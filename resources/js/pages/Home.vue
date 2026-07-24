@@ -12,7 +12,7 @@ defineProps<{
 
 // Buttons whose screens arrive in later milestones stay disabled until then.
 const actions = [
-    { label: 'Capture Item', href: null },
+    { label: 'Capture Item', href: '/capture' },
     { label: 'Process Items', href: null },
     { label: 'Processed Items', href: null },
     { label: 'Needs Review', href: null },
