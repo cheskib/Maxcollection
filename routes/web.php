@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -10,9 +11,11 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', function () {
-        return Inertia::render('Welcome');
-    })->name('home');
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+
+    Route::get('/settings', function () {
+        return Inertia::render('ComingSoon');
+    })->name('settings');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
