@@ -12,15 +12,14 @@ defineProps<{
 
 const page = usePage<{ flash: { status: string | null } }>();
 
-const actions = [
-    { label: 'Capture Item', href: '/capture' },
+const navigation = [
     { label: 'Processed Items', href: '/items' },
     { label: 'Needs Review', href: '/review' },
     { label: 'Settings', href: '/settings' },
 ] as const;
 
-function open(href: string | null): void {
-    if (href) router.visit(href);
+function open(href: string): void {
+    router.visit(href);
 }
 
 function processItems(): void {
@@ -74,10 +73,9 @@ function logout(): void {
                 Process Items
             </button>
             <button
-                v-for="action in actions.slice(1)"
+                v-for="action in navigation"
                 :key="action.label"
-                :disabled="!action.href"
-                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500"
+                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
                 @click="open(action.href)"
             >
                 {{ action.label }}

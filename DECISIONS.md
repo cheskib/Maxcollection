@@ -29,6 +29,18 @@ Every OpenAI response is stored exactly as returned, before any parsing or modif
 
 Laravel Queue only (database driver for local development). No Horizon, Redis, Supervisor configuration, or queue monitoring dashboards during the MVP.
 
+## 2026-07-24 — Metadata stored as explicit columns
+
+Category metadata lives in explicit nullable columns on the `metadata` table (one row per item), not a JSON blob. Fields shared between categories (year, country, denomination, condition notes) are stored once. This keeps the schema self-documenting and makes keyword search plain SQL. Proposed in the Milestone 5 report and approved with the continuation of Milestones 6–13.
+
+## 2026-07-24 — Accepted upload formats
+
+Uploads accept JPG, PNG, and WebP up to 20 MB per photo. The PRD requires "only supported image formats" without listing them; this set was flagged in the Milestone 4 report and carried forward. HEIC can be added later if iPhone captures require it.
+
+## 2026-07-24 — "Missing required metadata" review rule
+
+PROJECT.md section 17 lists "Missing required metadata" as a Needs Review reason without defining required fields. Implemented as: an item needs review when every primary identifying field for its category is blank (sports card: player name; comic book: title; coin: country/denomination; stamp: country/issue name).
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
