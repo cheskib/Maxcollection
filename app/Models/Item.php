@@ -52,4 +52,19 @@ class Item extends Model
     {
         return $this->hasMany(ProcessingJob::class);
     }
+
+    /**
+     * Human-readable reason why this item needs review (PROJECT.md 17).
+     */
+    public function reviewReasonLabel(): ?string
+    {
+        return match ($this->review_reason) {
+            'low_confidence' => 'Low AI confidence',
+            'unsupported_category' => 'Unsupported category',
+            'ai_failure' => 'AI processing failure',
+            'missing_metadata' => 'Missing required metadata',
+            'unreadable_photographs' => 'Unreadable photographs',
+            default => $this->review_reason,
+        };
+    }
 }

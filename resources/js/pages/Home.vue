@@ -12,11 +12,10 @@ defineProps<{
 
 const page = usePage<{ flash: { status: string | null } }>();
 
-// Buttons whose screens arrive in later milestones stay disabled until then.
 const actions = [
     { label: 'Capture Item', href: '/capture' },
-    { label: 'Processed Items', href: null },
-    { label: 'Needs Review', href: null },
+    { label: 'Processed Items', href: '/items' },
+    { label: 'Needs Review', href: '/review' },
     { label: 'Settings', href: '/settings' },
 ] as const;
 
