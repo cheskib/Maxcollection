@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
         ]);
 
+        // The app runs behind the hosting platform's HTTPS proxy in production.
+        $middleware->trustProxies(at: '*');
+
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/');
     })
