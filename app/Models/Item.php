@@ -9,7 +9,24 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Item extends Model
 {
-    protected $fillable = ['user_id'];
+    public const STATUS_CAPTURED = 'captured';
+
+    public const STATUS_QUEUED = 'queued';
+
+    public const STATUS_PROCESSING = 'processing';
+
+    public const STATUS_PROCESSED = 'processed';
+
+    public const STATUS_NEEDS_REVIEW = 'needs_review';
+
+    protected $fillable = ['user_id', 'status', 'review_reason', 'processed_at'];
+
+    protected function casts(): array
+    {
+        return [
+            'processed_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {

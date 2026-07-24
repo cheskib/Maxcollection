@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 
 defineProps<{
     stats: {
@@ -10,10 +10,11 @@ defineProps<{
     };
 }>();
 
+const page = usePage<{ flash: { status: string | null } }>();
+
 // Buttons whose screens arrive in later milestones stay disabled until then.
 const actions = [
     { label: 'Capture Item', href: '/capture' },
-    { label: 'Process Items', href: null },
     { label: 'Processed Items', href: null },
     { label: 'Needs Review', href: null },
     { label: 'Settings', href: '/settings' },
@@ -21,6 +22,10 @@ const actions = [
 
 function open(href: string | null): void {
     if (href) router.visit(href);
+}
+
+function processItems(): void {
+    router.post('/process');
 }
 
 function logout(): void {
@@ -32,6 +37,10 @@ function logout(): void {
     <Head title="Home" />
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
         <h1 class="text-center text-2xl font-bold text-gray-900">Max Collection</h1>
+
+        <p v-if="page.props.flash.status" class="mt-4 rounded-lg bg-green-50 p-3 text-center text-sm text-green-700">
+            {{ page.props.flash.status }}
+        </p>
 
         <div class="mt-6 grid grid-cols-2 gap-3">
             <div class="rounded-xl bg-white p-4 shadow-sm">
@@ -54,7 +63,19 @@ function logout(): void {
 
         <div class="mt-6 flex flex-col gap-3">
             <button
-                v-for="action in actions"
+                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
+                @click="open('/capture')"
+            >
+                Capture Item
+            </button>
+            <button
+                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
+                @click="processItems"
+            >
+                Process Items
+            </button>
+            <button
+                v-for="action in actions.slice(1)"
                 :key="action.label"
                 :disabled="!action.href"
                 class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500"

@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CaptureController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\ProcessController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,6 +21,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/capture/images', [CaptureController::class, 'storeImage'])->name('capture.images.store');
     Route::delete('/images/{image}', [CaptureController::class, 'destroyImage'])->name('images.destroy');
     Route::get('/images/{image}', [ImageController::class, 'show'])->name('images.show');
+
+    Route::post('/process', [ProcessController::class, 'store'])->name('process');
 
     Route::get('/settings', function () {
         return Inertia::render('ComingSoon');

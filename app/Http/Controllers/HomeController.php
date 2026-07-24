@@ -11,13 +11,11 @@ class HomeController extends Controller
 {
     public function index(): Response
     {
-        // itemsProcessed and needsReview stay at zero until processing exists
-        // (Milestones 6-7), as allowed by PHASE_1 Milestone 3.
         return Inertia::render('Home', [
             'stats' => [
                 'itemsCaptured' => Item::count(),
-                'itemsProcessed' => 0,
-                'needsReview' => 0,
+                'itemsProcessed' => Item::where('status', Item::STATUS_PROCESSED)->count(),
+                'needsReview' => Item::where('status', Item::STATUS_NEEDS_REVIEW)->count(),
                 'picturesUploaded' => Image::count(),
             ],
         ]);
