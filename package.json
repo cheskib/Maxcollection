@@ -1,0 +1,16 @@
+{
+  "name": "maxcollection",
+  "version": "0.1.0",
+  "description": "Maxcollection — collections management system for tracking members, charges, and payments",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
