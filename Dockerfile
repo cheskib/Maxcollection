@@ -16,7 +16,10 @@ RUN apt-get update \
         libpng-dev libjpeg62-turbo-dev libwebp-dev libzip-dev unzip \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install pdo_mysql gd zip exif \
-    && a2enmod rewrite headers \
+    # PHP requires the prefork MPM; ensure no second MPM stays enabled or
+    # Apache refuses to start ("More than one MPM loaded").
+    && (a2dismod -f mpm_event mpm_worker || true) \
+    && a2enmod mpm_prefork rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
 # Serve from Laravel's public directory
