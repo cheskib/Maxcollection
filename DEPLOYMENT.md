@@ -36,7 +36,7 @@ three pieces: the web app, the queue worker, and MySQL.
 ### 3. Queue worker service
 1. **Create → GitHub Repo** → same repository (second service in the project).
 2. **Settings → Deploy → Custom Start Command**:
-   `php artisan queue:work --tries=1 --timeout=300 --sleep=3`
+   (runs automatically inside the web service container)
 3. Give it the same **Variables** as the web service (Railway shared variables
    work well for this). No volume and no public networking needed.
 
