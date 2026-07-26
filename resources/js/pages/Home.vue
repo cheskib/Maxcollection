@@ -68,6 +68,12 @@ function logout(): void {
             </button>
             <button
                 class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
+                @click="open('/capture/bulk')"
+            >
+                Bulk Capture
+            </button>
+            <button
+                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
                 @click="processItems"
             >
                 Process Items

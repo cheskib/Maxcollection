@@ -49,6 +49,10 @@ From first production use: the Edit screen shows the item's photographs; Sport i
 
 Railway volumes attach to a single service, so a separate worker service cannot read uploaded photographs (diagnosed in production: the AI received text-only requests). The entrypoint runs `queue:work` in the background of the web container instead.
 
+## 2026-07-26 — Bulk capture added (owner-requested)
+
+The owner requested two capture approaches: one item at a time (unchanged) and bulk. Bulk Capture creates one item per group of photos, with a session toggle for 1 or 2 photos per item (default 2, front/back) — grouping happens client-side so the server stays simple. Photos can come from the camera in rhythm or from a multi-select file picker. An odd leftover photo can be finished as a single-photo item. PHP upload limits raised to 25M per file for phone photographs.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

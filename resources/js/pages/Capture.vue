@@ -46,7 +46,10 @@ function deleteImage(image: CaptureImage): void {
 <template>
     <Head title="Capture Item" />
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
-        <h1 class="text-center text-2xl font-bold text-gray-900">Capture Item</h1>
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900">Capture Item</h1>
+            <Link v-if="!item" href="/capture/bulk" class="text-sm font-semibold text-blue-600">Bulk mode</Link>
+        </div>
         <p v-if="item" class="mt-1 text-center text-sm text-gray-500">Item #{{ item.id }} · {{ item.images.length }} picture(s)</p>
         <p v-else class="mt-1 text-center text-sm text-gray-500">The first picture creates the item.</p>
 
