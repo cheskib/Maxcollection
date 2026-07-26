@@ -23,7 +23,7 @@ const categories = [
 ];
 
 const SPORTS = ['Baseball', 'Basketball', 'Football', 'Hockey', 'Soccer', 'Golf', 'Tennis', 'Boxing', 'Wrestling', 'Racing', 'Other'];
-const YES_NO_UNKNOWN = ['Yes', 'No', 'Unknown'];
+const YES_NO = ['Yes', 'No'];
 
 // Team suggestions per sport. The team field stays free-typed underneath so
 // defunct, minor-league, and college teams remain enterable.
@@ -84,7 +84,7 @@ const teamSuggestions = computed<string[] | null>(() => {
 function optionsFor(field: string): string[] | null {
     const base =
         field === 'sport' ? SPORTS
-        : field === 'rookie_card' ? YES_NO_UNKNOWN
+        : field === 'rookie_card' || field === 'autograph' ? YES_NO
         : field === 'year' && form.category === 'sports_card' ? YEARS
         : null;
     if (!base) return null;

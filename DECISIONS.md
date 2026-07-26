@@ -41,6 +41,14 @@ Uploads accept JPG, PNG, and WebP up to 20 MB per photo. The PRD requires "only 
 
 PROJECT.md section 17 lists "Missing required metadata" as a Needs Review reason without defining required fields. Implemented as: an item needs review when every primary identifying field for its category is blank (sports card: player name; comic book: title; coin: country/denomination; stamp: country/issue name).
 
+## 2026-07-26 — Edit form input refinements (owner-directed)
+
+From first production use: the Edit screen shows the item's photographs; Sport is a fixed dropdown; Rookie Card and Autograph are Yes/No dropdowns (owner narrowed Rookie Card from the PRD's Yes/No/Unknown — the empty option covers "undetermined"); Year is a dropdown (current year back to 1900) for sports cards only; Team and Manufacturer suggest known values while allowing free typing. Franchise-founding-based year ranges are deferred until a verified data source is added.
+
+## 2026-07-26 — Queue worker runs inside the web container
+
+Railway volumes attach to a single service, so a separate worker service cannot read uploaded photographs (diagnosed in production: the AI received text-only requests). The entrypoint runs `queue:work` in the background of the web container instead.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
