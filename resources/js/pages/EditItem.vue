@@ -8,6 +8,7 @@ const props = defineProps<{
         title: string;
         category: string;
         values: Record<string, string | null>;
+        images: { id: number; original_filename: string }[];
     };
     categoryFields: Record<string, string[]>;
     fieldLabels: Record<string, string>;
@@ -40,6 +41,18 @@ function submit(): void {
         <div class="flex items-center justify-between">
             <h1 class="min-w-0 truncate text-xl font-bold text-gray-900">Edit Item</h1>
             <Link :href="`/items/${item.id}`" class="ml-3 shrink-0 text-sm font-semibold text-blue-600">Cancel</Link>
+        </div>
+
+<!-- The photographs stay visible while editing: corrections are made by
+     reading the item itself. Tapping opens the full-size original. -->
+        <div v-if="item.images.length" class="mt-4 grid grid-cols-2 gap-3">
+            <a v-for="image in item.images" :key="image.id" :href="`/images/${image.id}`" target="_blank">
+                <img
+                    :src="`/thumbnails/${image.id}`"
+                    :alt="image.original_filename"
+                    class="h-44 w-full rounded-xl object-cover shadow-sm"
+                />
+            </a>
         </div>
 
         <form class="mt-6 flex flex-col gap-4" @submit.prevent="submit">
