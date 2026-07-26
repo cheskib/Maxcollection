@@ -120,7 +120,7 @@ function submit(): void {
                 <img
                     :src="`/thumbnails/${image.id}`"
                     :alt="image.original_filename"
-                    class="h-44 w-full rounded-xl object-cover shadow-sm"
+                    class="w-full rounded-xl bg-gray-100 object-contain shadow-sm"
                 />
             </a>
         </div>

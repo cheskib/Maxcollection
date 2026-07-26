@@ -63,9 +63,10 @@ function back(): void {
             Needs review: {{ item.reviewReason }}
         </p>
 
+<!-- object-contain: the full photograph is always visible, never cropped -->
         <div class="mt-4 grid grid-cols-2 gap-3">
             <a v-for="image in item.images" :key="image.id" :href="`/images/${image.id}`" target="_blank">
-                <img :src="`/thumbnails/${image.id}`" :alt="image.original_filename" class="h-40 w-full rounded-xl object-cover shadow-sm" />
+                <img :src="`/thumbnails/${image.id}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
             </a>
         </div>
 
