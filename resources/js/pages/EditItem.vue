@@ -8,6 +8,7 @@ const props = defineProps<{
         title: string;
         category: string;
         values: Record<string, string | null>;
+        images: { id: number; original_filename: string }[];
     };
     categoryFields: Record<string, string[]>;
     fieldLabels: Record<string, string>;
@@ -20,6 +21,76 @@ const categories = [
     { value: 'stamp', label: 'Stamp' },
     { value: 'unsupported', label: 'Unsupported' },
 ];
+
+const SPORTS = ['Baseball', 'Basketball', 'Football', 'Hockey', 'Soccer', 'Golf', 'Tennis', 'Boxing', 'Wrestling', 'Racing', 'Other'];
+const YES_NO = ['Yes', 'No'];
+
+// Team suggestions per sport. The team field stays free-typed underneath so
+// defunct, minor-league, and college teams remain enterable.
+const TEAMS: Record<string, string[]> = {
+    Baseball: [
+        'Arizona Diamondbacks', 'Athletics', 'Atlanta Braves', 'Baltimore Orioles', 'Boston Red Sox',
+        'Chicago Cubs', 'Chicago White Sox', 'Cincinnati Reds', 'Cleveland Guardians', 'Colorado Rockies',
+        'Detroit Tigers', 'Houston Astros', 'Kansas City Royals', 'Los Angeles Angels', 'Los Angeles Dodgers',
+        'Miami Marlins', 'Milwaukee Brewers', 'Minnesota Twins', 'New York Mets', 'New York Yankees',
+        'Philadelphia Phillies', 'Pittsburgh Pirates', 'San Diego Padres', 'San Francisco Giants',
+        'Seattle Mariners', 'St. Louis Cardinals', 'Tampa Bay Rays', 'Texas Rangers', 'Toronto Blue Jays',
+        'Washington Nationals',
+    ],
+    Basketball: [
+        'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
+        'Cleveland Cavaliers', 'Dallas Mavericks', 'Denver Nuggets', 'Detroit Pistons', 'Golden State Warriors',
+        'Houston Rockets', 'Indiana Pacers', 'LA Clippers', 'Los Angeles Lakers', 'Memphis Grizzlies',
+        'Miami Heat', 'Milwaukee Bucks', 'Minnesota Timberwolves', 'New Orleans Pelicans', 'New York Knicks',
+        'Oklahoma City Thunder', 'Orlando Magic', 'Philadelphia 76ers', 'Phoenix Suns', 'Portland Trail Blazers',
+        'Sacramento Kings', 'San Antonio Spurs', 'Toronto Raptors', 'Utah Jazz', 'Washington Wizards',
+    ],
+    Football: [
+        'Arizona Cardinals', 'Atlanta Falcons', 'Baltimore Ravens', 'Buffalo Bills', 'Carolina Panthers',
+        'Chicago Bears', 'Cincinnati Bengals', 'Cleveland Browns', 'Dallas Cowboys', 'Denver Broncos',
+        'Detroit Lions', 'Green Bay Packers', 'Houston Texans', 'Indianapolis Colts', 'Jacksonville Jaguars',
+        'Kansas City Chiefs', 'Las Vegas Raiders', 'Los Angeles Chargers', 'Los Angeles Rams', 'Miami Dolphins',
+        'Minnesota Vikings', 'New England Patriots', 'New Orleans Saints', 'New York Giants', 'New York Jets',
+        'Philadelphia Eagles', 'Pittsburgh Steelers', 'San Francisco 49ers', 'Seattle Seahawks',
+        'Tampa Bay Buccaneers', 'Tennessee Titans', 'Washington Commanders',
+    ],
+    Hockey: [
+        'Anaheim Ducks', 'Boston Bruins', 'Buffalo Sabres', 'Calgary Flames', 'Carolina Hurricanes',
+        'Chicago Blackhawks', 'Colorado Avalanche', 'Columbus Blue Jackets', 'Dallas Stars', 'Detroit Red Wings',
+        'Edmonton Oilers', 'Florida Panthers', 'Los Angeles Kings', 'Minnesota Wild', 'Montreal Canadiens',
+        'Nashville Predators', 'New Jersey Devils', 'New York Islanders', 'New York Rangers', 'Ottawa Senators',
+        'Philadelphia Flyers', 'Pittsburgh Penguins', 'San Jose Sharks', 'Seattle Kraken', 'St. Louis Blues',
+        'Tampa Bay Lightning', 'Toronto Maple Leafs', 'Utah Mammoth', 'Vancouver Canucks', 'Vegas Golden Knights',
+        'Washington Capitals', 'Winnipeg Jets',
+    ],
+};
+
+const MANUFACTURERS = [
+    'Topps', 'Bowman', 'Panini', 'Upper Deck', 'Fleer', 'Donruss', 'Score',
+    'Leaf', 'O-Pee-Chee', 'Pinnacle', 'Skybox', 'Pacific', 'Pro Set',
+];
+
+// Sports cards effectively start around 1900; coins and stamps can be far
+// older, so the year dropdown applies to sports cards only.
+const YEARS = Array.from({ length: new Date().getFullYear() - 1899 }, (_, i) => String(new Date().getFullYear() - i));
+
+const teamSuggestions = computed<string[] | null>(() => {
+    const sport = (form as Record<string, any>).sport as string | null;
+    return sport ? (TEAMS[sport] ?? null) : null;
+});
+
+// Keep whatever value is already stored selectable, even if it is not in
+// the standard list, so opening the editor never silently changes data.
+function optionsFor(field: string): string[] | null {
+    const base =
+        field === 'sport' ? SPORTS
+        : field === 'rookie_card' || field === 'autograph' ? YES_NO
+        : field === 'year' && form.category === 'sports_card' ? YEARS
+        : null;
+    if (!base) return null;
+    const current = (form as Record<string, any>)[field];
+    return current && !base.includes(current) ? [current, ...base] : base;
+}
 
 const form = useForm({
     category: props.item.category,
@@ -40,6 +111,18 @@ function submit(): void {
         <div class="flex items-center justify-between">
             <h1 class="min-w-0 truncate text-xl font-bold text-gray-900">Edit Item</h1>
             <Link :href="`/items/${item.id}`" class="ml-3 shrink-0 text-sm font-semibold text-blue-600">Cancel</Link>
+        </div>
+
+<!-- The photographs stay visible while editing: corrections are made by
+     reading the item itself. Tapping opens the full-size original. -->
+        <div v-if="item.images.length" class="mt-4 grid grid-cols-2 gap-3">
+            <a v-for="image in item.images" :key="image.id" :href="`/images/${image.id}`" target="_blank">
+                <img
+                    :src="`/thumbnails/${image.id}`"
+                    :alt="image.original_filename"
+                    class="h-44 w-full rounded-xl object-cover shadow-sm"
+                />
+            </a>
         </div>
 
         <form class="mt-6 flex flex-col gap-4" @submit.prevent="submit">
@@ -65,6 +148,39 @@ function submit(): void {
                     rows="3"
                     class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
                 ></textarea>
+                <select
+                    v-else-if="optionsFor(field)"
+                    :id="field"
+                    v-model="(form as Record<string, any>)[field]"
+                    class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                >
+                    <option :value="null">—</option>
+                    <option v-for="option in optionsFor(field)" :key="option" :value="option">{{ option }}</option>
+                </select>
+                <template v-else-if="field === 'team' && teamSuggestions">
+                    <input
+                        :id="field"
+                        v-model="(form as Record<string, any>)[field]"
+                        type="text"
+                        list="team-suggestions"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                    <datalist id="team-suggestions">
+                        <option v-for="team in teamSuggestions" :key="team" :value="team" />
+                    </datalist>
+                </template>
+                <template v-else-if="field === 'manufacturer'">
+                    <input
+                        :id="field"
+                        v-model="(form as Record<string, any>)[field]"
+                        type="text"
+                        list="manufacturer-suggestions"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                    <datalist id="manufacturer-suggestions">
+                        <option v-for="maker in MANUFACTURERS" :key="maker" :value="maker" />
+                    </datalist>
+                </template>
                 <input
                     v-else
                     :id="field"
