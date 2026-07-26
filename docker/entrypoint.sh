@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# Apache refuses to start when two MPMs are enabled, and package upgrades
+# during the image build can re-enable mpm_event behind prefork's back.
+# Normalize here, at startup, where nothing can override it afterwards.
+a2dismod -f mpm_event mpm_worker >/dev/null 2>&1 || true
+a2enmod mpm_prefork >/dev/null 2>&1 || true
+
 # Railway assigns the listening port at runtime.
 if [ -n "$PORT" ] && [ "$PORT" != "80" ]; then
     sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
