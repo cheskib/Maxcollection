@@ -30,9 +30,9 @@ defineProps<{
                         v-if="item.thumbnailImageId"
                         :src="`/thumbnails/${item.thumbnailImageId}`"
                         :alt="item.title"
-                        class="h-16 w-16 rounded-lg object-cover"
+                        class="h-20 w-16 rounded-lg bg-gray-100 object-contain"
                     />
-                    <div v-else class="h-16 w-16 rounded-lg bg-gray-200"></div>
+                    <div v-else class="h-20 w-16 rounded-lg bg-gray-200"></div>
                     <div class="min-w-0 flex-1">
                         <p class="truncate font-semibold text-gray-900">{{ item.title }}</p>
                         <p class="text-sm text-amber-700">{{ item.reason }}</p>
