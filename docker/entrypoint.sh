@@ -27,4 +27,14 @@ php artisan migrate --force
 # Seeders are idempotent (updateOrCreate) so this is safe on every boot.
 php artisan db:seed --force
 
+# The queue worker runs inside this same container so it shares the photo
+# volume with the web server -- Railway volumes attach to only one service,
+# and a separate worker service cannot see the uploaded images.
+(
+    while true; do
+        php artisan queue:work --tries=1 --timeout=300 --sleep=3 || true
+        sleep 5
+    done
+) &
+
 exec "$@"

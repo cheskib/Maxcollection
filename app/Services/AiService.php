@@ -44,6 +44,8 @@ class AiService
     {
         $content = [['type' => 'input_text', 'text' => $this->prompt()]];
 
+        $attached = 0;
+
         foreach ($item->images()->orderBy('id')->get() as $image) {
             $binary = Storage::disk('local')->get($image->path);
 
@@ -55,6 +57,13 @@ class AiService
                 'type' => 'input_image',
                 'image_url' => 'data:'.$image->mime_type.';base64,'.base64_encode($binary),
             ];
+            $attached++;
+        }
+
+        // Asking the AI to identify an item it cannot see produces a
+        // confident-looking "unsupported" instead of an obvious failure.
+        if ($attached === 0) {
+            throw new RuntimeException('No photograph files could be read for this item.');
         }
 
         return [
