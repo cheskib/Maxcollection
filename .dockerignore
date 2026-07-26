@@ -1,0 +1,15 @@
+.git
+node_modules
+vendor
+public/build
+storage/app/original
+storage/app/processed
+storage/app/thumbnails
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+.env
+.env.*
+tests
+.github
