@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BulkCaptureController;
 use App\Http\Controllers\CaptureController;
 use App\Http\Controllers\EditItemController;
 use App\Http\Controllers\HomeController;
@@ -23,7 +24,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
 
     Route::get('/capture', [CaptureController::class, 'create'])->name('capture.create');
-    Route::get('/capture/{item}', [CaptureController::class, 'show'])->name('capture.show');
+    Route::get('/capture/bulk', [BulkCaptureController::class, 'create'])->name('capture.bulk');
+    Route::post('/capture/bulk/items', [BulkCaptureController::class, 'store'])->name('capture.bulk.store');
+    Route::get('/capture/{item}', [CaptureController::class, 'show'])->whereNumber('item')->name('capture.show');
     Route::post('/capture/images', [CaptureController::class, 'storeImage'])->name('capture.images.store');
     Route::delete('/images/{image}', [CaptureController::class, 'destroyImage'])->name('images.destroy');
     Route::get('/images/{image}', [ImageController::class, 'show'])->name('images.show');

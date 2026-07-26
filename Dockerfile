@@ -26,6 +26,12 @@ RUN apt-get update \
 RUN sed -ri 's!/var/www/html!/var/www/html/public!g' \
     /etc/apache2/sites-available/000-default.conf /etc/apache2/apache2.conf
 
+# Phone photographs regularly exceed PHP's 2M default upload limit.
+RUN { \
+        echo 'upload_max_filesize=25M'; \
+        echo 'post_max_size=60M'; \
+    } > /usr/local/etc/php/conf.d/uploads.ini
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
