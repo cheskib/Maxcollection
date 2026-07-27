@@ -7,6 +7,7 @@ use App\Models\Item;
 use App\Models\ProcessingJob;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProcessingService
 {
@@ -97,6 +98,12 @@ class ProcessingService
 
         if ($existingAutograph !== null && array_key_exists('autograph', $fields)) {
             $fields['autograph'] = $existingAutograph;
+        }
+
+        // The AI sometimes returns "football"; display and grouping (Browse,
+        // filters) expect "Football".
+        if (filled($fields['sport'] ?? null)) {
+            $fields['sport'] = Str::title($fields['sport']);
         }
 
         $item->metadata()->updateOrCreate([], [

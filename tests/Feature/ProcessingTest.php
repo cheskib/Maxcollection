@@ -249,6 +249,22 @@ class ProcessingTest extends TestCase
         $this->assertSame('Premium Player', $item->fresh()->metadata->player_name);
     }
 
+    public function test_sport_is_capitalized_when_saved(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 92,
+                'fields' => ['player_name' => 'Dan Marino', 'sport' => 'football'],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        $this->assertSame('Football', $item->fresh()->metadata->sport);
+    }
+
     public function test_reprocessing_from_originals_replaces_adjustments(): void
     {
         Http::fake([
