@@ -5,6 +5,7 @@ import { ref } from 'vue';
 interface ProcessedItem {
     id: number;
     thumbnailImageId: number | null;
+    thumbnailRotation: number;
     title: string;
     category: string;
     confidence: number | null;
@@ -62,7 +63,7 @@ function apply(): void {
             >
                 <img
                     v-if="item.thumbnailImageId"
-                    :src="`/thumbnails/${item.thumbnailImageId}`"
+                    :src="`/thumbnails/${item.thumbnailImageId}?v=${item.thumbnailRotation}`"
                     :alt="item.title"
                     class="h-20 w-16 rounded-lg bg-gray-100 object-contain"
                 />
