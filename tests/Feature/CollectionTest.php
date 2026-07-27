@@ -130,6 +130,29 @@ class CollectionTest extends TestCase
                 ->has('items', 1)->where('items.0.id', $loose->id));
     }
 
+    public function test_processed_items_can_filter_by_collection(): void
+    {
+        $collection = Collection::create(['user_id' => $this->user->id, 'name' => "Cheski's"]);
+        $inside = $this->item(['collection_id' => $collection->id, 'status' => Item::STATUS_PROCESSED, 'processed_at' => now()]);
+        $inside->metadata()->create(['category' => 'sports_card', 'player_name' => 'In']);
+        $loose = $this->item(['status' => Item::STATUS_PROCESSED, 'processed_at' => now()]);
+        $loose->metadata()->create(['category' => 'sports_card', 'player_name' => 'Out']);
+
+        $this->actingAs($this->user)
+            ->get("/items?collection={$collection->id}")
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('items', 1)->where('items.0.id', $inside->id));
+
+        $this->actingAs($this->user)
+            ->get('/items?collection=unassigned')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('items', 1)->where('items.0.id', $loose->id));
+
+        $this->actingAs($this->user)
+            ->get('/items')
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('items', 2));
+    }
+
     public function test_collections_require_authentication(): void
     {
         $this->get('/collections')->assertRedirect('/login');

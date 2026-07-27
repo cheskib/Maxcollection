@@ -16,13 +16,20 @@ const props = defineProps<{
     items: ProcessedItem[];
     sort: string;
     search?: string;
+    collection: string;
+    collections: { id: number; name: string }[];
 }>();
 
 const search = ref(props.search ?? '');
 const sort = ref(props.sort);
+const collection = ref(props.collection);
 
 function apply(): void {
-    router.get('/items', { q: search.value || undefined, sort: sort.value }, { preserveState: true });
+    router.get(
+        '/items',
+        { q: search.value || undefined, sort: sort.value, collection: collection.value || undefined },
+        { preserveState: true },
+    );
 }
 </script>
 
@@ -46,11 +53,18 @@ function apply(): void {
             </button>
         </form>
 
-        <select v-model="sort" class="mt-3 rounded-lg border border-gray-300 px-3 py-2 text-sm" @change="apply">
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="title">By title</option>
-        </select>
+        <div class="mt-3 flex gap-2">
+            <select v-model="collection" class="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm" @change="apply">
+                <option value="">All collections</option>
+                <option v-for="entry in collections" :key="entry.id" :value="String(entry.id)">{{ entry.name }}</option>
+                <option value="unassigned">Unassigned</option>
+            </select>
+            <select v-model="sort" class="rounded-lg border border-gray-300 px-3 py-2 text-sm" @change="apply">
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="title">By title</option>
+            </select>
+        </div>
 
         <p v-if="items.length === 0" class="mt-10 text-center text-gray-500">No processed items yet.</p>
 
