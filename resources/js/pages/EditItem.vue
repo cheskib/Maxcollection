@@ -78,8 +78,10 @@ const CARD_TYPES = [
     'Future Stars', 'Checklist', 'Traded', 'Insert',
 ];
 
-// Original Card Year only makes sense on reprint-style cards.
+// Original Card Year only makes sense on reprint-style cards, and a
+// checklist has no player or team.
 const REPRINT_TYPES = ['reprint', 'turn back the clock', 'retro'];
+const NO_PLAYER_TYPES = ['checklist'];
 
 // Sports cards effectively start around 1900; coins and stamps can be far
 // older, so the year dropdown applies to sports cards only.
@@ -118,7 +120,12 @@ const visibleFields = computed(() => {
     const fields = props.categoryFields[form.category] ?? [];
     const cardType = ((form as Record<string, any>).card_type ?? '').toLowerCase();
     const isReprint = REPRINT_TYPES.includes(cardType);
-    return fields.filter((field) => field !== 'original_year' || isReprint);
+    const hasPlayer = !NO_PLAYER_TYPES.includes(cardType);
+    return fields.filter(
+        (field) =>
+            (field !== 'original_year' || isReprint) &&
+            (!['player_name', 'team'].includes(field) || hasPlayer),
+    );
 });
 
 // Compact bottom section: rookie + autograph share a row, and the three
