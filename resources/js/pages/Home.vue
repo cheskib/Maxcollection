@@ -40,22 +40,27 @@ function logout(): void {
             {{ page.props.flash.status }}
         </p>
 
-        <div class="mt-6 grid grid-cols-2 gap-3">
-            <div class="rounded-xl bg-white p-4 shadow-sm">
-                <p class="text-3xl font-bold text-gray-900">{{ stats.itemsCaptured }}</p>
-                <p class="mt-1 text-sm text-gray-500">Items Captured</p>
-            </div>
-            <div class="rounded-xl bg-white p-4 shadow-sm">
-                <p class="text-3xl font-bold text-gray-900">{{ stats.itemsProcessed }}</p>
-                <p class="mt-1 text-sm text-gray-500">Items Processed</p>
-            </div>
-            <div class="rounded-xl bg-white p-4 shadow-sm">
-                <p class="text-3xl font-bold" :class="stats.needsReview ? 'text-amber-600' : 'text-gray-900'">{{ stats.needsReview }}</p>
-                <p class="mt-1 text-sm text-gray-500">Needs Review</p>
-            </div>
-            <div class="rounded-xl bg-white p-4 shadow-sm">
-                <p class="text-3xl font-bold text-gray-900">{{ stats.picturesUploaded }}</p>
-                <p class="mt-1 text-sm text-gray-500">Pictures Uploaded</p>
+<!-- The card inventory at a glance: a distinct panel, every tile opens
+     its summary view -->
+        <div class="mt-6 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Inventory Overview</p>
+            <div class="mt-3 grid grid-cols-2 gap-3">
+                <Link href="/inventory" class="rounded-xl bg-white p-4 shadow-sm hover:bg-gray-50">
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.itemsCaptured }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Items Uploaded ›</p>
+                </Link>
+                <Link href="/items/summary" class="rounded-xl bg-white p-4 shadow-sm hover:bg-gray-50">
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.itemsProcessed }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Items Processed ›</p>
+                </Link>
+                <Link href="/review" class="rounded-xl bg-white p-4 shadow-sm hover:bg-gray-50">
+                    <p class="text-3xl font-bold" :class="stats.needsReview ? 'text-amber-600' : 'text-gray-900'">{{ stats.needsReview }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Needs Review ›</p>
+                </Link>
+                <Link href="/photos" class="rounded-xl bg-white p-4 shadow-sm hover:bg-gray-50">
+                    <p class="text-3xl font-bold text-gray-900">{{ stats.picturesUploaded }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Photos Uploaded ›</p>
+                </Link>
             </div>
         </div>
 
