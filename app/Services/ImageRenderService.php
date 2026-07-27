@@ -27,8 +27,13 @@ class ImageRenderService
             return null;
         }
 
-        if ($applyRotation && $image->rotation) {
-            $rotated = imagerotate($source, -$image->rotation, 0);
+        $angle = $applyRotation ? $image->rotation + $image->tilt : 0;
+
+        if ($angle) {
+            // Non-quarter angles expose corner triangles; fill them white so
+            // the following trim can hide them.
+            $background = imagecolorallocate($source, 255, 255, 255);
+            $rotated = imagerotate($source, -$angle, $background === false ? 0 : $background);
 
             if ($rotated !== false) {
                 imagedestroy($source);

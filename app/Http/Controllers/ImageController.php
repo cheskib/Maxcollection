@@ -31,7 +31,7 @@ class ImageController extends Controller
 
         $applyCrop = ! $request->boolean('uncropped');
 
-        if ($image->rotation === 0 && ! ($applyCrop && $image->hasCrop())) {
+        if (! $image->hasTurn() && ! ($applyCrop && $image->hasCrop())) {
             return response()->file(Storage::disk('local')->path($image->path));
         }
 

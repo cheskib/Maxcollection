@@ -9,8 +9,10 @@ class Image extends Model
 {
     protected $fillable = [
         'item_id', 'path', 'original_filename', 'mime_type', 'size_bytes', 'role',
-        'rotation', 'crop_top', 'crop_right', 'crop_bottom', 'crop_left',
+        'rotation', 'tilt', 'crop_top', 'crop_right', 'crop_bottom', 'crop_left',
     ];
+
+    protected $casts = ['tilt' => 'float'];
 
     public function item(): BelongsTo
     {
@@ -23,12 +25,25 @@ class Image extends Model
     public function versionTag(): string
     {
         return implode('-', [
-            $this->rotation, $this->crop_top, $this->crop_right, $this->crop_bottom, $this->crop_left,
+            $this->rotation, $this->tilt, $this->crop_top, $this->crop_right, $this->crop_bottom, $this->crop_left,
         ]);
     }
 
     public function hasCrop(): bool
     {
         return $this->crop_top || $this->crop_right || $this->crop_bottom || $this->crop_left;
+    }
+
+    public function hasTurn(): bool
+    {
+        return $this->rotation !== 0 || $this->tilt !== 0.0;
+    }
+
+    /**
+     * Whether the displayed rendering differs from the original photo.
+     */
+    public function isAdjusted(): bool
+    {
+        return $this->hasTurn() || $this->hasCrop();
     }
 }
