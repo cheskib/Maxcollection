@@ -192,10 +192,13 @@ class ProcessingService
                         $changes["crop_{$edge}"] = $value;
                     }
                 }
-            } elseif ($trim !== null && ! $image->hasCrop()) {
-                // On cleaned renderings, trims only apply to untrimmed
-                // photos: they would stack (the AI sees the already-trimmed
-                // rendering) and each reprocess would cut into the item.
+            } elseif ($trim !== null && ! $image->hasCrop() && $item->batch_id === null) {
+                // Automatic trims are for hand-held single captures only;
+                // scanner and PDF batches arrive already framed (owner
+                // decision — batch items are only trimmed when the user
+                // explicitly reprocesses from originals). They also apply
+                // just to untrimmed photos: they would stack (the AI sees
+                // the already-trimmed rendering) and cut into the item.
                 foreach (['top', 'right', 'bottom', 'left'] as $edge) {
                     $value = min(45, $trim[$edge]);
 

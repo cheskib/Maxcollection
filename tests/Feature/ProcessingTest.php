@@ -273,7 +273,7 @@ class ProcessingTest extends TestCase
             ->assertHeader('Content-Type', 'image/jpeg');
     }
 
-    public function test_ai_tilt_is_ignored_for_batch_items(): void
+    public function test_ai_tilt_and_trim_are_ignored_for_batch_items(): void
     {
         Http::fake([
             'api.openai.com/*' => Http::response($this->openAiResponse([
@@ -281,6 +281,7 @@ class ProcessingTest extends TestCase
                 'confidence' => 95,
                 'fields' => ['player_name' => 'Scanned Player'],
                 'tilts' => [7.5],
+                'trims' => [['top' => 10, 'right' => 10, 'bottom' => 10, 'left' => 10]],
             ])),
         ]);
 
@@ -290,8 +291,35 @@ class ProcessingTest extends TestCase
 
         $this->actingAs($this->user)->post('/process');
 
-        // Scanner and PDF batches come in straight; no fine straightening.
-        $this->assertSame(0.0, $item->images()->first()->tilt);
+        // Scanner and PDF batches arrive straight and already framed; no
+        // automatic straightening or trimming.
+        $image = $item->images()->first();
+        $this->assertSame(0.0, $image->tilt);
+        $this->assertSame([0, 0, 0, 0], [
+            $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
+        ]);
+    }
+
+    public function test_batch_reprocess_from_originals_still_trims_on_request(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Requested Player'],
+                'trims' => [['top' => 5, 'right' => 5, 'bottom' => 5, 'left' => 5]],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $batch = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'bulk']);
+        $item->update(['batch_id' => $batch->id]);
+
+        $this->actingAs($this->user)->post("/batches/{$batch->id}/reprocess", ['source' => 'original']);
+
+        // Reprocessing from originals is an explicit request to redo the
+        // cleanup, so trims apply even to batch items.
+        $this->assertSame(5, $item->images()->first()->crop_top);
     }
 
     public function test_a_whole_batch_can_be_reprocessed(): void
