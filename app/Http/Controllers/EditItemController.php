@@ -27,7 +27,7 @@ class EditItemController extends Controller
                 'title' => $metadata?->primaryTitle() ?? "Item #{$item->id}",
                 'category' => $metadata?->category ?? 'unsupported',
                 'values' => $values,
-                'images' => $item->images()->orderBy('id')->get(['id', 'original_filename', 'rotation'])->all(),
+                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag()])->all(),
             ],
             'categoryFields' => Metadata::CATEGORY_FIELDS,
             'fieldLabels' => Metadata::FIELD_LABELS,

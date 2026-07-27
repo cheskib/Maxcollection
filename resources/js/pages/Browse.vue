@@ -9,7 +9,7 @@ const props = defineProps<{
     items: {
         id: number;
         thumbnailImageId: number | null;
-        thumbnailRotation: number;
+        thumbnailVersion: string;
         player: string;
         title: string;
         confidence: number | null;
@@ -92,7 +92,7 @@ const crumbs = computed(() => {
                 >
                     <img
                         v-if="item.thumbnailImageId"
-                        :src="`/thumbnails/${item.thumbnailImageId}?v=${item.thumbnailRotation}`"
+                        :src="`/thumbnails/${item.thumbnailImageId}?v=${item.thumbnailVersion}`"
                         :alt="item.title"
                         class="h-20 w-16 rounded-lg bg-gray-100 object-contain"
                     />

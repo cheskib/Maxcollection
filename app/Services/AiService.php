@@ -15,6 +15,10 @@ use RuntimeException;
  */
 class AiService
 {
+    public function __construct(private readonly ImageRenderService $renderer)
+    {
+    }
+
     public const TIER_STANDARD = 'standard';
 
     public const TIER_PREMIUM = 'premium';
@@ -57,20 +61,18 @@ class AiService
         $attached = 0;
 
         foreach ($item->images()->orderBy('id')->get() as $image) {
-            $binary = Storage::disk('local')->get($image->path);
+            // Send the displayed rendering (rotation + trim), downscaled to
+            // keep image token cost low (ARCHITECTURE.md 7). Originals are
+            // never modified.
+            $binary = $this->renderer->render($image, 1024);
 
             if ($binary === null) {
                 continue;
             }
 
-            // Send a downscaled derived copy to keep image token cost low
-            // (ARCHITECTURE.md 7: derived images for AI optimization).
-            // Originals are never modified.
-            [$binary, $mime] = $this->optimizeForAi($binary, $image->mime_type, $image->rotation);
-
             $content[] = [
                 'type' => 'input_image',
-                'image_url' => 'data:'.$mime.';base64,'.base64_encode($binary),
+                'image_url' => 'data:image/jpeg;base64,'.base64_encode($binary),
             ];
             $attached++;
         }
@@ -93,53 +95,6 @@ class AiService
                 ],
             ],
         ];
-    }
-
-    /**
-     * Downscale an image for the AI request. Card text stays perfectly
-     * legible at this size while image token cost drops sharply.
-     *
-     * @return array{0: string, 1: string} [binary, mime type]
-     */
-    private function optimizeForAi(string $binary, string $mime, int $rotation = 0): array
-    {
-        $maxEdge = 1024;
-
-        $source = @imagecreatefromstring($binary);
-
-        if ($source === false) {
-            return [$binary, $mime];
-        }
-
-        if ($rotation !== 0) {
-            $rotated = imagerotate($source, -$rotation, 0);
-
-            if ($rotated !== false) {
-                imagedestroy($source);
-                $source = $rotated;
-            }
-        }
-
-        $width = imagesx($source);
-        $height = imagesy($source);
-        $longest = max($width, $height);
-
-        if ($longest > $maxEdge) {
-            $scale = $maxEdge / $longest;
-            $resized = imagescale($source, (int) round($width * $scale), (int) round($height * $scale));
-
-            if ($resized !== false) {
-                imagedestroy($source);
-                $source = $resized;
-            }
-        }
-
-        ob_start();
-        imagejpeg($source, null, 85);
-        $jpeg = ob_get_clean();
-        imagedestroy($source);
-
-        return $jpeg === false || $jpeg === '' ? [$binary, $mime] : [$jpeg, 'image/jpeg'];
     }
 
     private function prompt(): string

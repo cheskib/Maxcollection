@@ -57,7 +57,7 @@ class ProcessedItemsController extends Controller
             ->map(fn (Item $item) => [
                 'id' => $item->id,
                 'thumbnailImageId' => $item->images->first()?->id,
-                'thumbnailRotation' => $item->images->first()?->rotation ?? 0,
+                'thumbnailVersion' => $item->images->first()?->versionTag() ?? '0',
                 'title' => $item->metadata?->primaryTitle() ?? "Item #{$item->id}",
                 'category' => $item->metadata?->categoryLabel() ?? 'Unknown',
                 'confidence' => $item->metadata?->confidence,

@@ -35,6 +35,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/images/{image}', [CaptureController::class, 'destroyImage'])->name('images.destroy');
     Route::get('/images/{image}', [ImageController::class, 'show'])->name('images.show');
     Route::post('/images/{image}/rotate', [ImageController::class, 'rotate'])->name('images.rotate');
+    Route::get('/images/{image}/trim', [ImageController::class, 'trimForm'])->name('images.trim');
+    Route::post('/images/{image}/trim', [ImageController::class, 'trim'])->name('images.trim.save');
     Route::get('/thumbnails/{image}', [ThumbnailController::class, 'show'])->name('thumbnails.show');
 
     Route::post('/process', [ProcessController::class, 'store'])->name('process');

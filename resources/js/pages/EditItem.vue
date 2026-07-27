@@ -8,7 +8,7 @@ const props = defineProps<{
         title: string;
         category: string;
         values: Record<string, string | null>;
-        images: { id: number; original_filename: string; rotation: number }[];
+        images: { id: number; original_filename: string; version: string }[];
     };
     categoryFields: Record<string, string[]>;
     fieldLabels: Record<string, string>;
@@ -123,7 +123,7 @@ function rotateImage(imageId: number): void {
             <div v-for="image in item.images" :key="image.id" class="relative">
                 <a :href="`/images/${image.id}`" target="_blank">
                     <img
-                        :src="`/thumbnails/${image.id}?v=${image.rotation}`"
+                        :src="`/thumbnails/${image.id}?v=${image.version}`"
                         :alt="image.original_filename"
                         class="w-full rounded-xl bg-gray-100 object-contain shadow-sm"
                     />

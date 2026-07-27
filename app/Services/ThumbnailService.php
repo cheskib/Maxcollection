@@ -11,7 +11,11 @@ use Illuminate\Support\Facades\Storage;
  */
 class ThumbnailService
 {
-    private const MAX_WIDTH = 400;
+    private const MAX_EDGE = 400;
+
+    public function __construct(private readonly ImageRenderService $renderer)
+    {
+    }
 
     /**
      * Return the storage path of the thumbnail for an image, generating it
@@ -26,41 +30,11 @@ class ThumbnailService
             return $thumbnailPath;
         }
 
-        if (! $disk->exists($image->path)) {
+        $jpeg = $this->renderer->render($image, self::MAX_EDGE, quality: 80);
+
+        if ($jpeg === null) {
             return null;
         }
-
-        $source = @imagecreatefromstring($disk->get($image->path));
-
-        if ($source === false) {
-            return null;
-        }
-
-        if ($image->rotation) {
-            $rotated = imagerotate($source, -$image->rotation, 0);
-
-            if ($rotated !== false) {
-                imagedestroy($source);
-                $source = $rotated;
-            }
-        }
-
-        $width = imagesx($source);
-        $height = imagesy($source);
-        $targetWidth = min(self::MAX_WIDTH, $width);
-        $targetHeight = (int) round($height * ($targetWidth / $width));
-
-        $thumbnail = imagescale($source, $targetWidth, $targetHeight);
-        imagedestroy($source);
-
-        if ($thumbnail === false) {
-            return null;
-        }
-
-        ob_start();
-        imagejpeg($thumbnail, null, 80);
-        $jpeg = ob_get_clean();
-        imagedestroy($thumbnail);
 
         $disk->put($thumbnailPath, $jpeg);
 
@@ -68,7 +42,8 @@ class ThumbnailService
     }
 
     /**
-     * Drop the cached thumbnail (e.g. after rotation) so it regenerates.
+     * Drop the cached thumbnail (e.g. after rotation or trim) so it
+     * regenerates.
      */
     public function forget(Image $image): void
     {

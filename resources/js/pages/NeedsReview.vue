@@ -5,7 +5,7 @@ defineProps<{
     items: {
         id: number;
         thumbnailImageId: number | null;
-        thumbnailRotation: number;
+        thumbnailVersion: string;
         title: string;
         reason: string;
         confidence: number | null;
@@ -29,7 +29,7 @@ defineProps<{
                 <div class="flex items-center gap-3">
                     <img
                         v-if="item.thumbnailImageId"
-                        :src="`/thumbnails/${item.thumbnailImageId}?v=${item.thumbnailRotation}`"
+                        :src="`/thumbnails/${item.thumbnailImageId}?v=${item.thumbnailVersion}`"
                         :alt="item.title"
                         class="h-20 w-16 rounded-lg bg-gray-100 object-contain"
                     />

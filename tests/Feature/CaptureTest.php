@@ -137,6 +137,51 @@ class CaptureTest extends TestCase
             ->assertHeader('Content-Type', 'image/jpeg');
     }
 
+    public function test_an_image_can_be_trimmed_and_streams_cropped(): void
+    {
+        $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('t.jpg', 200, 300)]);
+        $image = Image::first();
+
+        $this->actingAs($this->user)
+            ->post("/images/{$image->id}/trim", ['top' => 10, 'right' => 5, 'bottom' => 10, 'left' => 5])
+            ->assertRedirect("/items/{$image->item_id}");
+
+        $image->refresh();
+        $this->assertSame([10, 5, 10, 5], [$image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left]);
+
+        $this->actingAs($this->user)
+            ->get("/images/{$image->id}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
+
+        $this->actingAs($this->user)->get("/images/{$image->id}/trim")->assertOk();
+    }
+
+    public function test_trim_values_are_validated(): void
+    {
+        $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('v.jpg')]);
+        $image = Image::first();
+
+        $this->actingAs($this->user)
+            ->post("/images/{$image->id}/trim", ['top' => 90, 'right' => 0, 'bottom' => 0, 'left' => 0])
+            ->assertSessionHasErrors('top');
+    }
+
+    public function test_a_photo_can_be_added_from_the_item_page(): void
+    {
+        $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('front.jpg')]);
+        $item = Item::first();
+
+        $response = $this->actingAs($this->user)->post('/capture/images', [
+            'photo' => UploadedFile::fake()->image('detail.jpg'),
+            'item_id' => $item->id,
+            'stay' => 1,
+        ]);
+
+        $response->assertRedirect("/items/{$item->id}");
+        $this->assertSame(2, $item->images()->count());
+    }
+
     public function test_capture_requires_authentication(): void
     {
         $this->get('/capture')->assertRedirect('/login');
