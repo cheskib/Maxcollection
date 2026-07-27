@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
 
 interface Field {
@@ -34,11 +34,47 @@ const props = defineProps<{
 
 const page = usePage<{ flash: { status: string | null } }>();
 
+// Reprocessing always asks which photos the AI should read.
+const pendingTier = ref<'standard' | 'premium' | null>(null);
+
 function reprocess(tier: 'standard' | 'premium'): void {
-    const label = tier === 'premium' ? 'Run a premium analysis on this item?' : 'Reprocess this item with AI?';
-    if (!confirm(`${label} Current metadata will be replaced.`)) return;
-    router.post(`/items/${props.item.id}/reprocess`, { tier });
+    pendingTier.value = pendingTier.value === tier ? null : tier;
 }
+
+function runReprocess(source: 'original' | 'cleaned'): void {
+    if (pendingTier.value === null) return;
+    router.post(
+        `/items/${props.item.id}/reprocess`,
+        { tier: pendingTier.value, source },
+        { preserveScroll: true },
+    );
+    pendingTier.value = null;
+}
+
+// While the AI is working, refresh the item every few seconds so the
+// photos and metadata appear without a manual page reload.
+let poll: number | null = null;
+
+function stopPolling(): void {
+    if (poll !== null) {
+        clearInterval(poll);
+        poll = null;
+    }
+}
+
+watch(
+    () => props.item.status,
+    (status) => {
+        const busy = status === 'queued' || status === 'processing';
+        if (busy && poll === null) {
+            poll = window.setInterval(() => router.reload({ only: ['item'] }), 4000);
+        } else if (!busy) {
+            stopPolling();
+        }
+    },
+    { immediate: true },
+);
+onUnmounted(stopPolling);
 
 function rotate(imageId: number): void {
     router.post(`/images/${imageId}/rotate`, {}, { preserveScroll: true });
@@ -111,6 +147,12 @@ function back(): void {
         </p>
         <p v-if="item.reviewReason" class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
             Needs review: {{ item.reviewReason }}
+        </p>
+        <p
+            v-if="item.status === 'queued' || item.status === 'processing'"
+            class="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-700"
+        >
+            ⏳ The AI is reading this item… the page updates by itself when it finishes.
         </p>
 
 <!-- Adjusted photos show original vs cleaned side by side; the full
@@ -250,6 +292,32 @@ function back(): void {
             >
                 ★ Premium Analysis
             </button>
+            <div v-if="pendingTier" class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <p class="text-sm font-semibold text-gray-900">Which photos should the AI read?</p>
+                <p class="mt-1 text-xs text-gray-500">Current details will be replaced with what it finds.</p>
+                <div class="mt-3 flex flex-col gap-2">
+                    <button
+                        class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
+                        @click="runReprocess('original')"
+                    >
+                        Original photos
+                        <span class="block text-xs font-normal text-blue-100">Start fresh — the AI redoes the straightening and trimming too.</span>
+                    </button>
+                    <button
+                        class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
+                        @click="runReprocess('cleaned')"
+                    >
+                        Cleaned photos
+                        <span class="block text-xs font-normal text-blue-100">Keep my adjustments — just re-read the item as shown.</span>
+                    </button>
+                    <button
+                        class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                        @click="pendingTier = null"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
             <button
                 class="w-full rounded-lg bg-red-600 py-3 font-semibold text-white hover:bg-red-700"
                 @click="deleteItem"

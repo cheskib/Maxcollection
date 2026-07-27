@@ -249,6 +249,44 @@ class ProcessingTest extends TestCase
         $this->assertSame('Premium Player', $item->fresh()->metadata->player_name);
     }
 
+    public function test_reprocessing_from_originals_replaces_adjustments(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 96,
+                'fields' => ['player_name' => 'Fresh Player'],
+                'rotations' => [90],
+                'trims' => [['top' => 5, 'right' => 5, 'bottom' => 5, 'left' => 5]],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $item->images()->first()->update(['rotation' => 270, 'crop_top' => 40, 'crop_left' => 20]);
+
+        $this->actingAs($this->user)
+            ->post("/items/{$item->id}/reprocess", ['tier' => 'standard', 'source' => 'original'])
+            ->assertRedirect("/items/{$item->id}");
+
+        $image = $item->images()->first();
+        // The AI saw the untouched photo, so its answers replace the old
+        // adjustments instead of stacking on top of them.
+        $this->assertSame(90, $image->rotation);
+        $this->assertSame([5, 5, 5, 5], [
+            $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
+        ]);
+    }
+
+    public function test_invalid_source_is_rejected(): void
+    {
+        Http::fake();
+        $item = $this->captureItem();
+
+        $this->actingAs($this->user)
+            ->post("/items/{$item->id}/reprocess", ['source' => 'raw'])
+            ->assertSessionHasErrors('source');
+    }
+
     public function test_invalid_tier_is_rejected(): void
     {
         Http::fake();

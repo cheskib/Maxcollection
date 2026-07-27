@@ -21,6 +21,7 @@ class ProcessItemJob implements ShouldQueue
     public function __construct(
         public readonly int $processingJobId,
         public readonly string $tier = AiService::TIER_STANDARD,
+        public readonly string $source = AiService::SOURCE_CLEANED,
     ) {
     }
 
@@ -32,6 +33,6 @@ class ProcessItemJob implements ShouldQueue
             return; // Item was deleted while waiting in the queue.
         }
 
-        $service->processJob($job, $this->tier);
+        $service->processJob($job, $this->tier, $this->source);
     }
 }
