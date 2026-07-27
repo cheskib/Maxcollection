@@ -103,6 +103,10 @@ function logout(): void {
                 <span class="text-2xl">🗄️</span>
                 <p class="mt-1 font-semibold text-gray-900">Collections</p>
             </Link>
+            <Link href="/sets" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
+                <span class="text-2xl">📚</span>
+                <p class="mt-1 font-semibold text-gray-900">Sets</p>
+            </Link>
         </div>
 
         <div class="mt-8 flex items-center justify-center gap-6 text-sm">

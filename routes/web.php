@@ -58,6 +58,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 
     Route::get('/batches', [BatchController::class, 'index'])->name('batches.index');
+    Route::get('/sets', [\App\Http\Controllers\CardSetController::class, 'index'])->name('sets.index');
+    Route::get('/sets/{cardSet}', [\App\Http\Controllers\CardSetController::class, 'show'])->name('sets.show');
+    Route::put('/sets/{cardSet}', [\App\Http\Controllers\CardSetController::class, 'update'])->name('sets.update');
     Route::get('/batches/{batch}', [BatchController::class, 'show'])->name('batches.show');
     Route::post('/batches/{batch}/collection', [BatchController::class, 'assignCollection'])->name('batches.collection');
     Route::post('/batches/{batch}/reprocess', [BatchController::class, 'reprocess'])->name('batches.reprocess');
