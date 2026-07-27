@@ -53,9 +53,14 @@ class AiService
                 continue;
             }
 
+            // Send a downscaled derived copy to keep image token cost low
+            // (ARCHITECTURE.md 7: derived images for AI optimization).
+            // Originals are never modified.
+            [$binary, $mime] = $this->optimizeForAi($binary, $image->mime_type);
+
             $content[] = [
                 'type' => 'input_image',
-                'image_url' => 'data:'.$image->mime_type.';base64,'.base64_encode($binary),
+                'image_url' => 'data:'.$mime.';base64,'.base64_encode($binary),
             ];
             $attached++;
         }
@@ -78,6 +83,44 @@ class AiService
                 ],
             ],
         ];
+    }
+
+    /**
+     * Downscale an image for the AI request. Card text stays perfectly
+     * legible at this size while image token cost drops sharply.
+     *
+     * @return array{0: string, 1: string} [binary, mime type]
+     */
+    private function optimizeForAi(string $binary, string $mime): array
+    {
+        $maxEdge = 1024;
+
+        $source = @imagecreatefromstring($binary);
+
+        if ($source === false) {
+            return [$binary, $mime];
+        }
+
+        $width = imagesx($source);
+        $height = imagesy($source);
+        $longest = max($width, $height);
+
+        if ($longest > $maxEdge) {
+            $scale = $maxEdge / $longest;
+            $resized = imagescale($source, (int) round($width * $scale), (int) round($height * $scale));
+
+            if ($resized !== false) {
+                imagedestroy($source);
+                $source = $resized;
+            }
+        }
+
+        ob_start();
+        imagejpeg($source, null, 85);
+        $jpeg = ob_get_clean();
+        imagedestroy($source);
+
+        return $jpeg === false || $jpeg === '' ? [$binary, $mime] : [$jpeg, 'image/jpeg'];
     }
 
     private function prompt(): string
