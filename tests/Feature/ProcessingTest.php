@@ -249,50 +249,23 @@ class ProcessingTest extends TestCase
         $this->assertSame('Premium Player', $item->fresh()->metadata->player_name);
     }
 
-    public function test_ai_tilt_straightens_single_capture_photos(): void
+    public function test_ai_never_trims_or_tilts_photos(): void
     {
         Http::fake([
             'api.openai.com/*' => Http::response($this->openAiResponse([
                 'category' => 'sports_card',
                 'confidence' => 95,
-                'fields' => ['player_name' => 'Crooked Player'],
-                'tilts' => [7.5],
-            ])),
-        ]);
-
-        $item = $this->captureItem();
-        $this->actingAs($this->user)->post('/process');
-
-        $image = $item->images()->first();
-        $this->assertSame(7.5, $image->tilt);
-
-        // The tilted rendering still streams as a JPEG.
-        $this->actingAs($this->user)
-            ->get("/images/{$image->id}")
-            ->assertOk()
-            ->assertHeader('Content-Type', 'image/jpeg');
-    }
-
-    public function test_ai_tilt_and_trim_are_ignored_for_batch_items(): void
-    {
-        Http::fake([
-            'api.openai.com/*' => Http::response($this->openAiResponse([
-                'category' => 'sports_card',
-                'confidence' => 95,
-                'fields' => ['player_name' => 'Scanned Player'],
+                'fields' => ['player_name' => 'Framed Player'],
                 'tilts' => [7.5],
                 'trims' => [['top' => 10, 'right' => 10, 'bottom' => 10, 'left' => 10]],
             ])),
         ]);
 
         $item = $this->captureItem();
-        $batch = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'bulk']);
-        $item->update(['batch_id' => $batch->id]);
-
         $this->actingAs($this->user)->post('/process');
 
-        // Scanner and PDF batches arrive straight and already framed; no
-        // automatic straightening or trimming.
+        // Framing is the photographer's responsibility (owner decision):
+        // trim/tilt data in an AI response is ignored entirely.
         $image = $item->images()->first();
         $this->assertSame(0.0, $image->tilt);
         $this->assertSame([0, 0, 0, 0], [
@@ -380,13 +353,11 @@ class ProcessingTest extends TestCase
         $this->actingAs($this->user)->post("/images/{$image->id}/undo");
         $image->refresh();
         $this->assertSame(0, $image->rotation);
-        $this->assertSame(0, $image->crop_top);
 
         // ...and undoing again swaps the AI cleanup back.
         $this->actingAs($this->user)->post("/images/{$image->id}/undo");
         $image->refresh();
         $this->assertSame(180, $image->rotation);
-        $this->assertSame(12, $image->crop_top);
     }
 
     public function test_undo_without_a_snapshot_is_a_404(): void
@@ -413,7 +384,7 @@ class ProcessingTest extends TestCase
         $this->assertSame('Football', $item->fresh()->metadata->sport);
     }
 
-    public function test_reprocessing_from_originals_replaces_adjustments(): void
+    public function test_reprocessing_from_originals_restores_framing_and_sets_rotation(): void
     {
         Http::fake([
             'api.openai.com/*' => Http::response($this->openAiResponse([
@@ -421,22 +392,22 @@ class ProcessingTest extends TestCase
                 'confidence' => 96,
                 'fields' => ['player_name' => 'Fresh Player'],
                 'rotations' => [90],
-                'trims' => [['top' => 5, 'right' => 5, 'bottom' => 5, 'left' => 5]],
             ])),
         ]);
 
         $item = $this->captureItem();
-        $item->images()->first()->update(['rotation' => 270, 'crop_top' => 40, 'crop_left' => 20]);
+        $item->images()->first()->update(['rotation' => 270, 'crop_top' => 40, 'crop_left' => 20, 'tilt' => 3.0]);
 
         $this->actingAs($this->user)
             ->post("/items/{$item->id}/reprocess", ['tier' => 'standard', 'source' => 'original'])
             ->assertRedirect("/items/{$item->id}");
 
         $image = $item->images()->first();
-        // The AI saw the untouched photo, so its answers replace the old
-        // adjustments instead of stacking on top of them.
+        // The AI saw the untouched photo: its rotation is absolute, and the
+        // photo returns to its original framing (no trim, no tilt).
         $this->assertSame(90, $image->rotation);
-        $this->assertSame([5, 5, 5, 5], [
+        $this->assertSame(0.0, $image->tilt);
+        $this->assertSame([0, 0, 0, 0], [
             $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
         ]);
     }
@@ -501,52 +472,6 @@ class ProcessingTest extends TestCase
         $this->actingAs($this->user)->post('/process');
 
         $this->assertSame(0, $item->images()->first()->rotation);
-    }
-
-    public function test_ai_reported_trims_are_applied_to_untrimmed_photos(): void
-    {
-        Http::fake([
-            'api.openai.com/*' => Http::response($this->openAiResponse([
-                'category' => 'sports_card',
-                'confidence' => 95,
-                'fields' => ['player_name' => 'Trimmed Player'],
-                'trims' => [['top' => 10, 'right' => 5, 'bottom' => 60, 'left' => 0]],
-            ])),
-        ]);
-
-        $item = $this->captureItem();
-
-        $this->actingAs($this->user)->post('/process');
-
-        $image = $item->images()->first();
-        // 60 reported clamps to the 45 maximum.
-        $this->assertSame([10, 5, 45, 0], [
-            $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
-        ]);
-    }
-
-    public function test_ai_trims_never_touch_an_already_trimmed_photo(): void
-    {
-        Http::fake([
-            'api.openai.com/*' => Http::response($this->openAiResponse([
-                'category' => 'sports_card',
-                'confidence' => 95,
-                'fields' => ['player_name' => 'Kept Player'],
-                'trims' => [['top' => 10, 'right' => 5, 'bottom' => 5, 'left' => 5]],
-            ])),
-        ]);
-
-        $item = $this->captureItem();
-        $item->images()->first()->update(['crop_top' => 8]);
-
-        $this->actingAs($this->user)->post('/process');
-
-        $image = $item->images()->first();
-        // The existing trim (manual or from an earlier AI pass) is final;
-        // reprocessing must not stack more trim and cut into the item.
-        $this->assertSame([8, 0, 0, 0], [
-            $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
-        ]);
     }
 
     public function test_missing_rotations_leave_photos_untouched(): void

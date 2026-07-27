@@ -93,7 +93,7 @@ onUnmounted(stopPolling);
                         @click="runBatchReprocess('original')"
                     >
                         Original photos
-                        <span class="block text-xs font-normal text-blue-100">Start fresh — the AI redoes straightening and trimming too.</span>
+                        <span class="block text-xs font-normal text-blue-100">Start fresh — photos go back to their original framing.</span>
                     </button>
                     <button
                         class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"

@@ -129,20 +129,6 @@ printed text on the item must read left to right, not upside down. If the
 photograph is already correct, report 0 — never rotate an already-upright
 photo.
 
-Also report "tilts": for each photograph, in the same order and AFTER the
-rotation above is applied, the small clockwise angle in degrees (-45 to 45,
-decimals allowed) still needed to make the item perfectly straight — for
-example a hand-held photo where the card leans slightly. Use 0 when the
-item is already straight or you are unsure.
-
-Also report "trims": for each photograph, in the same order and AFTER the
-rotation and tilt above are applied, the percentage of each edge (top,
-right, bottom, left; whole numbers 0-45) that is background — hands, table,
-scanner bed — around the item. Trimming those edges should leave just the
-item with a small margin. Be conservative: never cut into the item itself,
-and use 0 for every edge when the item already fills the photo or you are
-unsure.
-
 Also report "roles": for each photograph, in the same order, which side of
 the item it shows: "front", "back", "detail" (a close-up of one area), or
 "unknown" when you cannot tell.
@@ -179,30 +165,12 @@ PROMPT;
                     'type' => 'array',
                     'items' => ['type' => 'integer', 'enum' => [0, 90, 180, 270]],
                 ],
-                'tilts' => [
-                    'type' => 'array',
-                    'items' => ['type' => 'number'],
-                ],
-                'trims' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'additionalProperties' => false,
-                        'properties' => [
-                            'top' => ['type' => 'integer'],
-                            'right' => ['type' => 'integer'],
-                            'bottom' => ['type' => 'integer'],
-                            'left' => ['type' => 'integer'],
-                        ],
-                        'required' => ['top', 'right', 'bottom', 'left'],
-                    ],
-                ],
                 'roles' => [
                     'type' => 'array',
                     'items' => ['type' => 'string', 'enum' => ['front', 'back', 'detail', 'unknown']],
                 ],
             ],
-            'required' => ['category', 'confidence', 'fields', 'rotations', 'tilts', 'trims', 'roles'],
+            'required' => ['category', 'confidence', 'fields', 'rotations', 'roles'],
         ];
     }
 
@@ -247,31 +215,12 @@ PROMPT;
             ->values()
             ->all();
 
-        $tilts = collect((array) ($decoded['tilts'] ?? []))
-            ->map(fn ($value) => is_numeric($value) ? round(max(-45.0, min(45.0, (float) $value)), 1) : 0.0)
-            ->values()
-            ->all();
-
-        $trims = collect((array) ($decoded['trims'] ?? []))
-            ->map(function ($trim) {
-                $clamp = fn ($value) => is_numeric($value) ? max(0, min(45, (int) $value)) : 0;
-
-                return [
-                    'top' => $clamp($trim['top'] ?? 0),
-                    'right' => $clamp($trim['right'] ?? 0),
-                    'bottom' => $clamp($trim['bottom'] ?? 0),
-                    'left' => $clamp($trim['left'] ?? 0),
-                ];
-            })
-            ->values()
-            ->all();
-
         $roles = collect((array) ($decoded['roles'] ?? []))
             ->map(fn ($value) => in_array($value, ['front', 'back', 'detail'], true) ? $value : 'unknown')
             ->values()
             ->all();
 
-        return new AiResult($category, $confidence, $fields, $rotations, $trims, $roles, $tilts);
+        return new AiResult($category, $confidence, $fields, $rotations, $roles);
     }
 
     /**

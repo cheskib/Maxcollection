@@ -25,21 +25,15 @@ class AiResult
      * @param array<string, string|null> $fields metadata columns for the category
      * @param array<int, int> $rotations additional clockwise degrees per photo,
      *                                   in the order the photos were sent
-     * @param array<int, array{top: int, right: int, bottom: int, left: int}> $trims
-     *                                   additional edge trims per photo (percent)
      * @param array<int, string> $roles which side each photo shows
      *                                  (front|back|detail|unknown)
-     * @param array<int, float> $tilts fine straightening angle per photo
-     *                                 (degrees, applied after rotation)
      */
     public function __construct(
         public readonly string $category,
         public readonly float $confidence,
         public readonly array $fields,
         public readonly array $rotations = [],
-        public readonly array $trims = [],
         public readonly array $roles = [],
-        public readonly array $tilts = [],
     ) {
     }
 
