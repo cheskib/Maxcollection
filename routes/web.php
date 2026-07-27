@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/items', [ProcessedItemsController::class, 'index'])->name('items.index');
     Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
+    Route::delete('/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
     Route::get('/items/{item}/edit', [EditItemController::class, 'edit'])->name('items.edit');
     Route::put('/items/{item}/metadata', [EditItemController::class, 'update'])->name('items.metadata.update');
     Route::post('/items/{item}/reprocess', [ReprocessController::class, 'store'])->name('items.reprocess');

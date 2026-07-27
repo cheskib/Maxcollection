@@ -165,6 +165,28 @@ class ItemPagesTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $item->processingJobs()->count());
     }
 
+    public function test_deleting_an_item_removes_everything(): void
+    {
+        $item = $this->processedItem();
+        $item->images()->create([
+            'path' => 'original/'.$item->id.'/photo.jpg',
+            'original_filename' => 'photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 10,
+        ]);
+        Storage::disk('local')->put('original/'.$item->id.'/photo.jpg', 'x');
+        $item->metadataHistory()->create(['user_id' => $this->user->id, 'field_name' => 'year', 'new_value' => '1989']);
+
+        $response = $this->actingAs($this->user)->delete("/items/{$item->id}");
+
+        $response->assertRedirect('/items');
+        $this->assertDatabaseCount('items', 0);
+        $this->assertDatabaseCount('images', 0);
+        $this->assertDatabaseCount('metadata', 0);
+        $this->assertDatabaseCount('metadata_history', 0);
+        Storage::disk('local')->assertMissing('original/'.$item->id.'/photo.jpg');
+    }
+
     public function test_item_pages_require_authentication(): void
     {
         $item = $this->processedItem();

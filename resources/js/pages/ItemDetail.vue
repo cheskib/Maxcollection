@@ -40,6 +40,11 @@ function rotate(imageId: number): void {
     router.post(`/images/${imageId}/rotate`, {}, { preserveScroll: true });
 }
 
+function deleteItem(): void {
+    if (!confirm('Delete this item? Its photographs, details, and history will be permanently removed.')) return;
+    router.delete(`/items/${props.item.id}`);
+}
+
 function back(): void {
     if (window.history.length > 1) {
         window.history.back();
@@ -127,6 +132,12 @@ function back(): void {
                 @click="reprocess('premium')"
             >
                 ★ Premium Analysis
+            </button>
+            <button
+                class="w-full rounded-lg bg-red-600 py-3 font-semibold text-white hover:bg-red-700"
+                @click="deleteItem"
+            >
+                Delete Item
             </button>
         </div>
     </div>
