@@ -7,7 +7,7 @@ import { collectionPayload, loadLastCollection, saveLastCollection } from '../co
 interface CaptureImage {
     id: number;
     original_filename: string;
-    rotation: number;
+    version: string;
 }
 
 const props = defineProps<{
@@ -83,7 +83,7 @@ function rotate(image: CaptureImage): void {
 
         <div v-if="item" class="mt-6 grid grid-cols-2 gap-3">
             <div v-for="image in item.images" :key="image.id" class="relative overflow-hidden rounded-xl bg-white shadow-sm">
-                <img :src="`/thumbnails/${image.id}?v=${image.rotation}`" :alt="image.original_filename" class="h-40 w-full bg-gray-100 object-contain" />
+                <img :src="`/thumbnails/${image.id}?v=${image.version}`" :alt="image.original_filename" class="h-40 w-full bg-gray-100 object-contain" />
                 <button
                     class="absolute right-2 top-2 rounded-lg bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700"
                     @click="deleteImage(image)"

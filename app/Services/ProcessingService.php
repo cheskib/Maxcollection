@@ -115,24 +115,44 @@ class ProcessingService
     }
 
     /**
-     * Auto-orient photographs. The AI sees images with their current display
-     * rotation already applied, so its answer is an additional turn on top;
-     * the user's rotate button remains the final authority afterwards.
+     * Auto-orient and auto-trim photographs. The AI sees images with their
+     * current rotation and trim already applied, so its answers are
+     * additional adjustments on top; the user's rotate and trim controls
+     * remain the final authority afterwards.
      */
     private function applyRotations(Item $item, AiResult $result): void
     {
-        if ($result->rotations === []) {
+        if ($result->rotations === [] && $result->trims === []) {
             return;
         }
 
         foreach ($item->images()->orderBy('id')->get()->values() as $index => $image) {
+            $changes = [];
+
             $extra = $result->rotations[$index] ?? 0;
 
-            if ($extra === 0) {
+            if ($extra !== 0) {
+                $changes['rotation'] = ($image->rotation + $extra) % 360;
+            }
+
+            $trim = $result->trims[$index] ?? null;
+
+            if ($trim !== null) {
+                foreach (['top', 'right', 'bottom', 'left'] as $edge) {
+                    $column = "crop_{$edge}";
+                    $combined = min(45, $image->{$column} + $trim[$edge]);
+
+                    if ($combined !== $image->{$column}) {
+                        $changes[$column] = $combined;
+                    }
+                }
+            }
+
+            if ($changes === []) {
                 continue;
             }
 
-            $image->update(['rotation' => ($image->rotation + $extra) % 360]);
+            $image->update($changes);
             $this->thumbnails->forget($image);
         }
     }

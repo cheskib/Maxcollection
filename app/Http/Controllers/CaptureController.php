@@ -31,7 +31,7 @@ class CaptureController extends Controller
         return Inertia::render('Capture', [
             'item' => [
                 'id' => $item->id,
-                'images' => $item->images()->orderBy('id')->get(['id', 'original_filename', 'rotation'])->all(),
+                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag()])->all(),
             ],
             'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
         ]);
@@ -48,6 +48,12 @@ class CaptureController extends Controller
         $collectionId = $item === null ? $collections->resolveFromRequest($request, $request->user()) : null;
 
         $item = $this->capture->storeImage($request->user(), $item, $request->file('photo'), null, $collectionId);
+
+        // Photos added from an item's page return there instead of the
+        // capture flow (e.g. adding a forgotten back or a detail shot).
+        if ($request->boolean('stay')) {
+            return redirect()->route('items.show', $item)->with('status', 'Photo added.');
+        }
 
         return redirect()->route('capture.show', $item);
     }

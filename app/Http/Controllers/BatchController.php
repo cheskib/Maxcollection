@@ -85,7 +85,7 @@ class BatchController extends Controller
             ->map(fn (Item $item) => [
                 'id' => $item->id,
                 'thumbnailImageId' => $item->images->first()?->id,
-                'thumbnailRotation' => $item->images->first()?->rotation ?? 0,
+                'thumbnailVersion' => $item->images->first()?->versionTag() ?? '0',
                 'title' => $item->metadata?->primaryTitle() ?? "Item #{$item->id}",
                 'status' => match ($item->status) {
                     Item::STATUS_PROCESSED => 'Processed',

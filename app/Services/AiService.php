@@ -15,6 +15,10 @@ use RuntimeException;
  */
 class AiService
 {
+    public function __construct(private readonly ImageRenderService $renderer)
+    {
+    }
+
     public const TIER_STANDARD = 'standard';
 
     public const TIER_PREMIUM = 'premium';
@@ -57,20 +61,18 @@ class AiService
         $attached = 0;
 
         foreach ($item->images()->orderBy('id')->get() as $image) {
-            $binary = Storage::disk('local')->get($image->path);
+            // Send the displayed rendering (rotation + trim), downscaled to
+            // keep image token cost low (ARCHITECTURE.md 7). Originals are
+            // never modified.
+            $binary = $this->renderer->render($image, 1024);
 
             if ($binary === null) {
                 continue;
             }
 
-            // Send a downscaled derived copy to keep image token cost low
-            // (ARCHITECTURE.md 7: derived images for AI optimization).
-            // Originals are never modified.
-            [$binary, $mime] = $this->optimizeForAi($binary, $image->mime_type, $image->rotation);
-
             $content[] = [
                 'type' => 'input_image',
-                'image_url' => 'data:'.$mime.';base64,'.base64_encode($binary),
+                'image_url' => 'data:image/jpeg;base64,'.base64_encode($binary),
             ];
             $attached++;
         }
@@ -95,53 +97,6 @@ class AiService
         ];
     }
 
-    /**
-     * Downscale an image for the AI request. Card text stays perfectly
-     * legible at this size while image token cost drops sharply.
-     *
-     * @return array{0: string, 1: string} [binary, mime type]
-     */
-    private function optimizeForAi(string $binary, string $mime, int $rotation = 0): array
-    {
-        $maxEdge = 1024;
-
-        $source = @imagecreatefromstring($binary);
-
-        if ($source === false) {
-            return [$binary, $mime];
-        }
-
-        if ($rotation !== 0) {
-            $rotated = imagerotate($source, -$rotation, 0);
-
-            if ($rotated !== false) {
-                imagedestroy($source);
-                $source = $rotated;
-            }
-        }
-
-        $width = imagesx($source);
-        $height = imagesy($source);
-        $longest = max($width, $height);
-
-        if ($longest > $maxEdge) {
-            $scale = $maxEdge / $longest;
-            $resized = imagescale($source, (int) round($width * $scale), (int) round($height * $scale));
-
-            if ($resized !== false) {
-                imagedestroy($source);
-                $source = $resized;
-            }
-        }
-
-        ob_start();
-        imagejpeg($source, null, 85);
-        $jpeg = ob_get_clean();
-        imagedestroy($source);
-
-        return $jpeg === false || $jpeg === '' ? [$binary, $mime] : [$jpeg, 'image/jpeg'];
-    }
-
     private function prompt(): string
     {
         return <<<'PROMPT'
@@ -162,6 +117,13 @@ Also report "rotations": for each photograph, in the order provided, the
 clockwise rotation in degrees (0, 90, 180, or 270) needed so the item is
 correctly oriented — the front standing upright, and the back turned so its
 text reads normally (card backs are often printed in landscape).
+
+Also report "trims": for each photograph, in the same order and AFTER the
+rotation above is applied, the percentage of each edge (top, right, bottom,
+left; whole numbers 0-45) that is background — hands, table, scanner bed —
+around the item. Trimming those edges should leave just the item with a
+small margin. Be conservative: never cut into the item itself, and use 0
+for every edge when the item already fills the photo or you are unsure.
 PROMPT;
     }
 
@@ -195,8 +157,22 @@ PROMPT;
                     'type' => 'array',
                     'items' => ['type' => 'integer', 'enum' => [0, 90, 180, 270]],
                 ],
+                'trims' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'properties' => [
+                            'top' => ['type' => 'integer'],
+                            'right' => ['type' => 'integer'],
+                            'bottom' => ['type' => 'integer'],
+                            'left' => ['type' => 'integer'],
+                        ],
+                        'required' => ['top', 'right', 'bottom', 'left'],
+                    ],
+                ],
             ],
-            'required' => ['category', 'confidence', 'fields', 'rotations'],
+            'required' => ['category', 'confidence', 'fields', 'rotations', 'trims'],
         ];
     }
 
@@ -233,14 +209,29 @@ PROMPT;
             ? []
             : AiResult::filterFields($category, (array) ($decoded['fields'] ?? []));
 
-        // Orientation hints are optional and validated; anything odd is ignored.
+        // Orientation and trim hints are optional and validated; anything odd
+        // is ignored.
         $rotations = collect((array) ($decoded['rotations'] ?? []))
             ->map(fn ($value) => is_numeric($value) ? ((int) $value) % 360 : 0)
             ->map(fn (int $value) => in_array($value, [0, 90, 180, 270], true) ? $value : 0)
             ->values()
             ->all();
 
-        return new AiResult($category, $confidence, $fields, $rotations);
+        $trims = collect((array) ($decoded['trims'] ?? []))
+            ->map(function ($trim) {
+                $clamp = fn ($value) => is_numeric($value) ? max(0, min(45, (int) $value)) : 0;
+
+                return [
+                    'top' => $clamp($trim['top'] ?? 0),
+                    'right' => $clamp($trim['right'] ?? 0),
+                    'bottom' => $clamp($trim['bottom'] ?? 0),
+                    'left' => $clamp($trim['left'] ?? 0),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return new AiResult($category, $confidence, $fields, $rotations, $trims);
     }
 
     /**

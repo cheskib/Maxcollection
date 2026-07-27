@@ -3,42 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Models\Image;
+use App\Services\ImageRenderService;
 use App\Services\ThumbnailService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class ImageController extends Controller
 {
     /**
-     * Stream a photograph to the authenticated administrator, applying the
-     * saved display rotation. The original file is never modified.
+     * Stream a photograph to the authenticated administrator with its saved
+     * rotation and trim applied. The original file is never modified.
+     * ?uncropped=1 skips the trim (used by the trim screen's preview).
      */
-    public function show(Image $image): Response
+    public function show(Request $request, Image $image, ImageRenderService $renderer): Response
     {
         abort_unless(Storage::disk('local')->exists($image->path), 404);
 
-        if ($image->rotation === 0) {
+        $applyCrop = ! $request->boolean('uncropped');
+
+        if ($image->rotation === 0 && ! ($applyCrop && $image->hasCrop())) {
             return response()->file(Storage::disk('local')->path($image->path));
         }
 
-        $source = @imagecreatefromstring(Storage::disk('local')->get($image->path));
+        $jpeg = $renderer->render($image, null, $applyCrop, 90);
 
-        if ($source === false) {
+        if ($jpeg === null) {
             return response()->file(Storage::disk('local')->path($image->path));
         }
-
-        $rotated = imagerotate($source, -$image->rotation, 0);
-
-        if ($rotated !== false) {
-            imagedestroy($source);
-            $source = $rotated;
-        }
-
-        ob_start();
-        imagejpeg($source, null, 90);
-        $jpeg = (string) ob_get_clean();
-        imagedestroy($source);
 
         return response($jpeg, 200, ['Content-Type' => 'image/jpeg']);
     }
@@ -53,5 +48,43 @@ class ImageController extends Controller
         $thumbnails->forget($image);
 
         return back();
+    }
+
+    public function trimForm(Image $image): InertiaResponse
+    {
+        return Inertia::render('TrimImage', [
+            'image' => [
+                'id' => $image->id,
+                'itemId' => $image->item_id,
+                'version' => $image->versionTag(),
+                'crop' => [
+                    'top' => $image->crop_top,
+                    'right' => $image->crop_right,
+                    'bottom' => $image->crop_bottom,
+                    'left' => $image->crop_left,
+                ],
+            ],
+        ]);
+    }
+
+    public function trim(Request $request, Image $image, ThumbnailService $thumbnails): RedirectResponse
+    {
+        $validated = $request->validate([
+            'top' => ['required', 'integer', 'min:0', 'max:45'],
+            'right' => ['required', 'integer', 'min:0', 'max:45'],
+            'bottom' => ['required', 'integer', 'min:0', 'max:45'],
+            'left' => ['required', 'integer', 'min:0', 'max:45'],
+        ]);
+
+        $image->update([
+            'crop_top' => $validated['top'],
+            'crop_right' => $validated['right'],
+            'crop_bottom' => $validated['bottom'],
+            'crop_left' => $validated['left'],
+        ]);
+
+        $thumbnails->forget($image);
+
+        return redirect()->route('items.show', $image->item_id)->with('status', 'Trim saved.');
     }
 }

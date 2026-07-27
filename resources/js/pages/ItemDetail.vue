@@ -26,7 +26,7 @@ const props = defineProps<{
         category: string;
         confidence: number | null;
         processedAt: string | null;
-        images: { id: number; original_filename: string; rotation: number }[];
+        images: { id: number; original_filename: string; version: string }[];
         fields: Field[];
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
@@ -45,6 +45,29 @@ function rotate(imageId: number): void {
 }
 
 const collectionChoice = ref<CollectionChoice>({ collectionId: props.item.collectionId, newName: '' });
+
+const addCameraInput = ref<HTMLInputElement | null>(null);
+const addFileInput = ref<HTMLInputElement | null>(null);
+const addingPhoto = ref(false);
+
+// Add a forgotten back or a detail shot directly from the item's page.
+function onAddPhoto(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const photo = input.files?.[0];
+    input.value = '';
+    if (!photo) return;
+
+    router.post(
+        '/capture/images',
+        { photo, item_id: props.item.id, stay: 1 },
+        {
+            forceFormData: true,
+            preserveScroll: true,
+            onStart: () => (addingPhoto.value = true),
+            onFinish: () => (addingPhoto.value = false),
+        },
+    );
+}
 
 function saveCollection(): void {
     router.put(
@@ -94,7 +117,7 @@ function back(): void {
         <div class="mt-4 grid grid-cols-2 gap-3">
             <div v-for="image in item.images" :key="image.id" class="relative">
                 <a :href="`/images/${image.id}`" target="_blank">
-                    <img :src="`/thumbnails/${image.id}?v=${image.rotation}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
+                    <img :src="`/thumbnails/${image.id}?v=${image.version}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
                 </a>
                 <button
                     class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
@@ -103,8 +126,35 @@ function back(): void {
                 >
                     ↻
                 </button>
+                <Link
+                    :href="`/images/${image.id}/trim`"
+                    class="absolute left-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                    title="Trim edges"
+                >
+                    ✂
+                </Link>
             </div>
         </div>
+
+        <input ref="addCameraInput" type="file" accept="image/*" capture="environment" class="hidden" @change="onAddPhoto" />
+        <input ref="addFileInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onAddPhoto" />
+        <div class="mt-3 flex gap-2">
+            <button
+                :disabled="addingPhoto"
+                class="flex-1 rounded-lg bg-gray-100 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                @click="addCameraInput?.click()"
+            >
+                📷 Add Photo
+            </button>
+            <button
+                :disabled="addingPhoto"
+                class="flex-1 rounded-lg bg-gray-100 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                @click="addFileInput?.click()"
+            >
+                🖼 Upload Photo
+            </button>
+        </div>
+        <p v-if="addingPhoto" class="mt-2 text-center text-sm text-gray-500">Uploading…</p>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
             <h2 class="font-semibold text-gray-900">Collection</h2>

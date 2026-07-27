@@ -301,6 +301,29 @@ class ProcessingTest extends TestCase
         $this->assertSame(0, $item->images()->first()->rotation);
     }
 
+    public function test_ai_reported_trims_are_applied_and_additive(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Trimmed Player'],
+                'trims' => [['top' => 10, 'right' => 5, 'bottom' => 60, 'left' => 0]],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $item->images()->first()->update(['crop_top' => 40]);
+
+        $this->actingAs($this->user)->post('/process');
+
+        $image = $item->images()->first();
+        // 40 existing + 10 reported caps at 45; 60 reported clamps to 45.
+        $this->assertSame([45, 5, 45, 0], [
+            $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
+        ]);
+    }
+
     public function test_missing_rotations_leave_photos_untouched(): void
     {
         Http::fake([

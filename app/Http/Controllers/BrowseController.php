@@ -47,7 +47,7 @@ class BrowseController extends Controller
                 ->map(fn (Item $item) => [
                     'id' => $item->id,
                     'thumbnailImageId' => $item->images->first()?->id,
-                    'thumbnailRotation' => $item->images->first()?->rotation ?? 0,
+                    'thumbnailVersion' => $item->images->first()?->versionTag() ?? '0',
                     'player' => $item->metadata?->player_name ?? self::UNKNOWN,
                     'title' => $item->metadata?->primaryTitle() ?? "Item #{$item->id}",
                     'confidence' => $item->metadata?->confidence,
