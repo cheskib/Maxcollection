@@ -26,7 +26,7 @@ class CaptureController extends Controller
         return Inertia::render('Capture', [
             'item' => [
                 'id' => $item->id,
-                'images' => $item->images()->orderBy('id')->get(['id', 'original_filename'])->all(),
+                'images' => $item->images()->orderBy('id')->get(['id', 'original_filename', 'rotation'])->all(),
             ],
         ]);
     }
