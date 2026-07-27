@@ -152,7 +152,10 @@ class ProcessingService
                 $changes['rotation'] = ($image->rotation + $extra) % 360;
             }
 
-            $trim = $result->trims[$index] ?? null;
+            // Apply AI trims only to untrimmed photos. Trims stack (the AI
+            // sees the already-trimmed rendering), so a reprocess would keep
+            // shaving off more and cut into the item.
+            $trim = $image->hasCrop() ? null : ($result->trims[$index] ?? null);
 
             if ($trim !== null) {
                 foreach (['top', 'right', 'bottom', 'left'] as $edge) {
