@@ -157,6 +157,11 @@ invent values.
 
 Report an overall confidence score from 0 to 100 for the identification and
 extracted metadata as a whole.
+
+Also report "rotations": for each photograph, in the order provided, the
+clockwise rotation in degrees (0, 90, 180, or 270) needed so the item is
+correctly oriented — the front standing upright, and the back turned so its
+text reads normally (card backs are often printed in landscape).
 PROMPT;
     }
 
@@ -186,8 +191,12 @@ PROMPT;
                     'properties' => $fieldProperties,
                     'required' => $fieldNames->all(),
                 ],
+                'rotations' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'integer', 'enum' => [0, 90, 180, 270]],
+                ],
             ],
-            'required' => ['category', 'confidence', 'fields'],
+            'required' => ['category', 'confidence', 'fields', 'rotations'],
         ];
     }
 
@@ -224,7 +233,14 @@ PROMPT;
             ? []
             : AiResult::filterFields($category, (array) ($decoded['fields'] ?? []));
 
-        return new AiResult($category, $confidence, $fields);
+        // Orientation hints are optional and validated; anything odd is ignored.
+        $rotations = collect((array) ($decoded['rotations'] ?? []))
+            ->map(fn ($value) => is_numeric($value) ? ((int) $value) % 360 : 0)
+            ->map(fn (int $value) => in_array($value, [0, 90, 180, 270], true) ? $value : 0)
+            ->values()
+            ->all();
+
+        return new AiResult($category, $confidence, $fields, $rotations);
     }
 
     /**
