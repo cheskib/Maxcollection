@@ -15,10 +15,10 @@ class CaptureService
      * Store an uploaded photograph. The first photograph creates the item
      * (PROJECT.md rule 2); later photographs attach to the same item.
      */
-    public function storeImage(User $user, ?Item $item, UploadedFile $photo): Item
+    public function storeImage(User $user, ?Item $item, UploadedFile $photo, ?int $batchId = null): Item
     {
-        return DB::transaction(function () use ($user, $item, $photo) {
-            $item ??= Item::create(['user_id' => $user->id]);
+        return DB::transaction(function () use ($user, $item, $photo, $batchId) {
+            $item ??= Item::create(['user_id' => $user->id, 'batch_id' => $batchId]);
 
             $path = $photo->store("original/{$item->id}", 'local');
 
