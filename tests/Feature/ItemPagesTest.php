@@ -86,7 +86,8 @@ class ItemPagesTest extends TestCase
             'year' => '1990',
         ]);
 
-        $response->assertRedirect("/items/{$item->id}");
+        // Save keeps the user on the edit screen with its confirmation.
+        $response->assertRedirect("/items/{$item->id}/edit");
 
         $item->refresh();
         $this->assertSame(Item::STATUS_PROCESSED, $item->status);
