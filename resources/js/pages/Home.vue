@@ -123,7 +123,7 @@ function logout(): void {
 
         <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">Your collection</p>
         <div class="mt-2 grid grid-cols-2 gap-3">
-            <Link href="/items" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
+            <Link href="/items/summary" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
                 <span class="text-2xl">🗂️</span>
                 <p class="mt-1 font-semibold text-gray-900">Processed Items</p>
             </Link>

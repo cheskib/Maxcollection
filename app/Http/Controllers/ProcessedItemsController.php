@@ -52,8 +52,22 @@ class ProcessedItemsController extends Controller
                     });
                 });
             })
-            ->with(['metadata', 'images' => fn ($query) => $query->orderBy('id')])
-            ->get()
+            ->with(['metadata', 'images' => fn ($query) => $query->orderBy('id')]);
+
+        // Sort and page in SQL: only one page of cards is ever loaded, so
+        // the list keeps working at any collection size.
+        $items = match ($sort) {
+            'oldest' => $items->orderBy('items.id'),
+            'title' => $items
+                ->leftJoin('metadata', 'metadata.item_id', '=', 'items.id')
+                ->orderByRaw("coalesce(metadata.player_name, metadata.title, metadata.country, '')")
+                ->select('items.*'),
+            default => $items->orderByDesc('items.id'),
+        };
+
+        $paginated = $items->paginate(60)->withQueryString();
+
+        $pageItems = collect($paginated->items())
             ->map(fn (Item $item) => [
                 'id' => $item->id,
                 'thumbnailImageId' => $item->images->first()?->id,
@@ -63,12 +77,6 @@ class ProcessedItemsController extends Controller
                 'confidence' => $item->metadata?->confidence,
                 'processedAt' => $item->processed_at?->format('M j, Y g:i A'),
             ]);
-
-        $items = match ($sort) {
-            'oldest' => $items->sortBy('id')->values(),
-            'title' => $items->sortBy('title', SORT_NATURAL | SORT_FLAG_CASE)->values(),
-            default => $items->sortByDesc('id')->values(),
-        };
 
         // Each dropdown offers only values that exist among processed items.
         $options = [];
@@ -82,7 +90,12 @@ class ProcessedItemsController extends Controller
         }
 
         return Inertia::render('ProcessedItems', [
-            'items' => $items->all(),
+            'items' => $pageItems->all(),
+            'page' => [
+                'current' => $paginated->currentPage(),
+                'last' => $paginated->lastPage(),
+                'total' => $paginated->total(),
+            ],
             'sort' => $sort,
             'search' => $search,
             'collection' => $collection,
