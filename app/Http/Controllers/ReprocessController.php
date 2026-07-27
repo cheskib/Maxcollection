@@ -15,11 +15,13 @@ class ReprocessController extends Controller
     {
         $validated = $request->validate([
             'tier' => ['nullable', Rule::in([AiService::TIER_STANDARD, AiService::TIER_PREMIUM])],
+            'source' => ['nullable', Rule::in([AiService::SOURCE_CLEANED, AiService::SOURCE_ORIGINAL])],
         ]);
 
         $tier = $validated['tier'] ?? AiService::TIER_STANDARD;
+        $source = $validated['source'] ?? AiService::SOURCE_CLEANED;
 
-        $service->queueItem($item, $tier);
+        $service->queueItem($item, $tier, $source);
 
         return redirect()
             ->route('items.show', $item)

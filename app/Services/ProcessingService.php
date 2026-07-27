@@ -32,16 +32,17 @@ class ProcessingService
     }
 
     /**
-     * Queue a single item for (re)processing at the given tier.
+     * Queue a single item for (re)processing at the given tier, reading
+     * either the cleaned renderings or the untouched original photos.
      */
-    public function queueItem(Item $item, string $tier = AiService::TIER_STANDARD): ProcessingJob
+    public function queueItem(Item $item, string $tier = AiService::TIER_STANDARD, string $source = AiService::SOURCE_CLEANED): ProcessingJob
     {
         $job = $item->processingJobs()->create(['status' => ProcessingJob::STATUS_QUEUED]);
-        $job->logs()->create(['message' => "Item queued for {$tier} processing."]);
+        $job->logs()->create(['message' => "Item queued for {$tier} processing ({$source} photos)."]);
 
         $item->update(['status' => Item::STATUS_QUEUED, 'review_reason' => null]);
 
-        ProcessItemJob::dispatch($job->id, $tier);
+        ProcessItemJob::dispatch($job->id, $tier, $source);
 
         return $job;
     }
@@ -49,7 +50,7 @@ class ProcessingService
     /**
      * Execute one processing job. Runs inside the queue worker.
      */
-    public function processJob(ProcessingJob $job, string $tier = AiService::TIER_STANDARD): void
+    public function processJob(ProcessingJob $job, string $tier = AiService::TIER_STANDARD, string $source = AiService::SOURCE_CLEANED): void
     {
         $item = $job->item;
 
@@ -57,9 +58,9 @@ class ProcessingService
         $item->update(['status' => Item::STATUS_PROCESSING]);
 
         try {
-            $result = $this->ai->identify($item, $job, $tier);
+            $result = $this->ai->identify($item, $job, $tier, $source);
 
-            $this->applyResult($item, $job, $result);
+            $this->applyResult($item, $job, $result, $source);
 
             $job->update(['status' => ProcessingJob::STATUS_COMPLETED, 'finished_at' => now()]);
             $job->logs()->create(['message' => 'Processing completed.']);
@@ -85,9 +86,9 @@ class ProcessingService
     /**
      * Save the AI result and route the item to Processed or Needs Review.
      */
-    private function applyResult(Item $item, ProcessingJob $job, AiResult $result): void
+    private function applyResult(Item $item, ProcessingJob $job, AiResult $result, string $source = AiService::SOURCE_CLEANED): void
     {
-        $this->applyRotations($item, $result);
+        $this->applyRotations($item, $result, $source);
 
         // The capture wizard's autograph answer is user-provided; the user
         // always overrides the AI (PROJECT.md rule 4).
@@ -124,12 +125,12 @@ class ProcessingService
     }
 
     /**
-     * Auto-orient and auto-trim photographs. The AI sees images with their
-     * current rotation and trim already applied, so its answers are
-     * additional adjustments on top; the user's rotate and trim controls
-     * remain the final authority afterwards.
+     * Auto-orient and auto-trim photographs. When the AI saw the cleaned
+     * renderings its answers are additional adjustments on top; when it saw
+     * the original photos its rotation is absolute. The user's rotate and
+     * trim controls remain the final authority afterwards.
      */
-    private function applyRotations(Item $item, AiResult $result): void
+    private function applyRotations(Item $item, AiResult $result, string $source = AiService::SOURCE_CLEANED): void
     {
         if ($result->rotations === [] && $result->trims === [] && $result->roles === []) {
             return;
@@ -146,24 +147,38 @@ class ProcessingService
                 $changes['role'] = $role;
             }
 
-            $extra = $result->rotations[$index] ?? 0;
+            $reported = $result->rotations[$index] ?? 0;
 
-            if ($extra !== 0) {
-                $changes['rotation'] = ($image->rotation + $extra) % 360;
+            $rotation = $source === AiService::SOURCE_ORIGINAL
+                ? $reported
+                : ($image->rotation + $reported) % 360;
+
+            if ($rotation !== $image->rotation && ($source === AiService::SOURCE_ORIGINAL || $reported !== 0)) {
+                $changes['rotation'] = $rotation;
             }
 
-            // Apply AI trims only to untrimmed photos. Trims stack (the AI
-            // sees the already-trimmed rendering), so a reprocess would keep
-            // shaving off more and cut into the item.
-            $trim = $image->hasCrop() ? null : ($result->trims[$index] ?? null);
+            $trim = $result->trims[$index] ?? null;
 
-            if ($trim !== null) {
+            if ($source === AiService::SOURCE_ORIGINAL && $trim !== null) {
+                // Reprocessing from originals redoes the adjustments from
+                // scratch: the AI's trim describes the untouched photo and
+                // replaces whatever trim was there before.
                 foreach (['top', 'right', 'bottom', 'left'] as $edge) {
-                    $column = "crop_{$edge}";
-                    $combined = min(45, $image->{$column} + $trim[$edge]);
+                    $value = $trim[$edge] ?? 0;
 
-                    if ($combined !== $image->{$column}) {
-                        $changes[$column] = $combined;
+                    if ($value !== $image->{"crop_{$edge}"}) {
+                        $changes["crop_{$edge}"] = $value;
+                    }
+                }
+            } elseif ($trim !== null && ! $image->hasCrop()) {
+                // On cleaned renderings, trims only apply to untrimmed
+                // photos: they would stack (the AI sees the already-trimmed
+                // rendering) and each reprocess would cut into the item.
+                foreach (['top', 'right', 'bottom', 'left'] as $edge) {
+                    $value = min(45, $trim[$edge]);
+
+                    if ($value !== $image->{"crop_{$edge}"}) {
+                        $changes["crop_{$edge}"] = $value;
                     }
                 }
             }

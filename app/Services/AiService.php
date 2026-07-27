@@ -23,7 +23,11 @@ class AiService
 
     public const TIER_PREMIUM = 'premium';
 
-    public function identify(Item $item, ProcessingJob $job, string $tier = self::TIER_STANDARD): AiResult
+    public const SOURCE_CLEANED = 'cleaned';
+
+    public const SOURCE_ORIGINAL = 'original';
+
+    public function identify(Item $item, ProcessingJob $job, string $tier = self::TIER_STANDARD, string $source = self::SOURCE_CLEANED): AiResult
     {
         $apiKey = config('services.openai.key');
 
@@ -39,7 +43,7 @@ class AiService
 
         $response = Http::withToken($apiKey)
             ->timeout((int) config('services.openai.timeout'))
-            ->post(rtrim(config('services.openai.base_url'), '/').'/responses', $this->buildPayload($item, $model));
+            ->post(rtrim(config('services.openai.base_url'), '/').'/responses', $this->buildPayload($item, $model, $source));
 
         // Store the response exactly as returned before any parsing (DECISIONS.md).
         $job->update(['raw_response' => $response->body()]);
@@ -54,17 +58,19 @@ class AiService
     /**
      * @return array<string, mixed>
      */
-    private function buildPayload(Item $item, string $model): array
+    private function buildPayload(Item $item, string $model, string $source): array
     {
         $content = [['type' => 'input_text', 'text' => $this->prompt()]];
 
         $attached = 0;
+        $useAdjustments = $source !== self::SOURCE_ORIGINAL;
 
         foreach ($item->images()->orderBy('id')->get() as $image) {
-            // Send the displayed rendering (rotation + trim), downscaled to
-            // keep image token cost low (ARCHITECTURE.md 7). Originals are
-            // never modified.
-            $binary = $this->renderer->render($image, 1024);
+            // Send the displayed rendering (rotation + trim) — or, when the
+            // user chose to reprocess from originals, the untouched photo —
+            // downscaled to keep image token cost low (ARCHITECTURE.md 7).
+            // Original files are never modified.
+            $binary = $this->renderer->render($image, 1024, applyCrop: $useAdjustments, applyRotation: $useAdjustments);
 
             if ($binary === null) {
                 continue;
