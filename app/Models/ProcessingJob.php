@@ -16,7 +16,7 @@ class ProcessingJob extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    protected $fillable = ['item_id', 'status', 'error_message', 'raw_response', 'started_at', 'finished_at'];
+    protected $fillable = ['item_id', 'status', 'model', 'error_message', 'raw_response', 'started_at', 'finished_at'];
 
     protected function casts(): array
     {

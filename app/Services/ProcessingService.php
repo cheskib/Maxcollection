@@ -30,16 +30,16 @@ class ProcessingService
     }
 
     /**
-     * Queue a single item for (re)processing.
+     * Queue a single item for (re)processing at the given tier.
      */
-    public function queueItem(Item $item): ProcessingJob
+    public function queueItem(Item $item, string $tier = AiService::TIER_STANDARD): ProcessingJob
     {
         $job = $item->processingJobs()->create(['status' => ProcessingJob::STATUS_QUEUED]);
-        $job->logs()->create(['message' => 'Item queued for processing.']);
+        $job->logs()->create(['message' => "Item queued for {$tier} processing."]);
 
         $item->update(['status' => Item::STATUS_QUEUED, 'review_reason' => null]);
 
-        ProcessItemJob::dispatch($job->id);
+        ProcessItemJob::dispatch($job->id, $tier);
 
         return $job;
     }
@@ -47,7 +47,7 @@ class ProcessingService
     /**
      * Execute one processing job. Runs inside the queue worker.
      */
-    public function processJob(ProcessingJob $job): void
+    public function processJob(ProcessingJob $job, string $tier = AiService::TIER_STANDARD): void
     {
         $item = $job->item;
 
@@ -55,7 +55,7 @@ class ProcessingService
         $item->update(['status' => Item::STATUS_PROCESSING]);
 
         try {
-            $result = $this->ai->identify($item, $job);
+            $result = $this->ai->identify($item, $job, $tier);
 
             $this->applyResult($item, $job, $result);
 

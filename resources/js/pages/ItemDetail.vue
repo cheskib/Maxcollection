@@ -24,15 +24,16 @@ const props = defineProps<{
         processedAt: string | null;
         images: { id: number; original_filename: string }[];
         fields: Field[];
-        processing: { status: string; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
+        processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
 }>();
 
 const page = usePage<{ flash: { status: string | null } }>();
 
-function reprocess(): void {
-    if (!confirm('Reprocess this item with AI? Current metadata will be replaced.')) return;
-    router.post(`/items/${props.item.id}/reprocess`);
+function reprocess(tier: 'standard' | 'premium'): void {
+    const label = tier === 'premium' ? 'Run a premium analysis on this item?' : 'Reprocess this item with AI?';
+    if (!confirm(`${label} Current metadata will be replaced.`)) return;
+    router.post(`/items/${props.item.id}/reprocess`, { tier });
 }
 
 function back(): void {
@@ -84,6 +85,7 @@ function back(): void {
             <h2 class="font-semibold text-gray-900">Processing</h2>
             <p class="mt-1 text-sm text-gray-500">
                 Status: {{ item.processing.status }}
+                <span v-if="item.processing.model"> · {{ item.processing.model }}</span>
                 <span v-if="item.processing.finishedAt"> · {{ item.processing.finishedAt }}</span>
             </p>
             <p v-if="item.processing.error" class="mt-1 text-sm text-red-600">{{ item.processing.error }}</p>
@@ -103,9 +105,15 @@ function back(): void {
             </Link>
             <button
                 class="w-full rounded-lg bg-gray-200 py-3 font-semibold text-gray-700 hover:bg-gray-300"
-                @click="reprocess"
+                @click="reprocess('standard')"
             >
-                Reprocess
+                Reprocess (Standard)
+            </button>
+            <button
+                class="w-full rounded-lg bg-purple-600 py-3 font-semibold text-white hover:bg-purple-700"
+                @click="reprocess('premium')"
+            >
+                ★ Premium Analysis
             </button>
         </div>
     </div>

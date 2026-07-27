@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ProcessingJob;
+use App\Services\AiService;
 use App\Services\ProcessingService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -17,8 +18,10 @@ class ProcessItemJob implements ShouldQueue
 
     public int $timeout = 300;
 
-    public function __construct(public readonly int $processingJobId)
-    {
+    public function __construct(
+        public readonly int $processingJobId,
+        public readonly string $tier = AiService::TIER_STANDARD,
+    ) {
     }
 
     public function handle(ProcessingService $service): void
@@ -29,6 +32,6 @@ class ProcessItemJob implements ShouldQueue
             return; // Item was deleted while waiting in the queue.
         }
 
-        $service->processJob($job);
+        $service->processJob($job, $this->tier);
     }
 }

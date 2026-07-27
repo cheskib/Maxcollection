@@ -37,7 +37,8 @@ return [
 
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
-        'model' => env('OPENAI_MODEL', 'gpt-4.1'),
+        'model' => env('OPENAI_MODEL', 'gpt-4.1-mini'),
+        'premium_model' => env('OPENAI_PREMIUM_MODEL', 'gpt-4.1'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'timeout' => env('OPENAI_TIMEOUT', 120),
     ],

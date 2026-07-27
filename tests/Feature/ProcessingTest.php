@@ -206,6 +206,59 @@ class ProcessingTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_standard_processing_uses_the_standard_model(): void
+    {
+        config(['services.openai.model' => 'gpt-4.1-mini']);
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 90,
+                'fields' => ['player_name' => 'Standard Player'],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        Http::assertSent(fn ($request) => $request['model'] === 'gpt-4.1-mini');
+        $this->assertSame('gpt-4.1-mini', $item->processingJobs()->latest('id')->first()->model);
+    }
+
+    public function test_premium_reprocess_uses_the_premium_model(): void
+    {
+        config([
+            'services.openai.model' => 'gpt-4.1-mini',
+            'services.openai.premium_model' => 'gpt-4.1',
+        ]);
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 97,
+                'fields' => ['player_name' => 'Premium Player'],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+
+        $this->actingAs($this->user)
+            ->post("/items/{$item->id}/reprocess", ['tier' => 'premium'])
+            ->assertRedirect("/items/{$item->id}");
+
+        Http::assertSent(fn ($request) => $request['model'] === 'gpt-4.1');
+        $this->assertSame('gpt-4.1', $item->processingJobs()->latest('id')->first()->model);
+        $this->assertSame('Premium Player', $item->fresh()->metadata->player_name);
+    }
+
+    public function test_invalid_tier_is_rejected(): void
+    {
+        Http::fake();
+        $item = $this->captureItem();
+
+        $this->actingAs($this->user)
+            ->post("/items/{$item->id}/reprocess", ['tier' => 'super-deluxe'])
+            ->assertSessionHasErrors('tier');
+    }
+
     public function test_home_stats_reflect_processing_results(): void
     {
         Http::fake([
