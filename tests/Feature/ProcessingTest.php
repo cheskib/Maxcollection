@@ -259,6 +259,64 @@ class ProcessingTest extends TestCase
             ->assertSessionHasErrors('tier');
     }
 
+    public function test_ai_reported_rotations_auto_orient_the_photos(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Turned Player'],
+                'rotations' => [180, 90],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/capture/images', [
+            'photo' => UploadedFile::fake()->image('back.jpg'),
+            'item_id' => $item->id,
+        ]);
+
+        $this->actingAs($this->user)->post('/process');
+
+        $rotations = $item->images()->orderBy('id')->pluck('rotation')->all();
+        $this->assertSame([180, 90], $rotations);
+    }
+
+    public function test_ai_rotation_is_additive_to_manual_rotation(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Additive Player'],
+                'rotations' => [90],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $item->images()->first()->update(['rotation' => 270]);
+
+        $this->actingAs($this->user)->post('/process');
+
+        $this->assertSame(0, $item->images()->first()->rotation);
+    }
+
+    public function test_missing_rotations_leave_photos_untouched(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Plain Player'],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        $this->assertSame(0, $item->images()->first()->rotation);
+    }
+
     public function test_home_stats_reflect_processing_results(): void
     {
         Http::fake([

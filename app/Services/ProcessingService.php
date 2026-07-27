@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Log;
 
 class ProcessingService
 {
-    public function __construct(private readonly AiService $ai)
-    {
+    public function __construct(
+        private readonly AiService $ai,
+        private readonly ThumbnailService $thumbnails,
+    ) {
     }
 
     /**
@@ -85,6 +87,8 @@ class ProcessingService
      */
     private function applyResult(Item $item, ProcessingJob $job, AiResult $result): void
     {
+        $this->applyRotations($item, $result);
+
         $item->metadata()->updateOrCreate([], [
             'category' => $result->category,
             'confidence' => $result->confidence,
@@ -108,5 +112,28 @@ class ProcessingService
                 $reason ? " (needs review: {$reason})" : ''
             ),
         ]);
+    }
+
+    /**
+     * Auto-orient photographs. The AI sees images with their current display
+     * rotation already applied, so its answer is an additional turn on top;
+     * the user's rotate button remains the final authority afterwards.
+     */
+    private function applyRotations(Item $item, AiResult $result): void
+    {
+        if ($result->rotations === []) {
+            return;
+        }
+
+        foreach ($item->images()->orderBy('id')->get()->values() as $index => $image) {
+            $extra = $result->rotations[$index] ?? 0;
+
+            if ($extra === 0) {
+                continue;
+            }
+
+            $image->update(['rotation' => ($image->rotation + $extra) % 360]);
+            $this->thumbnails->forget($image);
+        }
     }
 }

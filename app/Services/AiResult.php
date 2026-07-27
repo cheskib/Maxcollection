@@ -23,11 +23,14 @@ class AiResult
 
     /**
      * @param array<string, string|null> $fields metadata columns for the category
+     * @param array<int, int> $rotations additional clockwise degrees per photo,
+     *                                   in the order the photos were sent
      */
     public function __construct(
         public readonly string $category,
         public readonly float $confidence,
         public readonly array $fields,
+        public readonly array $rotations = [],
     ) {
     }
 
