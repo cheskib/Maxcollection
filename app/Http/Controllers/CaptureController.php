@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Services\CaptureService;
 use App\Services\CollectionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,7 +32,7 @@ class CaptureController extends Controller
         return Inertia::render('Capture', [
             'item' => [
                 'id' => $item->id,
-                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag()])->all(),
+                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag(), 'role' => $image->role])->all(),
             ],
             'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
         ]);
@@ -47,7 +48,14 @@ class CaptureController extends Controller
         // attach to the already-created item.
         $collectionId = $item === null ? $collections->resolveFromRequest($request, $request->user()) : null;
 
-        $item = $this->capture->storeImage($request->user(), $item, $request->file('photo'), null, $collectionId);
+        $item = $this->capture->storeImage(
+            $request->user(),
+            $item,
+            $request->file('photo'),
+            null,
+            $collectionId,
+            $request->input('role'),
+        );
 
         // Photos added from an item's page return there instead of the
         // capture flow (e.g. adding a forgotten back or a detail shot).
@@ -56,6 +64,21 @@ class CaptureController extends Controller
         }
 
         return redirect()->route('capture.show', $item);
+    }
+
+    /**
+     * Record the wizard's autograph answer. User-provided; AI processing
+     * never overwrites it (user authority, PROJECT.md rule 4).
+     */
+    public function setAutograph(Request $request, Item $item): RedirectResponse
+    {
+        $validated = $request->validate(['authentic' => ['required', 'boolean']]);
+
+        $item->metadata()->firstOrCreate([])->update([
+            'autograph' => $validated['authentic'] ? 'Yes' : 'No',
+        ]);
+
+        return redirect()->route('items.show', $item)->with('status', 'Item captured.');
     }
 
     public function destroyImage(Image $image): RedirectResponse

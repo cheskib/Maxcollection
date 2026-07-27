@@ -19,6 +19,7 @@ class StoreImageRequest extends FormRequest
         return [
             'photo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480'],
             'item_id' => ['nullable', 'integer', 'exists:items,id'],
+            'role' => ['nullable', 'in:front,back,detail'],
             ...\App\Services\CollectionService::rules(),
         ];
     }

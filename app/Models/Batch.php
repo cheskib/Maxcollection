@@ -8,7 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Batch extends Model
 {
-    protected $fillable = ['user_id', 'source', 'label'];
+    protected $fillable = ['user_id', 'source', 'label', 'converted_at'];
+
+    protected function casts(): array
+    {
+        return [
+            'converted_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {

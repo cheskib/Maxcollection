@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
 import { collectionPayload, loadLastCollection, saveLastCollection } from '../composables/lastCollection';
 
@@ -8,6 +8,7 @@ interface CaptureImage {
     id: number;
     original_filename: string;
     version: string;
+    role?: string | null;
 }
 
 const props = defineProps<{
@@ -15,36 +16,67 @@ const props = defineProps<{
     collections: { id: number; name: string }[];
 }>();
 
+type Step = 'front' | 'back' | 'extra' | 'autograph';
+
+// The wizard resumes from where the photos left off when the page reloads
+// after each upload.
+const step = computed<Step>(() => {
+    if (finishing.value) return 'autograph';
+    const images = props.item?.images ?? [];
+    if (images.length === 0) return 'front';
+    if (!images.some((image) => image.role === 'back') && images.length === 1) return 'back';
+    return 'extra';
+});
+
+const STEP_COPY: Record<Step, { title: string; hint: string }> = {
+    front: { title: 'Take the FRONT picture', hint: 'Hold the card front toward the camera.' },
+    back: { title: 'Now take the BACK picture', hint: 'Flip the card over.' },
+    extra: { title: 'Any additional pictures?', hint: 'Close-ups of corners, autographs, or details — optional.' },
+    autograph: { title: 'One last question', hint: '' },
+};
+
 const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
+const uploading = ref(false);
+const finishing = ref(false);
+const hasAutograph = ref(false);
+const error = ref<string | null>(null);
+
+const cameraInput = ref<HTMLInputElement | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 onMounted(() => {
     collectionChoice.value = loadLastCollection(props.collections);
 });
 
-const cameraInput = ref<HTMLInputElement | null>(null);
-const fileInput = ref<HTMLInputElement | null>(null);
-const uploading = ref(false);
-const error = ref<string | null>(null);
+function roleForStep(): string {
+    if (step.value === 'front') return 'front';
+    if (step.value === 'back') return 'back';
+    return 'detail';
+}
 
 function upload(event: Event): void {
     const input = event.target as HTMLInputElement;
     const photo = input.files?.[0];
+    input.value = '';
     if (!photo) return;
 
     error.value = null;
     if (typeof collectionChoice.value.collectionId === 'number') {
         saveLastCollection(collectionChoice.value.collectionId);
     }
+
     router.post(
         '/capture/images',
-        { photo, item_id: props.item?.id ?? null, ...collectionPayload(collectionChoice.value) },
+        {
+            photo,
+            item_id: props.item?.id ?? null,
+            role: roleForStep(),
+            ...collectionPayload(collectionChoice.value),
+        },
         {
             forceFormData: true,
             onStart: () => (uploading.value = true),
-            onFinish: () => {
-                uploading.value = false;
-                input.value = '';
-            },
+            onFinish: () => (uploading.value = false),
             onError: (errors) => (error.value = errors.photo ?? Object.values(errors)[0] ?? 'Upload failed.'),
         },
     );
@@ -55,9 +87,12 @@ function deleteImage(image: CaptureImage): void {
     router.delete(`/images/${image.id}`);
 }
 
-function rotate(image: CaptureImage): void {
-    router.post(`/images/${image.id}/rotate`, {}, { preserveScroll: true });
+function finish(): void {
+    if (!props.item) return;
+    router.post(`/items/${props.item.id}/autograph`, { authentic: hasAutograph.value });
 }
+
+const ROLE_LABELS: Record<string, string> = { front: 'Front', back: 'Back', detail: 'Detail' };
 </script>
 
 <template>
@@ -65,10 +100,8 @@ function rotate(image: CaptureImage): void {
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Capture Item</h1>
-            <Link v-if="!item" href="/capture/bulk" class="text-sm font-semibold text-blue-600">Bulk mode</Link>
+            <Link href="/capture/bulk" class="text-sm font-semibold text-blue-600">Bulk mode</Link>
         </div>
-        <p v-if="item" class="mt-1 text-center text-sm text-gray-500">Item #{{ item.id }} · {{ item.images.length }} picture(s)</p>
-        <p v-else class="mt-1 text-center text-sm text-gray-500">The first picture creates the item.</p>
 
         <div v-if="!item" class="mt-4 rounded-xl bg-white p-4 shadow-sm">
             <p class="text-sm font-medium text-gray-700">Collection</p>
@@ -77,25 +110,22 @@ function rotate(image: CaptureImage): void {
             </div>
         </div>
 
-        <!-- Hidden inputs: one opens the camera on mobile, the other the file picker -->
-        <input ref="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" @change="upload" />
-        <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="upload" />
+        <div class="mt-4 rounded-xl bg-blue-50 p-4 text-center">
+            <p class="font-semibold text-blue-900">{{ STEP_COPY[step].title }}</p>
+            <p v-if="STEP_COPY[step].hint" class="mt-1 text-sm text-blue-700">{{ STEP_COPY[step].hint }}</p>
+        </div>
 
-        <div v-if="item" class="mt-6 grid grid-cols-2 gap-3">
-            <div v-for="image in item.images" :key="image.id" class="relative overflow-hidden rounded-xl bg-white shadow-sm">
-                <img :src="`/thumbnails/${image.id}?v=${image.version}`" :alt="image.original_filename" class="h-40 w-full bg-gray-100 object-contain" />
+        <div v-if="item?.images.length" class="mt-4 grid grid-cols-3 gap-2">
+            <div v-for="image in item.images" :key="image.id" class="relative">
+                <img :src="`/thumbnails/${image.id}?v=${image.version}`" :alt="image.original_filename" class="h-28 w-full rounded-lg bg-gray-100 object-contain" />
+                <span class="absolute left-1 top-1 rounded bg-gray-900/70 px-1.5 py-0.5 text-xs font-semibold text-white">
+                    {{ ROLE_LABELS[image.role ?? ''] ?? 'Photo' }}
+                </span>
                 <button
-                    class="absolute right-2 top-2 rounded-lg bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700"
+                    class="absolute right-1 top-1 rounded bg-red-600 px-1.5 py-0.5 text-xs font-semibold text-white"
                     @click="deleteImage(image)"
                 >
-                    Delete
-                </button>
-                <button
-                    class="absolute left-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
-                    title="Rotate a quarter turn"
-                    @click="rotate(image)"
-                >
-                    ↻
+                    ✕
                 </button>
             </div>
         </div>
@@ -103,27 +133,49 @@ function rotate(image: CaptureImage): void {
         <p v-if="error" class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
         <p v-if="uploading" class="mt-4 text-center text-sm text-gray-500">Uploading…</p>
 
-        <div class="mt-6 flex flex-col gap-3">
+        <input ref="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" @change="upload" />
+        <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="upload" />
+
+        <div v-if="step !== 'autograph'" class="mt-5 flex flex-col gap-3">
             <button
                 :disabled="uploading"
-                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                class="w-full rounded-xl bg-blue-600 py-4 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
                 @click="cameraInput?.click()"
             >
-                {{ item ? 'Take Another Picture' : 'Take Picture' }}
+                📷 {{ step === 'front' ? 'Take Front Picture' : step === 'back' ? 'Take Back Picture' : 'Take Another Picture' }}
             </button>
             <button
                 :disabled="uploading"
-                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                class="w-full rounded-lg bg-gray-100 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 @click="fileInput?.click()"
             >
-                Upload Picture
+                …or upload from gallery
             </button>
-            <Link
-                href="/"
-                class="w-full rounded-lg bg-green-600 py-3 text-center font-semibold text-white hover:bg-green-700"
+            <button
+                v-if="item"
+                :disabled="uploading"
+                class="w-full rounded-lg bg-green-600 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                @click="finishing = true"
             >
-                I'm Done
-            </Link>
+                ✓ That's all the pictures
+            </button>
+        </div>
+
+        <div v-else class="mt-5 flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm">
+            <label class="flex items-center gap-3">
+                <input v-model="hasAutograph" type="checkbox" class="h-5 w-5 rounded border-gray-300" />
+                <span class="text-gray-900">This item has an <strong>authentic autograph</strong></span>
+            </label>
+            <p class="text-sm text-gray-500">Leave unchecked if there's no autograph (the usual case).</p>
+            <button
+                class="w-full rounded-xl bg-green-600 py-4 font-semibold text-white shadow-sm hover:bg-green-700"
+                @click="finish"
+            >
+                ✓ Finish — Save Item
+            </button>
+            <button class="text-sm font-semibold text-gray-500 hover:text-gray-700" @click="finishing = false">
+                ← Back to pictures
+            </button>
         </div>
     </div>
 </template>
