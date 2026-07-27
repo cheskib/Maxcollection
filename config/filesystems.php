@@ -36,6 +36,12 @@ return [
             'serve' => true,
             'throw' => false,
             'report' => false,
+            // The queue worker and the web server run as different users;
+            // written files must always be readable by both.
+            'permissions' => [
+                'file' => ['public' => 0644, 'private' => 0644],
+                'dir' => ['public' => 0755, 'private' => 0755],
+            ],
         ],
 
         'public' => [
