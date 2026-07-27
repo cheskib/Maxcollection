@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Collection;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,8 +22,11 @@ class ProcessedItemsController extends Controller
     {
         $sort = $request->string('sort', 'newest')->toString();
         $search = trim($request->string('q')->toString());
+        $collection = $request->string('collection')->toString();
 
         $items = Item::where('status', Item::STATUS_PROCESSED)
+            ->when($collection === 'unassigned', fn ($query) => $query->whereNull('collection_id'))
+            ->when($collection !== '' && $collection !== 'unassigned', fn ($query) => $query->where('collection_id', (int) $collection))
             ->when($search !== '', function ($query) use ($search) {
                 $query->whereHas('metadata', function ($metadata) use ($search) {
                     $metadata->where(function ($where) use ($search) {
@@ -54,6 +58,8 @@ class ProcessedItemsController extends Controller
             'items' => $items->all(),
             'sort' => $sort,
             'search' => $search,
+            'collection' => $collection,
+            'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
         ]);
     }
 }
