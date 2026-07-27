@@ -165,6 +165,35 @@ class ItemPagesTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $item->processingJobs()->count());
     }
 
+    public function test_processed_items_can_stack_metadata_filters(): void
+    {
+        $match = $this->processedItem(['sport' => 'Baseball', 'year' => '1987', 'team' => 'Rangers']);
+        $this->processedItem(['sport' => 'Baseball', 'year' => '1989']);
+        $this->processedItem(['sport' => 'Football', 'year' => '1987']);
+
+        $this->actingAs($this->user)
+            ->get('/items?sport=Baseball&year=1987')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('items', 1)
+                ->where('items.0.id', $match->id)
+                ->where('filters.sport', 'Baseball')
+            );
+    }
+
+    public function test_filter_options_come_from_existing_processed_items(): void
+    {
+        $this->processedItem(['sport' => 'Baseball', 'year' => '1987', 'manufacturer' => 'Topps']);
+        $this->processedItem(['sport' => 'Hockey', 'year' => '1990']);
+
+        $this->actingAs($this->user)
+            ->get('/items')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('filterOptions.sport', ['Baseball', 'Hockey'])
+                ->where('filterOptions.year', ['1990', '1987'])
+                ->where('filterOptions.manufacturer', ['Topps'])
+            );
+    }
+
     public function test_deleting_an_item_removes_everything(): void
     {
         $item = $this->processedItem();

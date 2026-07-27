@@ -12,24 +12,61 @@ interface ProcessedItem {
     processedAt: string | null;
 }
 
+type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer';
+
 const props = defineProps<{
     items: ProcessedItem[];
     sort: string;
     search?: string;
     collection: string;
     collections: { id: number; name: string }[];
+    filters: Record<FilterField, string>;
+    filterOptions: Record<FilterField, string[]>;
 }>();
 
 const search = ref(props.search ?? '');
 const sort = ref(props.sort);
 const collection = ref(props.collection);
+const filters = ref({ ...props.filters });
+
+const FILTER_LABELS: Record<FilterField, string> = {
+    category: 'Category',
+    sport: 'Sport',
+    year: 'Year',
+    team: 'Team',
+    manufacturer: 'Manufacturer',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+    sports_card: 'Sports Card',
+    comic_book: 'Comic Book',
+    coin: 'Coin',
+    stamp: 'Stamp',
+    unsupported: 'Unsupported',
+};
+
+const showFilters = ref(Object.values(props.filters).some((value) => value !== ''));
+
+function optionLabel(field: FilterField, value: string): string {
+    return field === 'category' ? (CATEGORY_LABELS[value] ?? value) : value;
+}
 
 function apply(): void {
     router.get(
         '/items',
-        { q: search.value || undefined, sort: sort.value, collection: collection.value || undefined },
+        {
+            q: search.value || undefined,
+            sort: sort.value,
+            collection: collection.value || undefined,
+            ...Object.fromEntries(Object.entries(filters.value).filter(([, value]) => value !== '')),
+        },
         { preserveState: true },
     );
+}
+
+function clearFilters(): void {
+    filters.value = { category: '', sport: '', year: '', team: '', manufacturer: '' };
+    apply();
 }
 </script>
 
@@ -64,6 +101,31 @@ function apply(): void {
                 <option value="oldest">Oldest first</option>
                 <option value="title">By title</option>
             </select>
+        </div>
+
+        <button class="mt-3 text-left text-sm font-semibold text-blue-600" @click="showFilters = !showFilters">
+            {{ showFilters ? '▾ Hide filters' : '▸ More filters' }}
+        </button>
+
+        <div v-if="showFilters" class="mt-2 rounded-xl bg-white p-3 shadow-sm">
+            <div class="grid grid-cols-2 gap-2">
+                <label v-for="(label, field) in FILTER_LABELS" :key="field" class="text-xs font-medium text-gray-500">
+                    {{ label }}
+                    <select
+                        v-model="filters[field]"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-900"
+                        @change="apply"
+                    >
+                        <option value="">All</option>
+                        <option v-for="option in filterOptions[field]" :key="option" :value="option">
+                            {{ optionLabel(field, option) }}
+                        </option>
+                    </select>
+                </label>
+            </div>
+            <button class="mt-3 text-sm font-semibold text-gray-500 hover:text-gray-700" @click="clearFilters">
+                Clear filters
+            </button>
         </div>
 
         <p v-if="items.length === 0" class="mt-10 text-center text-gray-500">No processed items yet.</p>
