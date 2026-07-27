@@ -10,6 +10,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // The first version of this migration died between creating the
+        // table and adding its oversized unique index (MySQL adds indexes
+        // as a second statement), leaving an empty half-made table behind.
+        // Clear it so the retry succeeds.
+        Schema::dropIfExists('card_sets');
+
         Schema::create('card_sets', function (Blueprint $table) {
             $table->id();
             // Empty strings (not nulls) so the unique key always applies.
