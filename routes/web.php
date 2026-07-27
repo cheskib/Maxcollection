@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\BulkCaptureController;
 use App\Http\Controllers\CaptureController;
 use App\Http\Controllers\EditItemController;
@@ -44,6 +45,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/items/{item}/reprocess', [ReprocessController::class, 'store'])->name('items.reprocess');
 
     Route::get('/review', [NeedsReviewController::class, 'index'])->name('review.index');
+
+    Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 
     Route::get('/batches', [BatchController::class, 'index'])->name('batches.index');
     Route::get('/batches/{batch}', [BatchController::class, 'show'])->name('batches.show');
