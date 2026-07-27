@@ -17,6 +17,7 @@ class HomeController extends Controller
                 'itemsProcessed' => Item::where('status', Item::STATUS_PROCESSED)->count(),
                 'needsReview' => Item::where('status', Item::STATUS_NEEDS_REVIEW)->count(),
                 'picturesUploaded' => Image::count(),
+                'unprocessed' => Item::where('status', Item::STATUS_CAPTURED)->count(),
             ],
         ]);
     }
