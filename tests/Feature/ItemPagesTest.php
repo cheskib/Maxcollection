@@ -69,7 +69,8 @@ class ItemPagesTest extends TestCase
                 ->component('ItemDetail')
                 ->where('item.title', '1989 Upper Deck Sample Player')
                 ->where('item.confidence', 90)
-                ->has('item.fields', 12)
+                // Only fields with values are shown (player, year, manufacturer).
+                ->has('item.fields', 3)
                 ->where('item.processing.status', 'completed')
             );
     }
