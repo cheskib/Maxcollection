@@ -301,7 +301,7 @@ class ProcessingTest extends TestCase
         $this->assertSame(0, $item->images()->first()->rotation);
     }
 
-    public function test_ai_reported_trims_are_applied_and_additive(): void
+    public function test_ai_reported_trims_are_applied_to_untrimmed_photos(): void
     {
         Http::fake([
             'api.openai.com/*' => Http::response($this->openAiResponse([
@@ -313,13 +313,36 @@ class ProcessingTest extends TestCase
         ]);
 
         $item = $this->captureItem();
-        $item->images()->first()->update(['crop_top' => 40]);
 
         $this->actingAs($this->user)->post('/process');
 
         $image = $item->images()->first();
-        // 40 existing + 10 reported caps at 45; 60 reported clamps to 45.
-        $this->assertSame([45, 5, 45, 0], [
+        // 60 reported clamps to the 45 maximum.
+        $this->assertSame([10, 5, 45, 0], [
+            $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
+        ]);
+    }
+
+    public function test_ai_trims_never_touch_an_already_trimmed_photo(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Kept Player'],
+                'trims' => [['top' => 10, 'right' => 5, 'bottom' => 5, 'left' => 5]],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $item->images()->first()->update(['crop_top' => 8]);
+
+        $this->actingAs($this->user)->post('/process');
+
+        $image = $item->images()->first();
+        // The existing trim (manual or from an earlier AI pass) is final;
+        // reprocessing must not stack more trim and cut into the item.
+        $this->assertSame([8, 0, 0, 0], [
             $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
         ]);
     }
