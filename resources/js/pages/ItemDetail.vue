@@ -22,7 +22,7 @@ const props = defineProps<{
         category: string;
         confidence: number | null;
         processedAt: string | null;
-        images: { id: number; original_filename: string }[];
+        images: { id: number; original_filename: string; rotation: number }[];
         fields: Field[];
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
@@ -34,6 +34,10 @@ function reprocess(tier: 'standard' | 'premium'): void {
     const label = tier === 'premium' ? 'Run a premium analysis on this item?' : 'Reprocess this item with AI?';
     if (!confirm(`${label} Current metadata will be replaced.`)) return;
     router.post(`/items/${props.item.id}/reprocess`, { tier });
+}
+
+function rotate(imageId: number): void {
+    router.post(`/images/${imageId}/rotate`, {}, { preserveScroll: true });
 }
 
 function back(): void {
@@ -66,9 +70,18 @@ function back(): void {
 
 <!-- object-contain: the full photograph is always visible, never cropped -->
         <div class="mt-4 grid grid-cols-2 gap-3">
-            <a v-for="image in item.images" :key="image.id" :href="`/images/${image.id}`" target="_blank">
-                <img :src="`/thumbnails/${image.id}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
-            </a>
+            <div v-for="image in item.images" :key="image.id" class="relative">
+                <a :href="`/images/${image.id}`" target="_blank">
+                    <img :src="`/thumbnails/${image.id}?v=${image.rotation}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
+                </a>
+                <button
+                    class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                    title="Rotate a quarter turn"
+                    @click="rotate(image.id)"
+                >
+                    ↻
+                </button>
+            </div>
         </div>
 
         <div v-if="item.fields.length" class="mt-6 rounded-xl bg-white p-4 shadow-sm">

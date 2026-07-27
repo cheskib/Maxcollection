@@ -66,7 +66,7 @@ class AiService
             // Send a downscaled derived copy to keep image token cost low
             // (ARCHITECTURE.md 7: derived images for AI optimization).
             // Originals are never modified.
-            [$binary, $mime] = $this->optimizeForAi($binary, $image->mime_type);
+            [$binary, $mime] = $this->optimizeForAi($binary, $image->mime_type, $image->rotation);
 
             $content[] = [
                 'type' => 'input_image',
@@ -101,7 +101,7 @@ class AiService
      *
      * @return array{0: string, 1: string} [binary, mime type]
      */
-    private function optimizeForAi(string $binary, string $mime): array
+    private function optimizeForAi(string $binary, string $mime, int $rotation = 0): array
     {
         $maxEdge = 1024;
 
@@ -109,6 +109,15 @@ class AiService
 
         if ($source === false) {
             return [$binary, $mime];
+        }
+
+        if ($rotation !== 0) {
+            $rotated = imagerotate($source, -$rotation, 0);
+
+            if ($rotated !== false) {
+                imagedestroy($source);
+                $source = $rotated;
+            }
         }
 
         $width = imagesx($source);

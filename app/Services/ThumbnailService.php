@@ -36,6 +36,15 @@ class ThumbnailService
             return null;
         }
 
+        if ($image->rotation) {
+            $rotated = imagerotate($source, -$image->rotation, 0);
+
+            if ($rotated !== false) {
+                imagedestroy($source);
+                $source = $rotated;
+            }
+        }
+
         $width = imagesx($source);
         $height = imagesy($source);
         $targetWidth = min(self::MAX_WIDTH, $width);
@@ -56,5 +65,13 @@ class ThumbnailService
         $disk->put($thumbnailPath, $jpeg);
 
         return $thumbnailPath;
+    }
+
+    /**
+     * Drop the cached thumbnail (e.g. after rotation) so it regenerates.
+     */
+    public function forget(Image $image): void
+    {
+        Storage::disk('local')->delete("thumbnails/{$image->item_id}/{$image->id}.jpg");
     }
 }

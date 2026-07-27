@@ -8,7 +8,7 @@ const props = defineProps<{
         title: string;
         category: string;
         values: Record<string, string | null>;
-        images: { id: number; original_filename: string }[];
+        images: { id: number; original_filename: string; rotation: number }[];
     };
     categoryFields: Record<string, string[]>;
     fieldLabels: Record<string, string>;
@@ -118,7 +118,7 @@ function submit(): void {
         <div v-if="item.images.length" class="mt-4 grid grid-cols-2 gap-3">
             <a v-for="image in item.images" :key="image.id" :href="`/images/${image.id}`" target="_blank">
                 <img
-                    :src="`/thumbnails/${image.id}`"
+                    :src="`/thumbnails/${image.id}?v=${image.rotation}`"
                     :alt="image.original_filename"
                     class="w-full rounded-xl bg-gray-100 object-contain shadow-sm"
                 />
