@@ -29,4 +29,18 @@ class ReprocessController extends Controller
                 ? 'Item queued for premium analysis.'
                 : 'Item queued for reprocessing.');
     }
+
+    /**
+     * Re-run the AI over the entire collection at the standard tier.
+     */
+    public function all(Request $request, ProcessingService $service): RedirectResponse
+    {
+        $validated = $request->validate([
+            'source' => ['nullable', Rule::in([AiService::SOURCE_CLEANED, AiService::SOURCE_ORIGINAL])],
+        ]);
+
+        $count = $service->reprocessAll($validated['source'] ?? AiService::SOURCE_CLEANED);
+
+        return back()->with('status', "{$count} item(s) queued for reprocessing.");
+    }
 }

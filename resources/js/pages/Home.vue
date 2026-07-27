@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 defineProps<{
     stats: {
@@ -16,6 +16,14 @@ const page = usePage<{ flash: { status: string | null } }>();
 
 function processItems(): void {
     router.post('/process');
+}
+
+// Re-run the AI over the whole collection, asking which photos it reads.
+const choosingReprocessSource = ref(false);
+
+function runReprocessAll(source: 'original' | 'cleaned'): void {
+    choosingReprocessSource.value = false;
+    router.post('/reprocess-all', { source });
 }
 
 function logout(): void {
@@ -74,6 +82,39 @@ function logout(): void {
             <template v-if="stats.unprocessed">▶ Process {{ stats.unprocessed }} waiting item(s)</template>
             <template v-else>Nothing waiting to process</template>
         </button>
+
+        <button
+            class="mt-2 w-full rounded-xl bg-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+            @click="choosingReprocessSource = !choosingReprocessSource"
+        >
+            ↻ Reprocess Everything
+        </button>
+        <div v-if="choosingReprocessSource" class="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <p class="text-sm font-semibold text-gray-900">Which photos should the AI read?</p>
+            <p class="mt-1 text-xs text-gray-500">Every item will be re-run at the standard tier; current details will be replaced.</p>
+            <div class="mt-3 flex flex-col gap-2">
+                <button
+                    class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="runReprocessAll('cleaned')"
+                >
+                    Cleaned photos
+                    <span class="block text-xs font-normal text-blue-100">Keep all adjustments — just re-read every item as shown.</span>
+                </button>
+                <button
+                    class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="runReprocessAll('original')"
+                >
+                    Original photos
+                    <span class="block text-xs font-normal text-blue-100">Start fresh — clears hand-trims; photos return to original framing.</span>
+                </button>
+                <button
+                    class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                    @click="choosingReprocessSource = false"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
 
         <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">Your collection</p>
         <div class="mt-2 grid grid-cols-2 gap-3">

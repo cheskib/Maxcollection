@@ -253,6 +253,21 @@ class ProcessingService
     }
 
     /**
+     * Re-run the AI over every item in the collection (whatever its
+     * status), skipping items already waiting in the queue.
+     */
+    public function reprocessAll(string $source = AiService::SOURCE_CLEANED): int
+    {
+        $items = Item::whereNotIn('status', [Item::STATUS_QUEUED, Item::STATUS_PROCESSING])->get();
+
+        foreach ($items as $item) {
+            $this->queueItem($item, AiService::TIER_STANDARD, $source);
+        }
+
+        return $items->count();
+    }
+
+    /**
      * Queue only the captured items belonging to the given batches.
      */
     public function queueBatches(array $batchIds): int
