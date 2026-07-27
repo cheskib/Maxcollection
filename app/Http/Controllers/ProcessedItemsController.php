@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Collection;
 use App\Models\Item;
+use App\Models\Metadata;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,15 +19,30 @@ class ProcessedItemsController extends Controller
         'year', 'card_number', 'issue_number', 'country',
     ];
 
+    /**
+     * Metadata fields that can be filtered by exact value.
+     */
+    private const FILTER_FIELDS = ['category', 'sport', 'year', 'team', 'manufacturer'];
+
     public function index(Request $request): Response
     {
         $sort = $request->string('sort', 'newest')->toString();
         $search = trim($request->string('q')->toString());
         $collection = $request->string('collection')->toString();
 
+        $filters = [];
+        foreach (self::FILTER_FIELDS as $field) {
+            $filters[$field] = $request->string($field)->toString();
+        }
+
         $items = Item::where('status', Item::STATUS_PROCESSED)
             ->when($collection === 'unassigned', fn ($query) => $query->whereNull('collection_id'))
             ->when($collection !== '' && $collection !== 'unassigned', fn ($query) => $query->where('collection_id', (int) $collection))
+            ->where(function ($query) use ($filters) {
+                foreach (array_filter($filters) as $field => $value) {
+                    $query->whereHas('metadata', fn ($metadata) => $metadata->where($field, $value));
+                }
+            })
             ->when($search !== '', function ($query) use ($search) {
                 $query->whereHas('metadata', function ($metadata) use ($search) {
                     $metadata->where(function ($where) use ($search) {
@@ -54,12 +70,25 @@ class ProcessedItemsController extends Controller
             default => $items->sortByDesc('id')->values(),
         };
 
+        // Each dropdown offers only values that exist among processed items.
+        $options = [];
+        foreach (self::FILTER_FIELDS as $field) {
+            $values = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED))
+                ->whereNotNull($field)
+                ->distinct()
+                ->orderBy($field)
+                ->pluck($field);
+            $options[$field] = ($field === 'year' ? $values->sortDesc()->values() : $values)->all();
+        }
+
         return Inertia::render('ProcessedItems', [
             'items' => $items->all(),
             'sort' => $sort,
             'search' => $search,
             'collection' => $collection,
             'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
+            'filters' => $filters,
+            'filterOptions' => $options,
         ]);
     }
 }
