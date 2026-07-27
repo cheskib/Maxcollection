@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
 
 interface Field {
     name: string;
@@ -14,8 +16,10 @@ interface LogLine {
 }
 
 const props = defineProps<{
+    collections: { id: number; name: string }[];
     item: {
         id: number;
+        collectionId: number | null;
         status: string;
         reviewReason: string | null;
         title: string;
@@ -38,6 +42,19 @@ function reprocess(tier: 'standard' | 'premium'): void {
 
 function rotate(imageId: number): void {
     router.post(`/images/${imageId}/rotate`, {}, { preserveScroll: true });
+}
+
+const collectionChoice = ref<CollectionChoice>({ collectionId: props.item.collectionId, newName: '' });
+
+function saveCollection(): void {
+    router.put(
+        `/items/${props.item.id}/collection`,
+        {
+            collection_id: collectionChoice.value.collectionId === 'new' ? null : collectionChoice.value.collectionId,
+            new_collection_name: collectionChoice.value.collectionId === 'new' ? collectionChoice.value.newName : '',
+        },
+        { preserveScroll: true },
+    );
 }
 
 function deleteItem(): void {
@@ -85,6 +102,19 @@ function back(): void {
                     @click="rotate(image.id)"
                 >
                     ↻
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">Collection</h2>
+            <div class="mt-2 flex flex-col gap-2">
+                <CollectionPicker v-model="collectionChoice" :collections="collections" />
+                <button
+                    class="rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="saveCollection"
+                >
+                    Save Collection
                 </button>
             </div>
         </div>

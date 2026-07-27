@@ -19,7 +19,7 @@ class Item extends Model
 
     public const STATUS_NEEDS_REVIEW = 'needs_review';
 
-    protected $fillable = ['user_id', 'batch_id', 'status', 'review_reason', 'processed_at'];
+    protected $fillable = ['user_id', 'batch_id', 'collection_id', 'status', 'review_reason', 'processed_at'];
 
     protected function casts(): array
     {
@@ -36,6 +36,11 @@ class Item extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(Batch::class);
+    }
+
+    public function collection(): BelongsTo
+    {
+        return $this->belongsTo(Collection::class);
     }
 
     public function images(): HasMany

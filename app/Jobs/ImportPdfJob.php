@@ -28,6 +28,7 @@ class ImportPdfJob implements ShouldQueue
         public readonly int $photosPerItem,
         public readonly int $userId,
         public readonly ?int $batchId = null,
+        public readonly ?int $collectionId = null,
     ) {
     }
 
@@ -57,7 +58,11 @@ class ImportPdfJob implements ShouldQueue
             $created = 0;
 
             foreach (array_chunk($pages, $this->photosPerItem) as $group) {
-                $item = Item::create(['user_id' => $this->userId, 'batch_id' => $this->batchId]);
+                $item = Item::create([
+                    'user_id' => $this->userId,
+                    'batch_id' => $this->batchId,
+                    'collection_id' => $this->collectionId,
+                ]);
 
                 foreach ($group as $index => $pagePath) {
                     $storagePath = "original/{$item->id}/".Str::uuid().'.jpg';

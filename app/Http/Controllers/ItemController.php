@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Collection;
 use App\Models\Item;
 use App\Models\Metadata;
 use App\Services\CaptureService;
@@ -38,8 +39,10 @@ class ItemController extends Controller
         }
 
         return Inertia::render('ItemDetail', [
+            'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
             'item' => [
                 'id' => $item->id,
+                'collectionId' => $item->collection_id,
                 'status' => $item->status,
                 'reviewReason' => $item->reviewReasonLabel(),
                 'title' => $metadata?->primaryTitle() ?? "Item #{$item->id}",

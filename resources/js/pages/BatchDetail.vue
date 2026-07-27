@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
+import { collectionPayload } from '../composables/lastCollection';
 
-defineProps<{
+const props = defineProps<{
     batch: { id: number; label: string; uploadedAt: string };
     items: {
         id: number;
@@ -12,7 +15,15 @@ defineProps<{
         reason: string | null;
         confidence: number | null;
     }[];
+    collections: { id: number; name: string }[];
 }>();
+
+const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
+
+function moveBatch(): void {
+    if (!confirm(`Move all ${props.items.length} item(s) in this batch?`)) return;
+    router.post(`/batches/${props.batch.id}/collection`, collectionPayload(collectionChoice.value), { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -23,6 +34,19 @@ defineProps<{
             <Link href="/batches" class="ml-2 shrink-0 text-sm font-semibold text-blue-600">All batches</Link>
         </div>
         <p class="mt-1 text-sm text-gray-500">Uploaded {{ batch.uploadedAt }} · {{ items.length }} item(s)</p>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <p class="text-sm font-medium text-gray-700">Move entire batch to collection</p>
+            <div class="mt-2 flex flex-col gap-2">
+                <CollectionPicker v-model="collectionChoice" :collections="collections" />
+                <button
+                    class="rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="moveBatch"
+                >
+                    Move Batch
+                </button>
+            </div>
+        </div>
 
         <div class="mt-4 flex flex-col gap-3">
             <Link

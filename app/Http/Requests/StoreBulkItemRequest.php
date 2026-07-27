@@ -20,6 +20,7 @@ class StoreBulkItemRequest extends FormRequest
             'photos' => ['required', 'array', 'min:1', 'max:10'],
             'photos.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480'],
             'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
+            ...\App\Services\CollectionService::rules(),
         ];
     }
 

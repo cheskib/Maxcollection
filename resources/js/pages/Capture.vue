@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
+import { collectionPayload, loadLastCollection, saveLastCollection } from '../composables/lastCollection';
 
 interface CaptureImage {
     id: number;
@@ -10,7 +12,14 @@ interface CaptureImage {
 
 const props = defineProps<{
     item: { id: number; images: CaptureImage[] } | null;
+    collections: { id: number; name: string }[];
 }>();
+
+const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
+
+onMounted(() => {
+    collectionChoice.value = loadLastCollection(props.collections);
+});
 
 const cameraInput = ref<HTMLInputElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -23,9 +32,12 @@ function upload(event: Event): void {
     if (!photo) return;
 
     error.value = null;
+    if (typeof collectionChoice.value.collectionId === 'number') {
+        saveLastCollection(collectionChoice.value.collectionId);
+    }
     router.post(
         '/capture/images',
-        { photo, item_id: props.item?.id ?? null },
+        { photo, item_id: props.item?.id ?? null, ...collectionPayload(collectionChoice.value) },
         {
             forceFormData: true,
             onStart: () => (uploading.value = true),
@@ -57,6 +69,13 @@ function rotate(image: CaptureImage): void {
         </div>
         <p v-if="item" class="mt-1 text-center text-sm text-gray-500">Item #{{ item.id }} · {{ item.images.length }} picture(s)</p>
         <p v-else class="mt-1 text-center text-sm text-gray-500">The first picture creates the item.</p>
+
+        <div v-if="!item" class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <p class="text-sm font-medium text-gray-700">Collection</p>
+            <div class="mt-2">
+                <CollectionPicker v-model="collectionChoice" :collections="collections" />
+            </div>
+        </div>
 
         <!-- Hidden inputs: one opens the camera on mobile, the other the file picker -->
         <input ref="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" @change="upload" />
