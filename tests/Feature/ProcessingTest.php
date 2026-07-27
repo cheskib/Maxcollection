@@ -300,6 +300,31 @@ class ProcessingTest extends TestCase
         $this->assertSame(0.0, $image->tilt);
     }
 
+    public function test_everything_can_be_reprocessed_at_once(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 92,
+                'fields' => ['player_name' => 'Everyone'],
+            ])),
+        ]);
+
+        $processed = $this->captureItem();
+        $processed->update(['status' => Item::STATUS_PROCESSED]);
+        $review = $this->captureItem();
+        $review->update(['status' => Item::STATUS_NEEDS_REVIEW, 'review_reason' => 'low_confidence']);
+
+        $this->actingAs($this->user)
+            ->post('/reprocess-all', ['source' => 'cleaned'])
+            ->assertRedirect();
+
+        $this->assertSame(Item::STATUS_PROCESSED, $processed->fresh()->status);
+        $this->assertSame(Item::STATUS_PROCESSED, $review->fresh()->status);
+        $this->assertSame(1, $processed->processingJobs()->count());
+        $this->assertSame(1, $review->processingJobs()->count());
+    }
+
     public function test_a_whole_batch_can_be_reprocessed(): void
     {
         Http::fake([
