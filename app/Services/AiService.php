@@ -108,6 +108,120 @@ class AiService
     }
 
     /**
+     * Classify scanned PDF pages as card fronts or backs, in order, so the
+     * importer can pair them even when a back is missing. Returns one
+     * 'front'/'back' per page, or null when classification is unavailable
+     * or inconsistent — the importer then falls back to mechanical pairs.
+     *
+     * @param array<int, string> $binaries JPEG contents, in page order
+     * @return array<int, string>|null
+     */
+    public function classifyPages(array $binaries): ?array
+    {
+        $apiKey = config('services.openai.key');
+
+        if (blank($apiKey) || $binaries === []) {
+            return null;
+        }
+
+        $roles = [];
+
+        // Chunked so huge scans never exceed request limits.
+        foreach (array_chunk($binaries, 20) as $chunk) {
+            $content = [[
+                'type' => 'input_text',
+                'text' => sprintf(
+                    'You are given %d scanned pages, in scanner order, from a stack of collectible cards. '
+                    .'Classify each page, in the same order, as "front" (the face with the main photo or design) '
+                    .'or "back" (the side with statistics, text blocks, card number, or copyright line).',
+                    count($chunk),
+                ),
+            ]];
+
+            foreach ($chunk as $binary) {
+                $content[] = [
+                    'type' => 'input_image',
+                    'image_url' => 'data:image/jpeg;base64,'.base64_encode($this->downscaleJpeg($binary, 512)),
+                ];
+            }
+
+            $response = Http::withToken($apiKey)
+                ->timeout((int) config('services.openai.timeout'))
+                ->post(rtrim(config('services.openai.base_url'), '/').'/responses', [
+                    'model' => config('services.openai.model'),
+                    'input' => [['role' => 'user', 'content' => $content]],
+                    'text' => [
+                        'format' => [
+                            'type' => 'json_schema',
+                            'name' => 'page_classification',
+                            'strict' => true,
+                            'schema' => [
+                                'type' => 'object',
+                                'additionalProperties' => false,
+                                'properties' => [
+                                    'pages' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => ['front', 'back']]],
+                                ],
+                                'required' => ['pages'],
+                            ],
+                        ],
+                    ],
+                ]);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            $decoded = json_decode($this->outputText($response->json()) ?? '', true);
+            $pages = is_array($decoded) ? ($decoded['pages'] ?? null) : null;
+
+            if (! is_array($pages) || count($pages) !== count($chunk)) {
+                return null;
+            }
+
+            foreach ($pages as $page) {
+                if (! in_array($page, ['front', 'back'], true)) {
+                    return null;
+                }
+
+                $roles[] = $page;
+            }
+        }
+
+        return $roles;
+    }
+
+    /**
+     * Small copy of a raw JPEG for cheap classification calls.
+     */
+    private function downscaleJpeg(string $binary, int $maxEdge): string
+    {
+        $source = @imagecreatefromstring($binary);
+
+        if ($source === false) {
+            return $binary;
+        }
+
+        $longest = max(imagesx($source), imagesy($source));
+
+        if ($longest > $maxEdge) {
+            $scale = $maxEdge / $longest;
+            $resized = imagescale($source, (int) round(imagesx($source) * $scale), (int) round(imagesy($source) * $scale));
+
+            if ($resized !== false) {
+                imagedestroy($source);
+                $source = $resized;
+            }
+        }
+
+        ob_start();
+        imagejpeg($source, null, 70);
+        $jpeg = ob_get_clean();
+        imagedestroy($source);
+
+        return $jpeg === false || $jpeg === '' ? $binary : $jpeg;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function buildPayload(Item $item, string $model, string $source): array
