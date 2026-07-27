@@ -15,6 +15,7 @@ class ProcessController extends Controller
             ? 'There are no unprocessed items.'
             : "{$count} item(s) queued for processing.";
 
-        return redirect()->route('home')->with('status', $message);
+        // Back to wherever the button was pressed (Home or Inventory).
+        return back(fallback: route('home'))->with('status', $message);
     }
 }
