@@ -4,11 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Item;
 use App\Models\Metadata;
+use App\Services\CaptureService;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ItemController extends Controller
 {
+    /**
+     * Delete an item with all of its photographs, metadata, and history.
+     */
+    public function destroy(Item $item, CaptureService $capture): RedirectResponse
+    {
+        $capture->deleteItem($item);
+
+        return redirect()->route('items.index')->with('status', 'Item deleted.');
+    }
+
     public function show(Item $item): Response
     {
         $metadata = $item->metadata;
