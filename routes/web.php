@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/capture', [CaptureController::class, 'create'])->name('capture.create');
     Route::get('/capture/bulk', [BulkCaptureController::class, 'create'])->name('capture.bulk');
     Route::post('/capture/bulk/items', [BulkCaptureController::class, 'store'])->name('capture.bulk.store');
+    Route::post('/capture/bulk/pdf', [BulkCaptureController::class, 'storePdf'])->name('capture.bulk.pdf');
     Route::get('/capture/{item}', [CaptureController::class, 'show'])->whereNumber('item')->name('capture.show');
     Route::post('/capture/images', [CaptureController::class, 'storeImage'])->name('capture.images.store');
     Route::delete('/images/{image}', [CaptureController::class, 'destroyImage'])->name('images.destroy');

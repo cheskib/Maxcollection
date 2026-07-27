@@ -11,6 +11,8 @@ const error = ref<string | null>(null);
 
 const cameraInput = ref<HTMLInputElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
+const pdfInput = ref<HTMLInputElement | null>(null);
+const pdfNotice = ref<string | null>(null);
 
 const pendingLabel = computed(() =>
     pending.value.length === 1 && photosPerItem.value === 2 ? '1 photo waiting for its pair' : null,
@@ -66,6 +68,40 @@ function onInput(event: Event): void {
     if (files.length) void handleFiles(files);
 }
 
+async function onPdf(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const pdf = input.files?.[0];
+    input.value = '';
+    if (!pdf) return;
+
+    error.value = null;
+    pdfNotice.value = null;
+    uploading.value = true;
+    progress.value = 'Uploading PDF…';
+
+    try {
+        const body = new FormData();
+        body.append('pdf', pdf);
+        body.append('photos_per_item', String(photosPerItem.value));
+
+        const response = await fetch('/capture/bulk/pdf', {
+            method: 'POST',
+            headers: { 'X-XSRF-TOKEN': xsrfToken(), Accept: 'application/json' },
+            credentials: 'same-origin',
+            body,
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message ?? `Upload failed (${response.status})`);
+        pdfNotice.value = data.message ?? 'PDF received.';
+    } catch (e) {
+        error.value = e instanceof Error ? e.message : 'PDF upload failed.';
+    } finally {
+        uploading.value = false;
+        progress.value = null;
+    }
+}
+
 // An odd photo left over (e.g. a single-sided last card) becomes its own item.
 async function finishPartial(): Promise<void> {
     if (!pending.value.length) return;
@@ -119,9 +155,11 @@ async function finishPartial(): Promise<void> {
         </div>
 
         <p v-if="error" class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
+        <p v-if="pdfNotice" class="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">{{ pdfNotice }}</p>
 
         <input ref="cameraInput" type="file" accept="image/*" capture="environment" class="hidden" @change="onInput" />
         <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" @change="onInput" />
+        <input ref="pdfInput" type="file" accept="application/pdf" class="hidden" @change="onPdf" />
 
         <div class="mt-6 flex flex-col gap-3">
             <button
@@ -137,6 +175,13 @@ async function finishPartial(): Promise<void> {
                 @click="fileInput?.click()"
             >
                 Upload Pictures
+            </button>
+            <button
+                :disabled="uploading"
+                class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                @click="pdfInput?.click()"
+            >
+                Upload Scanner PDF
             </button>
             <button
                 v-if="pending.length"
