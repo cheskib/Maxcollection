@@ -136,25 +136,28 @@ function rotateImage(imageId: number): void {
             <Link :href="`/items/${item.id}`" class="ml-3 shrink-0 text-sm font-semibold text-blue-600">Cancel</Link>
         </div>
 
-<!-- The photographs stay visible while editing: corrections are made by
-     reading the item itself. Tapping opens the full-size original. -->
-        <div v-if="item.images.length" class="mt-4 grid grid-cols-2 gap-3">
-            <div v-for="image in item.images" :key="image.id" class="relative">
-                <a :href="`/images/${image.id}`" target="_blank">
-                    <img
-                        :src="`/thumbnails/${image.id}?v=${image.version}`"
-                        :alt="image.original_filename"
-                        class="w-full rounded-xl bg-gray-100 object-contain shadow-sm"
-                    />
-                </a>
-                <button
-                    class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
-                    title="Rotate a quarter turn"
-                    type="button"
-                    @click="rotateImage(image.id)"
-                >
-                    ↻
-                </button>
+<!-- The photographs stay pinned while the fields scroll underneath:
+     corrections are made by reading the item itself. Tapping opens the
+     full-size original. -->
+        <div v-if="item.images.length" class="sticky top-0 z-10 -mx-4 bg-gray-100 px-4 pb-3 pt-2 shadow-sm">
+            <div class="grid grid-cols-2 gap-3">
+                <div v-for="image in item.images" :key="image.id" class="relative">
+                    <a :href="`/images/${image.id}`" target="_blank">
+                        <img
+                            :src="`/thumbnails/${image.id}?v=${image.version}`"
+                            :alt="image.original_filename"
+                            class="max-h-44 w-full rounded-xl bg-gray-100 object-contain shadow-sm"
+                        />
+                    </a>
+                    <button
+                        class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                        title="Rotate a quarter turn"
+                        type="button"
+                        @click="rotateImage(image.id)"
+                    >
+                        ↻
+                    </button>
+                </div>
             </div>
         </div>
 
