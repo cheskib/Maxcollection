@@ -368,6 +368,33 @@ class ProcessingTest extends TestCase
         $this->actingAs($this->user)->post("/images/{$image->id}/undo")->assertNotFound();
     }
 
+    public function test_reprint_and_subset_cards_save_card_type_and_original_year(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 94,
+                'fields' => [
+                    'player_name' => 'Don Mattingly',
+                    'manufacturer' => 'Topps',
+                    'year' => '1987',
+                    'original_year' => '1972',
+                    'card_type' => 'All-Star',
+                ],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        $metadata = $item->fresh()->metadata;
+        $this->assertSame('1987', $metadata->year);
+        $this->assertSame('1972', $metadata->original_year);
+        $this->assertSame('All-Star', $metadata->card_type);
+        // Subset cards read like collectors say them.
+        $this->assertSame('1987 Topps All-Star Don Mattingly', $metadata->primaryTitle());
+    }
+
     public function test_sport_is_capitalized_when_saved(): void
     {
         Http::fake([

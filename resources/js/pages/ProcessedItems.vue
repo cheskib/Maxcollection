@@ -12,7 +12,7 @@ interface ProcessedItem {
     processedAt: string | null;
 }
 
-type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer';
+type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer' | 'card_type';
 
 const props = defineProps<{
     items: ProcessedItem[];
@@ -35,6 +35,7 @@ const FILTER_LABELS: Record<FilterField, string> = {
     year: 'Year',
     team: 'Team',
     manufacturer: 'Manufacturer',
+    card_type: 'Card Type',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -65,7 +66,7 @@ function apply(): void {
 }
 
 function clearFilters(): void {
-    filters.value = { category: '', sport: '', year: '', team: '', manufacturer: '' };
+    filters.value = { category: '', sport: '', year: '', team: '', manufacturer: '', card_type: '' };
     apply();
 }
 </script>
