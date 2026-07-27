@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -103,6 +103,10 @@ const visibleFields = computed(() => props.categoryFields[form.category] ?? []);
 function submit(): void {
     form.put(`/items/${props.item.id}/metadata`);
 }
+
+function rotateImage(imageId: number): void {
+    router.post(`/images/${imageId}/rotate`, {}, { preserveScroll: true, preserveState: false });
+}
 </script>
 
 <template>
@@ -116,13 +120,23 @@ function submit(): void {
 <!-- The photographs stay visible while editing: corrections are made by
      reading the item itself. Tapping opens the full-size original. -->
         <div v-if="item.images.length" class="mt-4 grid grid-cols-2 gap-3">
-            <a v-for="image in item.images" :key="image.id" :href="`/images/${image.id}`" target="_blank">
-                <img
-                    :src="`/thumbnails/${image.id}?v=${image.rotation}`"
-                    :alt="image.original_filename"
-                    class="w-full rounded-xl bg-gray-100 object-contain shadow-sm"
-                />
-            </a>
+            <div v-for="image in item.images" :key="image.id" class="relative">
+                <a :href="`/images/${image.id}`" target="_blank">
+                    <img
+                        :src="`/thumbnails/${image.id}?v=${image.rotation}`"
+                        :alt="image.original_filename"
+                        class="w-full rounded-xl bg-gray-100 object-contain shadow-sm"
+                    />
+                </a>
+                <button
+                    class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                    title="Rotate a quarter turn"
+                    type="button"
+                    @click="rotateImage(image.id)"
+                >
+                    ↻
+                </button>
+            </div>
         </div>
 
         <form class="mt-6 flex flex-col gap-4" @submit.prevent="submit">

@@ -5,6 +5,7 @@ import { ref } from 'vue';
 interface CaptureImage {
     id: number;
     original_filename: string;
+    rotation: number;
 }
 
 const props = defineProps<{
@@ -41,6 +42,10 @@ function deleteImage(image: CaptureImage): void {
     if (!confirm('Delete this picture?')) return;
     router.delete(`/images/${image.id}`);
 }
+
+function rotate(image: CaptureImage): void {
+    router.post(`/images/${image.id}/rotate`, {}, { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -59,12 +64,19 @@ function deleteImage(image: CaptureImage): void {
 
         <div v-if="item" class="mt-6 grid grid-cols-2 gap-3">
             <div v-for="image in item.images" :key="image.id" class="relative overflow-hidden rounded-xl bg-white shadow-sm">
-                <img :src="`/images/${image.id}`" :alt="image.original_filename" class="h-40 w-full object-cover" />
+                <img :src="`/thumbnails/${image.id}?v=${image.rotation}`" :alt="image.original_filename" class="h-40 w-full bg-gray-100 object-contain" />
                 <button
                     class="absolute right-2 top-2 rounded-lg bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700"
                     @click="deleteImage(image)"
                 >
                     Delete
+                </button>
+                <button
+                    class="absolute left-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                    title="Rotate a quarter turn"
+                    @click="rotate(image)"
+                >
+                    ↻
                 </button>
             </div>
         </div>
