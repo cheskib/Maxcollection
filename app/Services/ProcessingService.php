@@ -139,7 +139,7 @@ class ProcessingService
      */
     private function applyRotations(Item $item, AiResult $result, string $source = AiService::SOURCE_CLEANED): void
     {
-        if ($result->rotations === [] && $result->trims === [] && $result->roles === []) {
+        if ($result->rotations === [] && $result->tilts === [] && $result->trims === [] && $result->roles === []) {
             return;
         }
 
@@ -162,6 +162,20 @@ class ProcessingService
 
             if ($rotation !== $image->rotation && ($source === AiService::SOURCE_ORIGINAL || $reported !== 0)) {
                 $changes['rotation'] = $rotation;
+            }
+
+            // Fine straightening is only for crooked hand-held photos:
+            // single captures. Scanner and PDF batches come in straight.
+            if ($item->batch_id === null) {
+                $reportedTilt = $result->tilts[$index] ?? 0.0;
+
+                $tilt = $source === AiService::SOURCE_ORIGINAL
+                    ? $reportedTilt
+                    : max(-45.0, min(45.0, $image->tilt + $reportedTilt));
+
+                if ($tilt !== $image->tilt && ($source === AiService::SOURCE_ORIGINAL || $reportedTilt !== 0.0)) {
+                    $changes['tilt'] = $tilt;
+                }
             }
 
             $trim = $result->trims[$index] ?? null;
@@ -196,7 +210,7 @@ class ProcessingService
 
             $image->update($changes);
 
-            if (isset($changes['rotation']) || isset($changes['crop_top']) || isset($changes['crop_right']) || isset($changes['crop_bottom']) || isset($changes['crop_left'])) {
+            if (isset($changes['rotation']) || isset($changes['tilt']) || isset($changes['crop_top']) || isset($changes['crop_right']) || isset($changes['crop_bottom']) || isset($changes['crop_left'])) {
                 $this->thumbnails->forget($image);
             }
         }

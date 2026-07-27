@@ -53,7 +53,7 @@ class ItemController extends Controller
                 'category' => $metadata?->categoryLabel() ?? 'Not processed yet',
                 'confidence' => $metadata?->confidence,
                 'processedAt' => $item->processed_at?->format('M j, Y g:i A'),
-                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag(), 'adjusted' => $image->versionTag() !== '0-0-0-0-0'])->all(),
+                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag(), 'adjusted' => $image->isAdjusted()])->all(),
                 'fields' => $fields,
                 'processing' => $lastJob === null ? null : [
                     'status' => $lastJob->status,

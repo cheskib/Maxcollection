@@ -29,6 +29,8 @@ class AiResult
      *                                   additional edge trims per photo (percent)
      * @param array<int, string> $roles which side each photo shows
      *                                  (front|back|detail|unknown)
+     * @param array<int, float> $tilts fine straightening angle per photo
+     *                                 (degrees, applied after rotation)
      */
     public function __construct(
         public readonly string $category,
@@ -37,6 +39,7 @@ class AiResult
         public readonly array $rotations = [],
         public readonly array $trims = [],
         public readonly array $roles = [],
+        public readonly array $tilts = [],
     ) {
     }
 

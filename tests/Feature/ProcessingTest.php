@@ -249,6 +249,51 @@ class ProcessingTest extends TestCase
         $this->assertSame('Premium Player', $item->fresh()->metadata->player_name);
     }
 
+    public function test_ai_tilt_straightens_single_capture_photos(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Crooked Player'],
+                'tilts' => [7.5],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        $image = $item->images()->first();
+        $this->assertSame(7.5, $image->tilt);
+
+        // The tilted rendering still streams as a JPEG.
+        $this->actingAs($this->user)
+            ->get("/images/{$image->id}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
+    }
+
+    public function test_ai_tilt_is_ignored_for_batch_items(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Scanned Player'],
+                'tilts' => [7.5],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $batch = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'bulk']);
+        $item->update(['batch_id' => $batch->id]);
+
+        $this->actingAs($this->user)->post('/process');
+
+        // Scanner and PDF batches come in straight; no fine straightening.
+        $this->assertSame(0.0, $item->images()->first()->tilt);
+    }
+
     public function test_sport_is_capitalized_when_saved(): void
     {
         Http::fake([
