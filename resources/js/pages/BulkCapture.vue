@@ -5,6 +5,8 @@ import { computed, ref } from 'vue';
 const photosPerItem = ref<1 | 2>(2);
 const pending = ref<File[]>([]);
 const itemsCreated = ref(0);
+// One batch per bulk session: the first item creates it, later items join it.
+const batchId = ref<number | null>(null);
 const uploading = ref(false);
 const progress = ref<string | null>(null);
 const error = ref<string | null>(null);
@@ -26,6 +28,7 @@ function xsrfToken(): string {
 async function createItem(photos: File[]): Promise<void> {
     const body = new FormData();
     photos.forEach((photo) => body.append('photos[]', photo));
+    if (batchId.value !== null) body.append('batch_id', String(batchId.value));
 
     const response = await fetch('/capture/bulk/items', {
         method: 'POST',
@@ -34,11 +37,13 @@ async function createItem(photos: File[]): Promise<void> {
         body,
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
         throw new Error(data.message ?? `Upload failed (${response.status})`);
     }
 
+    if (typeof data.batchId === 'number') batchId.value = data.batchId;
     itemsCreated.value += 1;
 }
 

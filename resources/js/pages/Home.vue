@@ -15,6 +15,7 @@ const page = usePage<{ flash: { status: string | null } }>();
 const navigation = [
     { label: 'Processed Items', href: '/items' },
     { label: 'Needs Review', href: '/review' },
+    { label: 'Batches', href: '/batches' },
     { label: 'Settings', href: '/settings' },
 ] as const;
 
