@@ -70,12 +70,16 @@ const MANUFACTURERS = [
     'Leaf', 'O-Pee-Chee', 'Pinnacle', 'Skybox', 'Pacific', 'Pro Set',
 ];
 
-// Common subset/insert designations; the field stays free-typed so any
-// oddball insert name can be entered.
+// Card type is a dropdown; a value the AI wrote that is not listed here
+// stays selectable via optionsFor's keep-current rule.
 const CARD_TYPES = [
-    'Base', 'All-Star', 'Rookie Subset', 'Record Breaker', 'Turn Back the Clock',
-    'Reprint', 'Highlights', 'League Leaders', 'Checklist', 'Traded', 'Insert',
+    'Base', 'All-Star', 'Team Leaders', 'League Leaders', 'Record Breaker',
+    'Highlights', 'Turn Back the Clock', 'Reprint', 'Rookie Subset',
+    'Future Stars', 'Checklist', 'Traded', 'Insert',
 ];
+
+// Original Card Year only makes sense on reprint-style cards.
+const REPRINT_TYPES = ['reprint', 'turn back the clock', 'retro'];
 
 // Sports cards effectively start around 1900; coins and stamps can be far
 // older, so the year dropdown applies to sports cards only.
@@ -91,6 +95,7 @@ const teamSuggestions = computed<string[] | null>(() => {
 function optionsFor(field: string): string[] | null {
     const base =
         field === 'sport' ? SPORTS
+        : field === 'card_type' ? CARD_TYPES
         : field === 'rookie_card' || field === 'autograph' ? YES_NO
         : (field === 'year' || field === 'original_year') && form.category === 'sports_card' ? YEARS
         : null;
@@ -104,8 +109,15 @@ const form = useForm({
     ...props.item.values,
 });
 
-// Only the fields belonging to the selected category are shown and saved.
-const visibleFields = computed(() => props.categoryFields[form.category] ?? []);
+// Only the fields belonging to the selected category are shown and saved;
+// what appears also adapts to the card type (original year is only
+// meaningful on reprint-style cards).
+const visibleFields = computed(() => {
+    const fields = props.categoryFields[form.category] ?? [];
+    const cardType = ((form as Record<string, any>).card_type ?? '').toLowerCase();
+    const isReprint = REPRINT_TYPES.includes(cardType);
+    return fields.filter((field) => field !== 'original_year' || isReprint);
+});
 
 function submit(): void {
     form.put(`/items/${props.item.id}/metadata`);
@@ -188,18 +200,6 @@ function rotateImage(imageId: number): void {
                     />
                     <datalist id="team-suggestions">
                         <option v-for="team in teamSuggestions" :key="team" :value="team" />
-                    </datalist>
-                </template>
-                <template v-else-if="field === 'card_type'">
-                    <input
-                        :id="field"
-                        v-model="(form as Record<string, any>)[field]"
-                        type="text"
-                        list="card-type-suggestions"
-                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
-                    />
-                    <datalist id="card-type-suggestions">
-                        <option v-for="cardType in CARD_TYPES" :key="cardType" :value="cardType" />
                     </datalist>
                 </template>
                 <template v-else-if="field === 'manufacturer'">
