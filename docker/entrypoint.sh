@@ -29,10 +29,11 @@ php artisan db:seed --force
 
 # The queue worker runs inside this same container so it shares the photo
 # volume with the web server -- Railway volumes attach to only one service,
-# and a separate worker service cannot see the uploaded images.
+# and a separate worker service cannot see the uploaded images. It runs as
+# www-data so files it creates are readable by the web server.
 (
     while true; do
-        php artisan queue:work --tries=1 --timeout=300 --sleep=3 || true
+        su -s /bin/sh www-data -c 'php artisan queue:work --tries=1 --timeout=300 --sleep=3' || true
         sleep 5
     done
 ) &
