@@ -16,6 +16,7 @@ type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer' | 'ca
 
 const props = defineProps<{
     items: ProcessedItem[];
+    page: { current: number; last: number; total: number };
     sort: string;
     search?: string;
     collection: string;
@@ -52,17 +53,22 @@ function optionLabel(field: FilterField, value: string): string {
     return field === 'category' ? (CATEGORY_LABELS[value] ?? value) : value;
 }
 
+function queryParams(): Record<string, any> {
+    return {
+        q: search.value || undefined,
+        sort: sort.value,
+        collection: collection.value || undefined,
+        ...Object.fromEntries(Object.entries(filters.value).filter(([, value]) => value !== '')),
+    };
+}
+
+// Changing search/sort/filters always restarts at page 1.
 function apply(): void {
-    router.get(
-        '/items',
-        {
-            q: search.value || undefined,
-            sort: sort.value,
-            collection: collection.value || undefined,
-            ...Object.fromEntries(Object.entries(filters.value).filter(([, value]) => value !== '')),
-        },
-        { preserveState: true },
-    );
+    router.get('/items', queryParams(), { preserveState: true });
+}
+
+function goToPage(page: number): void {
+    router.get('/items', { ...queryParams(), page: page > 1 ? page : undefined }, { preserveState: true });
 }
 
 function clearFilters(): void {
@@ -154,6 +160,24 @@ function clearFilters(): void {
                 </div>
                 <span class="text-sm font-semibold text-blue-600">View</span>
             </Link>
+        </div>
+
+        <div v-if="page.last > 1" class="mt-4 flex items-center justify-between">
+            <button
+                :disabled="page.current <= 1"
+                class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow-sm disabled:opacity-40"
+                @click="goToPage(page.current - 1)"
+            >
+                ‹ Prev
+            </button>
+            <p class="text-xs text-gray-500">Page {{ page.current }} of {{ page.last }} · {{ page.total }} item(s)</p>
+            <button
+                :disabled="page.current >= page.last"
+                class="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-blue-600 shadow-sm disabled:opacity-40"
+                @click="goToPage(page.current + 1)"
+            >
+                Next ›
+            </button>
         </div>
     </div>
 </template>

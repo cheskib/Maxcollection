@@ -53,6 +53,30 @@ class ItemPagesTest extends TestCase
                 ->has('items', 1)
                 ->where('items.0.id', $processed->id)
                 ->where('items.0.category', 'Sports Card')
+                ->where('page.current', 1)
+                ->where('page.total', 1)
+            );
+    }
+
+    public function test_processed_items_are_paginated(): void
+    {
+        for ($i = 0; $i < 61; $i++) {
+            $this->processedItem(['player_name' => "Player {$i}"]);
+        }
+
+        $this->actingAs($this->user)
+            ->get('/items')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('items', 60)
+                ->where('page.last', 2)
+                ->where('page.total', 61)
+            );
+
+        $this->actingAs($this->user)
+            ->get('/items?page=2')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('items', 1)
+                ->where('page.current', 2)
             );
     }
 
