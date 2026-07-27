@@ -124,6 +124,10 @@ left; whole numbers 0-45) that is background — hands, table, scanner bed —
 around the item. Trimming those edges should leave just the item with a
 small margin. Be conservative: never cut into the item itself, and use 0
 for every edge when the item already fills the photo or you are unsure.
+
+Also report "roles": for each photograph, in the same order, which side of
+the item it shows: "front", "back", "detail" (a close-up of one area), or
+"unknown" when you cannot tell.
 PROMPT;
     }
 
@@ -171,8 +175,12 @@ PROMPT;
                         'required' => ['top', 'right', 'bottom', 'left'],
                     ],
                 ],
+                'roles' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'string', 'enum' => ['front', 'back', 'detail', 'unknown']],
+                ],
             ],
-            'required' => ['category', 'confidence', 'fields', 'rotations', 'trims'],
+            'required' => ['category', 'confidence', 'fields', 'rotations', 'trims', 'roles'],
         ];
     }
 
@@ -231,7 +239,12 @@ PROMPT;
             ->values()
             ->all();
 
-        return new AiResult($category, $confidence, $fields, $rotations, $trims);
+        $roles = collect((array) ($decoded['roles'] ?? []))
+            ->map(fn ($value) => in_array($value, ['front', 'back', 'detail'], true) ? $value : 'unknown')
+            ->values()
+            ->all();
+
+        return new AiResult($category, $confidence, $fields, $rotations, $trims, $roles);
     }
 
     /**

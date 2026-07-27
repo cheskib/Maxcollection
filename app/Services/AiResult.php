@@ -27,6 +27,8 @@ class AiResult
      *                                   in the order the photos were sent
      * @param array<int, array{top: int, right: int, bottom: int, left: int}> $trims
      *                                   additional edge trims per photo (percent)
+     * @param array<int, string> $roles which side each photo shows
+     *                                  (front|back|detail|unknown)
      */
     public function __construct(
         public readonly string $category,
@@ -34,6 +36,7 @@ class AiResult
         public readonly array $fields,
         public readonly array $rotations = [],
         public readonly array $trims = [],
+        public readonly array $roles = [],
     ) {
     }
 

@@ -30,6 +30,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/capture/bulk', [BulkCaptureController::class, 'create'])->name('capture.bulk');
     Route::post('/capture/bulk/items', [BulkCaptureController::class, 'store'])->name('capture.bulk.store');
     Route::post('/capture/bulk/pdf', [BulkCaptureController::class, 'storePdf'])->name('capture.bulk.pdf');
+    Route::get('/capture/bulk/status', [BulkCaptureController::class, 'status'])->name('capture.bulk.status');
+    Route::post('/capture/bulk/process', [BulkCaptureController::class, 'processBatches'])->name('capture.bulk.process');
+    Route::post('/items/{item}/autograph', [CaptureController::class, 'setAutograph'])->name('items.autograph');
     Route::get('/capture/{item}', [CaptureController::class, 'show'])->whereNumber('item')->name('capture.show');
     Route::post('/capture/images', [CaptureController::class, 'storeImage'])->name('capture.images.store');
     Route::delete('/images/{image}', [CaptureController::class, 'destroyImage'])->name('images.destroy');

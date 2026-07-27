@@ -89,10 +89,19 @@ class ProcessingService
     {
         $this->applyRotations($item, $result);
 
+        // The capture wizard's autograph answer is user-provided; the user
+        // always overrides the AI (PROJECT.md rule 4).
+        $fields = $result->fields;
+        $existingAutograph = $item->metadata?->autograph;
+
+        if ($existingAutograph !== null && array_key_exists('autograph', $fields)) {
+            $fields['autograph'] = $existingAutograph;
+        }
+
         $item->metadata()->updateOrCreate([], [
             'category' => $result->category,
             'confidence' => $result->confidence,
-            ...$result->fields,
+            ...$fields,
         ]);
 
         $threshold = (float) Setting::value('confidence_threshold', '75');
@@ -122,12 +131,20 @@ class ProcessingService
      */
     private function applyRotations(Item $item, AiResult $result): void
     {
-        if ($result->rotations === [] && $result->trims === []) {
+        if ($result->rotations === [] && $result->trims === [] && $result->roles === []) {
             return;
         }
 
         foreach ($item->images()->orderBy('id')->get()->values() as $index => $image) {
             $changes = [];
+
+            // The AI classifies front/back/detail for photos that were not
+            // explicitly labeled in the capture wizard (user labels win).
+            $role = $result->roles[$index] ?? 'unknown';
+
+            if ($image->role === null && $role !== 'unknown') {
+                $changes['role'] = $role;
+            }
 
             $extra = $result->rotations[$index] ?? 0;
 
@@ -153,7 +170,26 @@ class ProcessingService
             }
 
             $image->update($changes);
-            $this->thumbnails->forget($image);
+
+            if (isset($changes['rotation']) || isset($changes['crop_top']) || isset($changes['crop_right']) || isset($changes['crop_bottom']) || isset($changes['crop_left'])) {
+                $this->thumbnails->forget($image);
+            }
         }
+    }
+
+    /**
+     * Queue only the captured items belonging to the given batches.
+     */
+    public function queueBatches(array $batchIds): int
+    {
+        $items = Item::whereIn('batch_id', $batchIds)
+            ->where('status', Item::STATUS_CAPTURED)
+            ->get();
+
+        foreach ($items as $item) {
+            $this->queueItem($item);
+        }
+
+        return $items->count();
     }
 }

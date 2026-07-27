@@ -79,6 +79,10 @@ class ImportPdfJob implements ShouldQueue
                 $created++;
             }
 
+            if ($this->batchId !== null) {
+                \App\Models\Batch::whereKey($this->batchId)->update(['converted_at' => now()]);
+            }
+
             Log::info('PDF import complete', ['pdf' => $this->pdfPath, 'items_created' => $created]);
         } catch (\Throwable $e) {
             Log::error('PDF import failed', ['pdf' => $this->pdfPath, 'exception' => $e]);

@@ -9,6 +9,7 @@ use App\Models\Collection;
 use App\Models\Item;
 use App\Services\CaptureService;
 use App\Services\CollectionService;
+use App\Services\ProcessingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -78,7 +79,60 @@ class BulkCaptureController extends Controller
         ImportPdfJob::dispatch($path, (int) $validated['photos_per_item'], $request->user()->id, $batch->id, $collectionId);
 
         return response()->json([
-            'message' => 'PDF received. Items will appear on the Home screen shortly.',
+            'batchId' => $batch->id,
+            'label' => $batch->displayLabel(),
+            'collectionId' => $collectionId,
+            'message' => 'PDF received — converting into items.',
         ], 202);
+    }
+
+    /**
+     * Live per-batch numbers for the bulk workspace.
+     */
+    public function status(Request $request): JsonResponse
+    {
+        $ids = collect(explode(',', $request->string('ids')->toString()))
+            ->filter(fn ($id) => ctype_digit($id))
+            ->map(fn ($id) => (int) $id)
+            ->take(20)
+            ->all();
+
+        $batches = Batch::whereIn('id', $ids)
+            ->withCount([
+                'items',
+                'items as captured_count' => fn ($query) => $query->where('status', Item::STATUS_CAPTURED),
+                'items as in_progress_count' => fn ($query) => $query->whereIn('status', [Item::STATUS_QUEUED, Item::STATUS_PROCESSING]),
+                'items as processed_count' => fn ($query) => $query->where('status', Item::STATUS_PROCESSED),
+                'items as needs_review_count' => fn ($query) => $query->where('status', Item::STATUS_NEEDS_REVIEW),
+            ])
+            ->get();
+
+        return response()->json([
+            'batches' => $batches->map(fn (Batch $batch) => [
+                'id' => $batch->id,
+                'label' => $batch->displayLabel(),
+                'converting' => $batch->source === 'pdf' && $batch->converted_at === null,
+                'itemCount' => $batch->items_count,
+                'captured' => $batch->captured_count,
+                'inProgress' => $batch->in_progress_count,
+                'processed' => $batch->processed_count,
+                'needsReview' => $batch->needs_review_count,
+            ])->all(),
+        ]);
+    }
+
+    /**
+     * Process only the given batches' captured items.
+     */
+    public function processBatches(Request $request, ProcessingService $processing): JsonResponse
+    {
+        $validated = $request->validate([
+            'batch_ids' => ['required', 'array', 'min:1', 'max:20'],
+            'batch_ids.*' => ['integer', 'exists:batches,id'],
+        ]);
+
+        $count = $processing->queueBatches($validated['batch_ids']);
+
+        return response()->json(['queued' => $count]);
     }
 }

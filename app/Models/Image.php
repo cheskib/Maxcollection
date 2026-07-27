@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Image extends Model
 {
     protected $fillable = [
-        'item_id', 'path', 'original_filename', 'mime_type', 'size_bytes',
+        'item_id', 'path', 'original_filename', 'mime_type', 'size_bytes', 'role',
         'rotation', 'crop_top', 'crop_right', 'crop_bottom', 'crop_left',
     ];
 
