@@ -51,6 +51,12 @@ class AiResult
             return 'low_confidence';
         }
 
+        // A checklist card legitimately has no player name, so the primary
+        // field requirement does not apply to it.
+        if ($this->category === 'sports_card' && strtolower((string) ($this->fields['card_type'] ?? '')) === 'checklist') {
+            return null;
+        }
+
         $primary = self::PRIMARY_FIELDS[$this->category] ?? [];
         $hasPrimary = collect($primary)->contains(fn (string $field) => filled($this->fields[$field] ?? null));
 

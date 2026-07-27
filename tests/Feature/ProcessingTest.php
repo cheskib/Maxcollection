@@ -420,6 +420,25 @@ class ProcessingTest extends TestCase
         $this->assertSame('1987 Topps All-Star Don Mattingly', $metadata->primaryTitle());
     }
 
+    public function test_checklist_cards_do_not_need_a_player_name(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 92,
+                'fields' => ['card_type' => 'Checklist', 'manufacturer' => 'Topps', 'year' => '1987', 'sport' => 'Baseball'],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        // No player name, but a checklist legitimately has none.
+        $item->refresh();
+        $this->assertSame(Item::STATUS_PROCESSED, $item->status);
+        $this->assertNull($item->review_reason);
+    }
+
     public function test_sport_is_capitalized_when_saved(): void
     {
         Http::fake([
