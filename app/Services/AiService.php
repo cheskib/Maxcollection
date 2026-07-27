@@ -56,6 +56,58 @@ class AiService
     }
 
     /**
+     * Write a short design history for a card set (Sets catalog). Text-only
+     * call on the standard model; returns null when unavailable so set
+     * creation never blocks item processing.
+     */
+    public function describeSet(\App\Models\CardSet $set): ?string
+    {
+        $apiKey = config('services.openai.key');
+
+        if (blank($apiKey)) {
+            return null;
+        }
+
+        $prompt = sprintf(
+            'Write a short design history (4-6 sentences) of the "%s" sports card set for a collector\'s catalog. '
+            .'Cover: what the card fronts and backs look like (borders, colors, layout), notable subsets or inserts '
+            .'(All-Star, Record Breaker, rookies), a few key cards or rookies, and how to recognize a card from this set at a glance. '
+            .'Only state facts you are confident about; if you are unsure about this exact set, describe what is reliably known '
+            .'for this manufacturer and year instead, without inventing specifics.',
+            $set->displayName(),
+        );
+
+        $response = Http::withToken($apiKey)
+            ->timeout((int) config('services.openai.timeout'))
+            ->post(rtrim(config('services.openai.base_url'), '/').'/responses', [
+                'model' => config('services.openai.model'),
+                'input' => [['role' => 'user', 'content' => [['type' => 'input_text', 'text' => $prompt]]]],
+                'text' => [
+                    'format' => [
+                        'type' => 'json_schema',
+                        'name' => 'set_description',
+                        'strict' => true,
+                        'schema' => [
+                            'type' => 'object',
+                            'additionalProperties' => false,
+                            'properties' => ['description' => ['type' => 'string']],
+                            'required' => ['description'],
+                        ],
+                    ],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        $decoded = json_decode($this->outputText($response->json()) ?? '', true);
+        $description = is_array($decoded) ? trim((string) ($decoded['description'] ?? '')) : '';
+
+        return $description === '' ? null : $description;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function buildPayload(Item $item, string $model, string $source): array

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Jobs\DescribeSetJob;
 use App\Jobs\ProcessItemJob;
 use App\Models\Batch;
+use App\Models\CardSet;
 use App\Models\Item;
 use App\Models\ProcessingJob;
 use App\Models\Setting;
@@ -113,6 +115,8 @@ class ProcessingService
             ...$fields,
         ]);
 
+        $this->registerCardSet($item);
+
         $threshold = (float) Setting::value('confidence_threshold', '75');
         $reason = $result->reviewReason($threshold);
 
@@ -202,6 +206,32 @@ class ProcessingService
             if ($visualChange) {
                 $this->thumbnails->forget($image);
             }
+        }
+    }
+
+    /**
+     * The Sets catalog builds itself: the first card seen from a
+     * sport/manufacturer/year creates the set profile, and a one-time
+     * background job writes its design history.
+     */
+    private function registerCardSet(Item $item): void
+    {
+        $metadata = $item->metadata()->first();
+
+        if ($metadata === null || $metadata->category !== 'sports_card'
+            || blank($metadata->manufacturer) || blank($metadata->year)) {
+            return;
+        }
+
+        $set = CardSet::firstOrCreate([
+            'sport' => $metadata->sport ?? '',
+            'manufacturer' => $metadata->manufacturer,
+            'year' => $metadata->year,
+            'set_name' => $metadata->set_name ?? '',
+        ]);
+
+        if ($set->description === null) {
+            DescribeSetJob::dispatch($set->id);
         }
     }
 
