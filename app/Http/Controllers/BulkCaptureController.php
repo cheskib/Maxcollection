@@ -44,7 +44,7 @@ class BulkCaptureController extends Controller
     public function storePdf(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'pdf' => ['required', 'file', 'mimetypes:application/pdf', 'max:51200'],
+            'pdf' => ['required', 'file', 'mimetypes:application/pdf', 'max:204800'],
             'photos_per_item' => ['required', 'integer', 'in:1,2'],
         ]);
 
