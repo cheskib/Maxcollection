@@ -5,15 +5,32 @@ namespace App\Http\Controllers;
 use App\Models\Batch;
 use App\Models\Collection;
 use App\Models\Item;
+use App\Services\AiService;
 use App\Services\CollectionService;
+use App\Services\ProcessingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class BatchController extends Controller
 {
+    /**
+     * Re-run the AI over every item in the batch.
+     */
+    public function reprocess(Request $request, Batch $batch, ProcessingService $service): RedirectResponse
+    {
+        $validated = $request->validate([
+            'source' => ['nullable', Rule::in([AiService::SOURCE_CLEANED, AiService::SOURCE_ORIGINAL])],
+        ]);
+
+        $count = $service->reprocessBatch($batch, $validated['source'] ?? AiService::SOURCE_CLEANED);
+
+        return back()->with('status', "{$count} item(s) queued for reprocessing.");
+    }
+
     /**
      * Move every item in the batch into a collection at once.
      */
@@ -101,6 +118,9 @@ class BatchController extends Controller
                 'id' => $batch->id,
                 'label' => $batch->displayLabel(),
                 'uploadedAt' => $batch->created_at->format('M j, Y g:i A'),
+                'pendingCount' => $batch->items()->whereIn('status', [
+                    Item::STATUS_CAPTURED, Item::STATUS_QUEUED, Item::STATUS_PROCESSING,
+                ])->count(),
             ],
             'items' => $items->all(),
             'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),

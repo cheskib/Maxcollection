@@ -294,6 +294,36 @@ class ProcessingTest extends TestCase
         $this->assertSame(0.0, $item->images()->first()->tilt);
     }
 
+    public function test_a_whole_batch_can_be_reprocessed(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 92,
+                'fields' => ['player_name' => 'Batch Player'],
+            ])),
+        ]);
+
+        $batch = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'bulk']);
+        $processed = $this->captureItem();
+        $processed->update(['batch_id' => $batch->id, 'status' => Item::STATUS_PROCESSED]);
+        $captured = $this->captureItem();
+        $captured->update(['batch_id' => $batch->id]);
+        $outside = $this->captureItem();
+
+        $this->actingAs($this->user)
+            ->post("/batches/{$batch->id}/reprocess", ['source' => 'cleaned'])
+            ->assertRedirect();
+
+        // Both batch members were re-run regardless of status; the item
+        // outside the batch was left alone.
+        $this->assertSame(Item::STATUS_PROCESSED, $processed->fresh()->status);
+        $this->assertSame(Item::STATUS_PROCESSED, $captured->fresh()->status);
+        $this->assertSame(1, $processed->processingJobs()->count());
+        $this->assertSame(1, $captured->processingJobs()->count());
+        $this->assertSame(0, $outside->processingJobs()->count());
+    }
+
     public function test_ai_cleanup_can_be_undone(): void
     {
         Http::fake([
