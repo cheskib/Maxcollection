@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\ProcessItemJob;
+use App\Models\Batch;
 use App\Models\Item;
 use App\Models\ProcessingJob;
 use App\Models\Setting;
@@ -222,6 +223,23 @@ class ProcessingService
                 $this->thumbnails->forget($image);
             }
         }
+    }
+
+    /**
+     * Re-run the AI over every item in a batch (whatever its status),
+     * skipping items already waiting in the queue.
+     */
+    public function reprocessBatch(Batch $batch, string $source = AiService::SOURCE_CLEANED): int
+    {
+        $items = $batch->items()
+            ->whereNotIn('status', [Item::STATUS_QUEUED, Item::STATUS_PROCESSING])
+            ->get();
+
+        foreach ($items as $item) {
+            $this->queueItem($item, AiService::TIER_STANDARD, $source);
+        }
+
+        return $items->count();
     }
 
     /**
