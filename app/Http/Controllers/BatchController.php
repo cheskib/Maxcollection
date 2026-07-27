@@ -3,13 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\Batch;
+use App\Models\Collection;
 use App\Models\Item;
+use App\Services\CollectionService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class BatchController extends Controller
 {
+    /**
+     * Move every item in the batch into a collection at once.
+     */
+    public function assignCollection(Request $request, Batch $batch, CollectionService $collections): RedirectResponse
+    {
+        $request->validate(CollectionService::rules());
+
+        $batch->items()->update(['collection_id' => $collections->resolveFromRequest($request, $request->user())]);
+
+        return back()->with('status', 'Batch moved.');
+    }
+
     public function index(): Response
     {
         $batches = Batch::withCount([
@@ -87,6 +103,7 @@ class BatchController extends Controller
                 'uploadedAt' => $batch->created_at->format('M j, Y g:i A'),
             ],
             'items' => $items->all(),
+            'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
         ]);
     }
 }

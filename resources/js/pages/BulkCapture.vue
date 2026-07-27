@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
+import { collectionPayload, loadLastCollection, saveLastCollection } from '../composables/lastCollection';
+
+const props = defineProps<{
+    collections: { id: number; name: string }[];
+}>();
+
+const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
+
+onMounted(() => {
+    collectionChoice.value = loadLastCollection(props.collections);
+});
 
 const photosPerItem = ref<1 | 2>(2);
 const pending = ref<File[]>([]);
@@ -29,6 +41,7 @@ async function createItem(photos: File[]): Promise<void> {
     const body = new FormData();
     photos.forEach((photo) => body.append('photos[]', photo));
     if (batchId.value !== null) body.append('batch_id', String(batchId.value));
+    Object.entries(collectionPayload(collectionChoice.value)).forEach(([key, value]) => body.append(key, value));
 
     const response = await fetch('/capture/bulk/items', {
         method: 'POST',
@@ -44,6 +57,10 @@ async function createItem(photos: File[]): Promise<void> {
     }
 
     if (typeof data.batchId === 'number') batchId.value = data.batchId;
+    if (typeof data.collectionId === 'number') {
+        collectionChoice.value = { collectionId: data.collectionId, newName: '' };
+        saveLastCollection(data.collectionId);
+    }
     itemsCreated.value += 1;
 }
 
@@ -88,6 +105,10 @@ async function onPdf(event: Event): Promise<void> {
         const body = new FormData();
         body.append('pdf', pdf);
         body.append('photos_per_item', String(photosPerItem.value));
+        Object.entries(collectionPayload(collectionChoice.value)).forEach(([key, value]) => body.append(key, value));
+        if (typeof collectionChoice.value.collectionId === 'number') {
+            saveLastCollection(collectionChoice.value.collectionId);
+        }
 
         const response = await fetch('/capture/bulk/pdf', {
             method: 'POST',
@@ -132,7 +153,14 @@ async function finishPartial(): Promise<void> {
             Keep shooting — every {{ photosPerItem === 2 ? 'two photos become' : 'photo becomes' }} a new item automatically.
         </p>
 
-        <div class="mt-5 rounded-xl bg-white p-4 shadow-sm">
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <p class="text-sm font-medium text-gray-700">Collection</p>
+            <div class="mt-2">
+                <CollectionPicker v-model="collectionChoice" :collections="collections" />
+            </div>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
             <p class="text-sm font-medium text-gray-700">Photos per item</p>
             <div class="mt-2 flex gap-2">
                 <button

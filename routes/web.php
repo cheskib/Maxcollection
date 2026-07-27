@@ -5,6 +5,7 @@ use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\BulkCaptureController;
 use App\Http\Controllers\CaptureController;
+use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\EditItemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImageController;
@@ -41,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/items', [ProcessedItemsController::class, 'index'])->name('items.index');
     Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
     Route::delete('/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
+    Route::put('/items/{item}/collection', [CollectionController::class, 'assignItem'])->name('items.collection');
     Route::get('/items/{item}/edit', [EditItemController::class, 'edit'])->name('items.edit');
     Route::put('/items/{item}/metadata', [EditItemController::class, 'update'])->name('items.metadata.update');
     Route::post('/items/{item}/reprocess', [ReprocessController::class, 'store'])->name('items.reprocess');
@@ -51,6 +53,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/batches', [BatchController::class, 'index'])->name('batches.index');
     Route::get('/batches/{batch}', [BatchController::class, 'show'])->name('batches.show');
+    Route::post('/batches/{batch}/collection', [BatchController::class, 'assignCollection'])->name('batches.collection');
+
+    Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
+    Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 
     Route::get('/settings', function () {
         return Inertia::render('ComingSoon');
