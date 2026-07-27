@@ -113,6 +113,30 @@ class CaptureTest extends TestCase
         $this->actingAs($this->user)->get("/images/{$image->id}")->assertOk();
     }
 
+    public function test_an_image_can_be_rotated_in_quarter_turns(): void
+    {
+        $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('r.jpg')]);
+        $image = Image::first();
+
+        foreach ([90, 180, 270, 0] as $expected) {
+            $this->actingAs($this->user)->post("/images/{$image->id}/rotate");
+            $this->assertSame($expected, $image->fresh()->rotation);
+        }
+    }
+
+    public function test_rotated_image_still_streams(): void
+    {
+        $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('s.jpg')]);
+        $image = Image::first();
+
+        $this->actingAs($this->user)->post("/images/{$image->id}/rotate");
+
+        $this->actingAs($this->user)
+            ->get("/images/{$image->id}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
+    }
+
     public function test_capture_requires_authentication(): void
     {
         $this->get('/capture')->assertRedirect('/login');
