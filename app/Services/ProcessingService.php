@@ -181,10 +181,25 @@ class ProcessingService
 
             $trim = $result->trims[$index] ?? null;
 
-            if ($source === AiService::SOURCE_ORIGINAL && $trim !== null) {
-                // Reprocessing from originals redoes the adjustments from
-                // scratch: the AI's trim describes the untouched photo and
-                // replaces whatever trim was there before.
+            if ($item->batch_id !== null) {
+                // Batch items are never AI-trimmed (owner decision): the
+                // scanner frames them. Reprocessing from originals restores
+                // that framing by clearing any trim and tilt.
+                if ($source === AiService::SOURCE_ORIGINAL) {
+                    foreach (['top', 'right', 'bottom', 'left'] as $edge) {
+                        if ($image->{"crop_{$edge}"} !== 0) {
+                            $changes["crop_{$edge}"] = 0;
+                        }
+                    }
+
+                    if ($image->tilt !== 0.0) {
+                        $changes['tilt'] = 0.0;
+                    }
+                }
+            } elseif ($source === AiService::SOURCE_ORIGINAL && $trim !== null) {
+                // Reprocessing a single capture from originals redoes the
+                // adjustments from scratch: the AI's trim describes the
+                // untouched photo and replaces whatever was there before.
                 foreach (['top', 'right', 'bottom', 'left'] as $edge) {
                     $value = $trim[$edge] ?? 0;
 
@@ -192,13 +207,10 @@ class ProcessingService
                         $changes["crop_{$edge}"] = $value;
                     }
                 }
-            } elseif ($trim !== null && ! $image->hasCrop() && $item->batch_id === null) {
-                // Automatic trims are for hand-held single captures only;
-                // scanner and PDF batches arrive already framed (owner
-                // decision — batch items are only trimmed when the user
-                // explicitly reprocesses from originals). They also apply
-                // just to untrimmed photos: they would stack (the AI sees
-                // the already-trimmed rendering) and cut into the item.
+            } elseif ($trim !== null && ! $image->hasCrop()) {
+                // Automatic trims apply only to untrimmed single-capture
+                // photos: they would stack (the AI sees the already-trimmed
+                // rendering) and each pass would cut into the item.
                 foreach (['top', 'right', 'bottom', 'left'] as $edge) {
                     $value = min(45, $trim[$edge]);
 

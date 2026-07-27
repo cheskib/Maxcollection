@@ -300,26 +300,31 @@ class ProcessingTest extends TestCase
         ]);
     }
 
-    public function test_batch_reprocess_from_originals_still_trims_on_request(): void
+    public function test_batch_reprocess_from_originals_restores_scanner_framing(): void
     {
         Http::fake([
             'api.openai.com/*' => Http::response($this->openAiResponse([
                 'category' => 'sports_card',
                 'confidence' => 95,
-                'fields' => ['player_name' => 'Requested Player'],
-                'trims' => [['top' => 5, 'right' => 5, 'bottom' => 5, 'left' => 5]],
+                'fields' => ['player_name' => 'Restored Player'],
+                'trims' => [['top' => 15, 'right' => 15, 'bottom' => 15, 'left' => 15]],
             ])),
         ]);
 
         $item = $this->captureItem();
         $batch = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'bulk']);
         $item->update(['batch_id' => $batch->id]);
+        $item->images()->first()->update(['crop_top' => 20, 'crop_left' => 10, 'tilt' => 3.0]);
 
         $this->actingAs($this->user)->post("/batches/{$batch->id}/reprocess", ['source' => 'original']);
 
-        // Reprocessing from originals is an explicit request to redo the
-        // cleanup, so trims apply even to batch items.
-        $this->assertSame(5, $item->images()->first()->crop_top);
+        // Batch items are never AI-trimmed; a fresh start clears any old
+        // trim and tilt so the scanner's own framing comes back.
+        $image = $item->images()->first();
+        $this->assertSame([0, 0, 0, 0], [
+            $image->crop_top, $image->crop_right, $image->crop_bottom, $image->crop_left,
+        ]);
+        $this->assertSame(0.0, $image->tilt);
     }
 
     public function test_a_whole_batch_can_be_reprocessed(): void
