@@ -17,14 +17,14 @@ class Metadata extends Model
      */
     public const CATEGORY_FIELDS = [
         // Ordered as displayed: card type first (right below the category
-        // it refines), then the always-filled fields, rarely-filled misc
-        // data grouped at the bottom so blanks never sit between rows.
+        // it refines), the identifying fields through condition notes,
+        // then the misc data at the very bottom.
         'sports_card' => [
             'card_type',
             'player_name', 'team', 'sport', 'year', 'manufacturer',
-            'card_number', 'rookie_card', 'autograph',
-            'set_name', 'original_year', 'parallel', 'serial_number',
-            'condition_notes',
+            'card_number', 'condition_notes',
+            'rookie_card', 'autograph', 'set_name', 'original_year',
+            'parallel', 'serial_number',
         ],
         'comic_book' => ['title', 'issue_number', 'publisher', 'year', 'variant', 'condition_notes'],
         'coin' => ['country', 'denomination', 'year', 'mint_mark', 'composition', 'condition_notes'],
