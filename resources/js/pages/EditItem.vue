@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
     item: {
@@ -104,6 +104,8 @@ function optionsFor(field: string): string[] | null {
     return current && !base.includes(current) ? [current, ...base] : base;
 }
 
+const page = usePage<{ flash: { status: string | null } }>();
+
 const form = useForm({
     category: props.item.category,
     ...props.item.values,
@@ -119,6 +121,19 @@ const visibleFields = computed(() => {
     return fields.filter((field) => field !== 'original_year' || isReprint);
 });
 
+// Compact bottom section: rookie + autograph share a row, and the three
+// rarely-used fields hide behind an "Add …" link unless already filled.
+const PAIR_FIELDS = ['rookie_card', 'autograph'];
+const MISC_FIELDS = ['set_name', 'parallel', 'serial_number'];
+
+const mainFields = computed(() => visibleFields.value.filter((field) => !PAIR_FIELDS.includes(field) && !MISC_FIELDS.includes(field)));
+const pairFields = computed(() => visibleFields.value.filter((field) => PAIR_FIELDS.includes(field)));
+const miscFields = computed(() => visibleFields.value.filter((field) => MISC_FIELDS.includes(field)));
+
+const showMisc = ref(
+    Boolean(props.item.values.set_name || props.item.values.parallel || props.item.values.serial_number),
+);
+
 function submit(): void {
     form.put(`/items/${props.item.id}/metadata`);
 }
@@ -133,8 +148,15 @@ function rotateImage(imageId: number): void {
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
         <div class="flex items-center justify-between">
             <h1 class="min-w-0 truncate text-xl font-bold text-gray-900">Edit Item</h1>
-            <Link :href="`/items/${item.id}`" class="ml-3 shrink-0 text-sm font-semibold text-blue-600">Cancel</Link>
+            <div class="ml-3 flex shrink-0 gap-4">
+                <Link href="/" class="text-sm font-semibold text-blue-600">Home</Link>
+                <Link :href="`/items/${item.id}`" class="text-sm font-semibold text-blue-600">Back</Link>
+            </div>
         </div>
+
+        <p v-if="page.props.flash.status" class="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+            ✓ {{ page.props.flash.status }}
+        </p>
 
 <!-- The photographs stay pinned while the fields scroll underneath:
      corrections are made by reading the item itself. Tapping opens the
@@ -175,7 +197,7 @@ function rotateImage(imageId: number): void {
                 </select>
             </div>
 
-            <div v-for="field in visibleFields" :key="field">
+            <div v-for="field in mainFields" :key="field">
                 <label :for="field" class="block text-sm font-medium text-gray-700">{{ fieldLabels[field] }}</label>
                 <textarea
                     v-if="field === 'condition_notes'"
@@ -228,6 +250,42 @@ function rotateImage(imageId: number): void {
                     {{ (form.errors as Record<string, string>)[field] }}
                 </p>
             </div>
+
+            <div v-if="pairFields.length" class="grid grid-cols-2 gap-3">
+                <div v-for="field in pairFields" :key="field">
+                    <label :for="field" class="block text-sm font-medium text-gray-700">{{ fieldLabels[field] }}</label>
+                    <select
+                        :id="field"
+                        v-model="(form as Record<string, any>)[field]"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    >
+                        <option :value="null">—</option>
+                        <option v-for="option in optionsFor(field)" :key="option" :value="option">{{ option }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <template v-if="miscFields.length">
+                <button
+                    v-if="!showMisc"
+                    type="button"
+                    class="text-left text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    @click="showMisc = true"
+                >
+                    ＋ Add Set Name, Parallel, and Serial #
+                </button>
+                <div v-else class="flex flex-col gap-4">
+                    <div v-for="field in miscFields" :key="field">
+                        <label :for="field" class="block text-sm font-medium text-gray-700">{{ fieldLabels[field] }}</label>
+                        <input
+                            :id="field"
+                            v-model="(form as Record<string, any>)[field]"
+                            type="text"
+                            class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                        />
+                    </div>
+                </div>
+            </template>
 
             <button
                 type="submit"

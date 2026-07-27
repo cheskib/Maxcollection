@@ -43,8 +43,10 @@ class EditItemController extends Controller
             $request->safe()->except('category'),
         );
 
+        // Stay on the edit screen so the confirmation is seen right where
+        // Save was pressed.
         return redirect()
-            ->route('items.show', $item)
+            ->route('items.edit', $item)
             ->with('status', 'Changes saved.');
     }
 }
