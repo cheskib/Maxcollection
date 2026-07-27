@@ -16,12 +16,13 @@ class Metadata extends Model
      * @var array<string, array<int, string>>
      */
     public const CATEGORY_FIELDS = [
-        // Ordered as displayed: fields that almost always have values
-        // first, rarely-filled misc data grouped at the bottom so blanks
-        // never sit between filled rows.
+        // Ordered as displayed: card type first (right below the category
+        // it refines), then the always-filled fields, rarely-filled misc
+        // data grouped at the bottom so blanks never sit between rows.
         'sports_card' => [
+            'card_type',
             'player_name', 'team', 'sport', 'year', 'manufacturer',
-            'card_type', 'card_number', 'rookie_card', 'autograph',
+            'card_number', 'rookie_card', 'autograph',
             'set_name', 'original_year', 'parallel', 'serial_number',
             'condition_notes',
         ],
