@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class ImageRenderService
 {
-    public function render(Image $image, ?int $maxEdge = null, bool $applyCrop = true, int $quality = 85): ?string
+    public function render(Image $image, ?int $maxEdge = null, bool $applyCrop = true, int $quality = 85, bool $applyRotation = true): ?string
     {
         $binary = Storage::disk('local')->get($image->path);
 
@@ -27,7 +27,7 @@ class ImageRenderService
             return null;
         }
 
-        if ($image->rotation) {
+        if ($applyRotation && $image->rotation) {
             $rotated = imagerotate($source, -$image->rotation, 0);
 
             if ($rotated !== false) {

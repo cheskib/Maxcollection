@@ -23,6 +23,12 @@ class ImageController extends Controller
     {
         abort_unless(Storage::disk('local')->exists($image->path), 404);
 
+        // ?original=1 serves the untouched upload (PROJECT.md 14: originals
+        // shall always be viewable).
+        if ($request->boolean('original')) {
+            return response()->file(Storage::disk('local')->path($image->path));
+        }
+
         $applyCrop = ! $request->boolean('uncropped');
 
         if ($image->rotation === 0 && ! ($applyCrop && $image->hasCrop())) {
