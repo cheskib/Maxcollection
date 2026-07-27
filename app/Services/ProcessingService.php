@@ -133,14 +133,16 @@ class ProcessingService
     }
 
     /**
-     * Auto-orient and auto-trim photographs. When the AI saw the cleaned
-     * renderings its answers are additional adjustments on top; when it saw
-     * the original photos its rotation is absolute. The user's rotate and
-     * trim controls remain the final authority afterwards.
+     * Auto-orient photographs and fill in photo roles. Framing is the
+     * photographer's responsibility (owner decision): the AI never trims
+     * or tilts; only quarter-turn rotation is corrected. When the AI saw
+     * the cleaned renderings its rotation adds on top; when it saw the
+     * original photos it is absolute, and any manual trim or tilt is
+     * cleared so the photo returns to its original framing.
      */
     private function applyRotations(Item $item, AiResult $result, string $source = AiService::SOURCE_CLEANED): void
     {
-        if ($result->rotations === [] && $result->tilts === [] && $result->trims === [] && $result->roles === []) {
+        if ($result->rotations === [] && $result->roles === [] && $source !== AiService::SOURCE_ORIGINAL) {
             return;
         }
 
@@ -165,46 +167,17 @@ class ProcessingService
                 $changes['rotation'] = $rotation;
             }
 
-            // Fine straightening is only for crooked hand-held photos:
-            // single captures. Scanner and PDF batches come in straight.
-            if ($item->batch_id === null) {
-                $reportedTilt = $result->tilts[$index] ?? 0.0;
-
-                $tilt = $source === AiService::SOURCE_ORIGINAL
-                    ? $reportedTilt
-                    : max(-45.0, min(45.0, $image->tilt + $reportedTilt));
-
-                if ($tilt !== $image->tilt && ($source === AiService::SOURCE_ORIGINAL || $reportedTilt !== 0.0)) {
-                    $changes['tilt'] = $tilt;
-                }
-            }
-
-            $trim = $result->trims[$index] ?? null;
-
-            if ($source === AiService::SOURCE_ORIGINAL && $trim !== null) {
-                // Reprocessing from originals redoes the adjustments from
-                // scratch: the AI's trim describes the untouched photo and
-                // replaces whatever trim was there before.
+            // Reprocessing from originals restores the photo's original
+            // framing: any manual trim or leftover tilt is cleared.
+            if ($source === AiService::SOURCE_ORIGINAL) {
                 foreach (['top', 'right', 'bottom', 'left'] as $edge) {
-                    $value = $trim[$edge] ?? 0;
-
-                    if ($value !== $image->{"crop_{$edge}"}) {
-                        $changes["crop_{$edge}"] = $value;
+                    if ($image->{"crop_{$edge}"} !== 0) {
+                        $changes["crop_{$edge}"] = 0;
                     }
                 }
-            } elseif ($trim !== null && ! $image->hasCrop() && $item->batch_id === null) {
-                // Automatic trims are for hand-held single captures only;
-                // scanner and PDF batches arrive already framed (owner
-                // decision — batch items are only trimmed when the user
-                // explicitly reprocesses from originals). They also apply
-                // just to untrimmed photos: they would stack (the AI sees
-                // the already-trimmed rendering) and cut into the item.
-                foreach (['top', 'right', 'bottom', 'left'] as $edge) {
-                    $value = min(45, $trim[$edge]);
 
-                    if ($value !== $image->{"crop_{$edge}"}) {
-                        $changes["crop_{$edge}"] = $value;
-                    }
+                if ($image->tilt !== 0.0) {
+                    $changes['tilt'] = 0.0;
                 }
             }
 
