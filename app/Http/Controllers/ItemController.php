@@ -27,14 +27,18 @@ class ItemController extends Controller
         $metadata = $item->metadata;
         $lastJob = $item->processingJobs()->latest('id')->first();
 
+        // Only the values that were actually pulled or entered; blanks are
+        // noise here (the Edit screen still offers every field).
         $fields = [];
         if ($metadata !== null && isset(Metadata::CATEGORY_FIELDS[$metadata->category])) {
             foreach (Metadata::CATEGORY_FIELDS[$metadata->category] as $field) {
-                $fields[] = [
-                    'name' => $field,
-                    'label' => Metadata::FIELD_LABELS[$field],
-                    'value' => $metadata->{$field},
-                ];
+                if (filled($metadata->{$field})) {
+                    $fields[] = [
+                        'name' => $field,
+                        'label' => Metadata::FIELD_LABELS[$field],
+                        'value' => $metadata->{$field},
+                    ];
+                }
             }
         }
 
@@ -49,7 +53,7 @@ class ItemController extends Controller
                 'category' => $metadata?->categoryLabel() ?? 'Not processed yet',
                 'confidence' => $metadata?->confidence,
                 'processedAt' => $item->processed_at?->format('M j, Y g:i A'),
-                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag()])->all(),
+                'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag(), 'adjusted' => $image->versionTag() !== '0-0-0-0-0'])->all(),
                 'fields' => $fields,
                 'processing' => $lastJob === null ? null : [
                     'status' => $lastJob->status,

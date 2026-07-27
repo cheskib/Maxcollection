@@ -157,6 +157,19 @@ class CaptureTest extends TestCase
         $this->actingAs($this->user)->get("/images/{$image->id}/trim")->assertOk();
     }
 
+    public function test_the_untouched_original_stays_viewable_after_adjustments(): void
+    {
+        $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('o.jpg')]);
+        $image = Image::first();
+        $image->update(['rotation' => 180, 'crop_top' => 10]);
+
+        $this->actingAs($this->user)->get("/images/{$image->id}?original=1")->assertOk();
+        $this->actingAs($this->user)
+            ->get("/thumbnails/{$image->id}?original=1")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
+    }
+
     public function test_trim_values_are_validated(): void
     {
         $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('v.jpg')]);

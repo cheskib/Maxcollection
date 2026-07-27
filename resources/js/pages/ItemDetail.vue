@@ -26,7 +26,7 @@ const props = defineProps<{
         category: string;
         confidence: number | null;
         processedAt: string | null;
-        images: { id: number; original_filename: string; version: string }[];
+        images: { id: number; original_filename: string; version: string; adjusted: boolean }[];
         fields: Field[];
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
@@ -113,26 +113,63 @@ function back(): void {
             Needs review: {{ item.reviewReason }}
         </p>
 
-<!-- object-contain: the full photograph is always visible, never cropped -->
-        <div class="mt-4 grid grid-cols-2 gap-3">
-            <div v-for="image in item.images" :key="image.id" class="relative">
-                <a :href="`/images/${image.id}`" target="_blank">
-                    <img :src="`/thumbnails/${image.id}?v=${image.version}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
-                </a>
-                <button
-                    class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
-                    title="Rotate a quarter turn"
-                    @click="rotate(image.id)"
-                >
-                    ↻
-                </button>
-                <Link
-                    :href="`/images/${image.id}/trim`"
-                    class="absolute left-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
-                    title="Trim edges"
-                >
-                    ✂
-                </Link>
+<!-- Adjusted photos show original vs cleaned side by side; the full
+     photograph is always visible, never cropped in display -->
+        <div class="mt-4 flex flex-col gap-3">
+            <div v-for="image in item.images" :key="image.id">
+                <div v-if="image.adjusted" class="grid grid-cols-2 gap-2">
+                    <div>
+                        <a :href="`/images/${image.id}?original=1`" target="_blank">
+                            <img
+                                :src="`/thumbnails/${image.id}?original=1&v=${image.version}`"
+                                :alt="`${image.original_filename} (original)`"
+                                class="w-full rounded-xl bg-gray-100 object-contain shadow-sm"
+                            />
+                        </a>
+                        <p class="mt-1 text-center text-xs text-gray-400">Original</p>
+                    </div>
+                    <div>
+                        <div class="relative">
+                            <a :href="`/images/${image.id}`" target="_blank">
+                                <img :src="`/thumbnails/${image.id}?v=${image.version}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
+                            </a>
+                            <button
+                                class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                                title="Rotate a quarter turn"
+                                @click="rotate(image.id)"
+                            >
+                                ↻
+                            </button>
+                            <Link
+                                :href="`/images/${image.id}/trim`"
+                                class="absolute left-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                                title="Trim edges"
+                            >
+                                ✂
+                            </Link>
+                        </div>
+                        <p class="mt-1 text-center text-xs text-gray-400">Cleaned</p>
+                    </div>
+                </div>
+                <div v-else class="relative">
+                    <a :href="`/images/${image.id}`" target="_blank">
+                        <img :src="`/thumbnails/${image.id}?v=${image.version}`" :alt="image.original_filename" class="w-full rounded-xl bg-gray-100 object-contain shadow-sm" />
+                    </a>
+                    <button
+                        class="absolute right-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                        title="Rotate a quarter turn"
+                        @click="rotate(image.id)"
+                    >
+                        ↻
+                    </button>
+                    <Link
+                        :href="`/images/${image.id}/trim`"
+                        class="absolute left-2 top-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                        title="Trim edges"
+                    >
+                        ✂
+                    </Link>
+                </div>
             </div>
         </div>
 
