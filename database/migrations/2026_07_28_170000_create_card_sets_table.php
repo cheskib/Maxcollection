@@ -13,10 +13,13 @@ return new class extends Migration
         Schema::create('card_sets', function (Blueprint $table) {
             $table->id();
             // Empty strings (not nulls) so the unique key always applies.
-            $table->string('sport')->default('');
-            $table->string('manufacturer');
-            $table->string('year');
-            $table->string('set_name')->default('');
+            // Lengths kept short so the four-column unique index stays
+            // under MySQL's 3072-byte key limit (full-length strings
+            // exceed it and fail the migration in production).
+            $table->string('sport', 64)->default('');
+            $table->string('manufacturer', 128);
+            $table->string('year', 16);
+            $table->string('set_name', 128)->default('');
             $table->text('description')->nullable();
             $table->timestamps();
 
