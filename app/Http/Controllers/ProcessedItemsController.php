@@ -22,7 +22,7 @@ class ProcessedItemsController extends Controller
     /**
      * Metadata fields that can be filtered by exact value.
      */
-    private const FILTER_FIELDS = ['category', 'sport', 'year', 'team', 'manufacturer'];
+    private const FILTER_FIELDS = ['category', 'sport', 'year', 'team', 'manufacturer', 'card_type'];
 
     public function index(Request $request): Response
     {

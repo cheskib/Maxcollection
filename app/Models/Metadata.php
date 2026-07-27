@@ -18,6 +18,7 @@ class Metadata extends Model
     public const CATEGORY_FIELDS = [
         'sports_card' => [
             'player_name', 'team', 'sport', 'year', 'manufacturer', 'set_name',
+            'card_type', 'original_year',
             'card_number', 'rookie_card', 'parallel', 'serial_number', 'autograph',
             'condition_notes',
         ],
@@ -38,6 +39,8 @@ class Metadata extends Model
         'year' => 'Year',
         'manufacturer' => 'Manufacturer',
         'set_name' => 'Set Name',
+        'card_type' => 'Card Type',
+        'original_year' => 'Original Card Year',
         'card_number' => 'Card Number',
         'rookie_card' => 'Rookie Card',
         'parallel' => 'Parallel',
@@ -59,6 +62,7 @@ class Metadata extends Model
     protected $fillable = [
         'item_id', 'category', 'confidence',
         'player_name', 'team', 'sport', 'year', 'manufacturer', 'set_name',
+        'card_type', 'original_year',
         'card_number', 'rookie_card', 'parallel', 'serial_number', 'autograph',
         'title', 'issue_number', 'publisher', 'variant',
         'country', 'denomination', 'mint_mark', 'composition', 'issue_name', 'color',
@@ -99,7 +103,14 @@ class Metadata extends Model
     public function primaryTitle(): string
     {
         $title = match ($this->category) {
-            'sports_card' => collect([$this->year, $this->manufacturer, $this->player_name])->filter()->implode(' '),
+            // Subset cards read like collectors say them: "1987 Topps
+            // All-Star Don Mattingly". Base cards omit the type.
+            'sports_card' => collect([
+                $this->year,
+                $this->manufacturer,
+                $this->card_type && strtolower($this->card_type) !== 'base' ? $this->card_type : null,
+                $this->player_name,
+            ])->filter()->implode(' '),
             'comic_book' => collect([$this->title, $this->issue_number ? "#{$this->issue_number}" : null])->filter()->implode(' '),
             'coin' => collect([$this->year, $this->country, $this->denomination])->filter()->implode(' '),
             'stamp' => collect([$this->country, $this->issue_name, $this->year])->filter()->implode(' '),

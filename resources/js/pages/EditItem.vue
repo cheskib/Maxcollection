@@ -70,6 +70,13 @@ const MANUFACTURERS = [
     'Leaf', 'O-Pee-Chee', 'Pinnacle', 'Skybox', 'Pacific', 'Pro Set',
 ];
 
+// Common subset/insert designations; the field stays free-typed so any
+// oddball insert name can be entered.
+const CARD_TYPES = [
+    'Base', 'All-Star', 'Rookie Subset', 'Record Breaker', 'Turn Back the Clock',
+    'Reprint', 'Highlights', 'League Leaders', 'Checklist', 'Traded', 'Insert',
+];
+
 // Sports cards effectively start around 1900; coins and stamps can be far
 // older, so the year dropdown applies to sports cards only.
 const YEARS = Array.from({ length: new Date().getFullYear() - 1899 }, (_, i) => String(new Date().getFullYear() - i));
@@ -85,7 +92,7 @@ function optionsFor(field: string): string[] | null {
     const base =
         field === 'sport' ? SPORTS
         : field === 'rookie_card' || field === 'autograph' ? YES_NO
-        : field === 'year' && form.category === 'sports_card' ? YEARS
+        : (field === 'year' || field === 'original_year') && form.category === 'sports_card' ? YEARS
         : null;
     if (!base) return null;
     const current = (form as Record<string, any>)[field];
@@ -181,6 +188,18 @@ function rotateImage(imageId: number): void {
                     />
                     <datalist id="team-suggestions">
                         <option v-for="team in teamSuggestions" :key="team" :value="team" />
+                    </datalist>
+                </template>
+                <template v-else-if="field === 'card_type'">
+                    <input
+                        :id="field"
+                        v-model="(form as Record<string, any>)[field]"
+                        type="text"
+                        list="card-type-suggestions"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                    <datalist id="card-type-suggestions">
+                        <option v-for="cardType in CARD_TYPES" :key="cardType" :value="cardType" />
                     </datalist>
                 </template>
                 <template v-else-if="field === 'manufacturer'">

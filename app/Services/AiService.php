@@ -116,6 +116,18 @@ values you can actually see or confidently determine from the photographs.
 If a value cannot be determined, return null for that field. Never guess or
 invent values.
 
+For sports cards, be careful with years and special cards:
+- "year" is the SET/RELEASE year of the card, not the year pictured on it.
+  The most reliable source is the copyright line on the back (for example
+  "(C) 1987 Topps"). A reprint or retro card may show a big older year on
+  the front while belonging to a much newer set.
+- "original_year" applies only to reprint/retro cards: the year of the old
+  card being reproduced (the one shown large on the front). Null otherwise.
+- "card_type" is the subset or insert designation when the card shows one:
+  for example "All-Star", "Record Breaker", "Turn Back the Clock",
+  "Reprint", "Highlights", "Checklist", "League Leaders". Use "Base" for a
+  regular card from the main set.
+
 Report an overall confidence score from 0 to 100 for the identification and
 extracted metadata as a whole.
 
