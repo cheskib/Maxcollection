@@ -26,7 +26,7 @@ const props = defineProps<{
         category: string;
         confidence: number | null;
         processedAt: string | null;
-        images: { id: number; original_filename: string; version: string; adjusted: boolean }[];
+        images: { id: number; original_filename: string; version: string; adjusted: boolean; canUndo: boolean }[];
         fields: Field[];
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
@@ -78,6 +78,11 @@ onUnmounted(stopPolling);
 
 function rotate(imageId: number): void {
     router.post(`/images/${imageId}/rotate`, {}, { preserveScroll: true });
+}
+
+// Swap back to the cleanup that was in place before the last AI pass.
+function undoCleanup(imageId: number): void {
+    router.post(`/images/${imageId}/undo`, {}, { preserveScroll: true });
 }
 
 const collectionChoice = ref<CollectionChoice>({ collectionId: props.item.collectionId, newName: '' });
@@ -189,6 +194,14 @@ function back(): void {
                             >
                                 ✂
                             </Link>
+                            <button
+                                v-if="image.canUndo"
+                                class="absolute bottom-2 right-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                                title="Undo the last AI cleanup"
+                                @click="undoCleanup(image.id)"
+                            >
+                                ⎌
+                            </button>
                         </div>
                         <p class="mt-1 text-center text-xs text-gray-400">Cleaned</p>
                     </div>
@@ -211,6 +224,14 @@ function back(): void {
                     >
                         ✂
                     </Link>
+                    <button
+                        v-if="image.canUndo"
+                        class="absolute bottom-2 right-2 rounded-lg bg-gray-900/70 px-2 py-1 text-sm font-semibold text-white hover:bg-gray-900"
+                        title="Undo the last AI cleanup"
+                        @click="undoCleanup(image.id)"
+                    >
+                        ⎌
+                    </button>
                 </div>
             </div>
         </div>

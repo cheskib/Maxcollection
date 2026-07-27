@@ -123,6 +123,11 @@ Also report "rotations": for each photograph, in the order provided, the
 clockwise rotation in degrees (0, 90, 180, or 270) needed so the item is
 correctly oriented — the front standing upright, and the back turned so its
 text reads normally (card backs are often printed in landscape).
+Double-check for 180-degree mistakes before answering: after your chosen
+rotation, faces and helmets must be upright (chin below eyes) and any
+printed text on the item must read left to right, not upside down. If the
+photograph is already correct, report 0 — never rotate an already-upright
+photo.
 
 Also report "tilts": for each photograph, in the same order and AFTER the
 rotation above is applied, the small clockwise angle in degrees (-45 to 45,

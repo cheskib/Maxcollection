@@ -208,9 +208,17 @@ class ProcessingService
                 continue;
             }
 
+            $visualChange = isset($changes['rotation']) || isset($changes['tilt']) || isset($changes['crop_top']) || isset($changes['crop_right']) || isset($changes['crop_bottom']) || isset($changes['crop_left']);
+
+            // Keep the cleanup that is about to be replaced so a bad AI
+            // pass can be undone from the item page.
+            if ($visualChange) {
+                $changes['previous_adjustments'] = $image->adjustmentValues();
+            }
+
             $image->update($changes);
 
-            if (isset($changes['rotation']) || isset($changes['tilt']) || isset($changes['crop_top']) || isset($changes['crop_right']) || isset($changes['crop_bottom']) || isset($changes['crop_left'])) {
+            if ($visualChange) {
                 $this->thumbnails->forget($image);
             }
         }

@@ -294,6 +294,46 @@ class ProcessingTest extends TestCase
         $this->assertSame(0.0, $item->images()->first()->tilt);
     }
 
+    public function test_ai_cleanup_can_be_undone(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Undo Player'],
+                'rotations' => [180],
+                'trims' => [['top' => 12, 'right' => 3, 'bottom' => 4, 'left' => 5]],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        $image = $item->images()->first();
+        $this->assertSame(180, $image->rotation);
+        $this->assertNotNull($image->previous_adjustments);
+
+        // Undo restores the pre-AI cleanup (untouched, here)...
+        $this->actingAs($this->user)->post("/images/{$image->id}/undo");
+        $image->refresh();
+        $this->assertSame(0, $image->rotation);
+        $this->assertSame(0, $image->crop_top);
+
+        // ...and undoing again swaps the AI cleanup back.
+        $this->actingAs($this->user)->post("/images/{$image->id}/undo");
+        $image->refresh();
+        $this->assertSame(180, $image->rotation);
+        $this->assertSame(12, $image->crop_top);
+    }
+
+    public function test_undo_without_a_snapshot_is_a_404(): void
+    {
+        $this->actingAs($this->user)->post('/capture/images', ['photo' => UploadedFile::fake()->image('u.jpg')]);
+        $image = Item::first()->images()->first();
+
+        $this->actingAs($this->user)->post("/images/{$image->id}/undo")->assertNotFound();
+    }
+
     public function test_sport_is_capitalized_when_saved(): void
     {
         Http::fake([

@@ -56,6 +56,31 @@ class ImageController extends Controller
         return back();
     }
 
+    /**
+     * Swap back to the cleanup that was in place before the last AI pass.
+     * Swapping (instead of clearing) lets the user flip between the two.
+     */
+    public function undoAdjustments(Image $image, ThumbnailService $thumbnails): RedirectResponse
+    {
+        $previous = $image->previous_adjustments;
+
+        abort_if($previous === null, 404);
+
+        $image->update([
+            'rotation' => (int) ($previous['rotation'] ?? 0),
+            'tilt' => (float) ($previous['tilt'] ?? 0),
+            'crop_top' => (int) ($previous['crop_top'] ?? 0),
+            'crop_right' => (int) ($previous['crop_right'] ?? 0),
+            'crop_bottom' => (int) ($previous['crop_bottom'] ?? 0),
+            'crop_left' => (int) ($previous['crop_left'] ?? 0),
+            'previous_adjustments' => $image->adjustmentValues(),
+        ]);
+
+        $thumbnails->forget($image);
+
+        return back()->with('status', 'Previous cleanup restored.');
+    }
+
     public function trimForm(Image $image): InertiaResponse
     {
         return Inertia::render('TrimImage', [

@@ -10,9 +10,10 @@ class Image extends Model
     protected $fillable = [
         'item_id', 'path', 'original_filename', 'mime_type', 'size_bytes', 'role',
         'rotation', 'tilt', 'crop_top', 'crop_right', 'crop_bottom', 'crop_left',
+        'previous_adjustments',
     ];
 
-    protected $casts = ['tilt' => 'float'];
+    protected $casts = ['tilt' => 'float', 'previous_adjustments' => 'array'];
 
     public function item(): BelongsTo
     {
@@ -45,5 +46,22 @@ class Image extends Model
     public function isAdjusted(): bool
     {
         return $this->hasTurn() || $this->hasCrop();
+    }
+
+    /**
+     * The current rotation/tilt/trim as an array, for undo snapshots.
+     *
+     * @return array<string, int|float>
+     */
+    public function adjustmentValues(): array
+    {
+        return [
+            'rotation' => $this->rotation,
+            'tilt' => $this->tilt,
+            'crop_top' => $this->crop_top,
+            'crop_right' => $this->crop_right,
+            'crop_bottom' => $this->crop_bottom,
+            'crop_left' => $this->crop_left,
+        ];
     }
 }
