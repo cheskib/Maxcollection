@@ -474,6 +474,32 @@ class ProcessingTest extends TestCase
         $this->assertSame(0, $item->images()->first()->rotation);
     }
 
+    public function test_manual_rotation_locks_out_ai_rotation(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Locked Player'],
+                'rotations' => [180],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $image = $item->images()->first();
+
+        // The user rotates by hand: orientation is now locked.
+        $this->actingAs($this->user)->post("/images/{$image->id}/rotate");
+        $this->assertTrue($image->fresh()->rotation_locked);
+
+        // Neither a normal run nor a reprocess-from-originals may change it.
+        $this->actingAs($this->user)->post('/process');
+        $this->assertSame(90, $image->fresh()->rotation);
+
+        $this->actingAs($this->user)->post("/items/{$item->id}/reprocess", ['source' => 'original']);
+        $this->assertSame(90, $image->fresh()->rotation);
+    }
+
     public function test_missing_rotations_leave_photos_untouched(): void
     {
         Http::fake([

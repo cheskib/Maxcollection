@@ -9,11 +9,11 @@ class Image extends Model
 {
     protected $fillable = [
         'item_id', 'path', 'original_filename', 'mime_type', 'size_bytes', 'role',
-        'rotation', 'tilt', 'crop_top', 'crop_right', 'crop_bottom', 'crop_left',
+        'rotation', 'rotation_locked', 'tilt', 'crop_top', 'crop_right', 'crop_bottom', 'crop_left',
         'previous_adjustments',
     ];
 
-    protected $casts = ['tilt' => 'float', 'previous_adjustments' => 'array'];
+    protected $casts = ['tilt' => 'float', 'rotation_locked' => 'boolean', 'previous_adjustments' => 'array'];
 
     public function item(): BelongsTo
     {

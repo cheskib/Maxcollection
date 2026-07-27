@@ -45,11 +45,12 @@ class ImageController extends Controller
     }
 
     /**
-     * Turn the image a quarter turn clockwise per press.
+     * Turn the image a quarter turn clockwise per press. A manual rotation
+     * locks the orientation: the AI may never change it again.
      */
     public function rotate(Image $image, ThumbnailService $thumbnails): RedirectResponse
     {
-        $image->update(['rotation' => ($image->rotation + 90) % 360]);
+        $image->update(['rotation' => ($image->rotation + 90) % 360, 'rotation_locked' => true]);
 
         $thumbnails->forget($image);
 

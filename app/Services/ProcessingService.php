@@ -157,14 +157,18 @@ class ProcessingService
                 $changes['role'] = $role;
             }
 
-            $reported = $result->rotations[$index] ?? 0;
+            // A hand-rotated photo is locked: the user's correction always
+            // overrides the AI (CLAUDE.md 11), on every future run.
+            if (! $image->rotation_locked) {
+                $reported = $result->rotations[$index] ?? 0;
 
-            $rotation = $source === AiService::SOURCE_ORIGINAL
-                ? $reported
-                : ($image->rotation + $reported) % 360;
+                $rotation = $source === AiService::SOURCE_ORIGINAL
+                    ? $reported
+                    : ($image->rotation + $reported) % 360;
 
-            if ($rotation !== $image->rotation && ($source === AiService::SOURCE_ORIGINAL || $reported !== 0)) {
-                $changes['rotation'] = $rotation;
+                if ($rotation !== $image->rotation && ($source === AiService::SOURCE_ORIGINAL || $reported !== 0)) {
+                    $changes['rotation'] = $rotation;
+                }
             }
 
             // Reprocessing from originals restores the photo's original
