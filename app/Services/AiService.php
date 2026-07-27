@@ -117,6 +117,13 @@ Also report "rotations": for each photograph, in the order provided, the
 clockwise rotation in degrees (0, 90, 180, or 270) needed so the item is
 correctly oriented — the front standing upright, and the back turned so its
 text reads normally (card backs are often printed in landscape).
+
+Also report "trims": for each photograph, in the same order and AFTER the
+rotation above is applied, the percentage of each edge (top, right, bottom,
+left; whole numbers 0-45) that is background — hands, table, scanner bed —
+around the item. Trimming those edges should leave just the item with a
+small margin. Be conservative: never cut into the item itself, and use 0
+for every edge when the item already fills the photo or you are unsure.
 PROMPT;
     }
 
@@ -150,8 +157,22 @@ PROMPT;
                     'type' => 'array',
                     'items' => ['type' => 'integer', 'enum' => [0, 90, 180, 270]],
                 ],
+                'trims' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'properties' => [
+                            'top' => ['type' => 'integer'],
+                            'right' => ['type' => 'integer'],
+                            'bottom' => ['type' => 'integer'],
+                            'left' => ['type' => 'integer'],
+                        ],
+                        'required' => ['top', 'right', 'bottom', 'left'],
+                    ],
+                ],
             ],
-            'required' => ['category', 'confidence', 'fields', 'rotations'],
+            'required' => ['category', 'confidence', 'fields', 'rotations', 'trims'],
         ];
     }
 
@@ -188,14 +209,29 @@ PROMPT;
             ? []
             : AiResult::filterFields($category, (array) ($decoded['fields'] ?? []));
 
-        // Orientation hints are optional and validated; anything odd is ignored.
+        // Orientation and trim hints are optional and validated; anything odd
+        // is ignored.
         $rotations = collect((array) ($decoded['rotations'] ?? []))
             ->map(fn ($value) => is_numeric($value) ? ((int) $value) % 360 : 0)
             ->map(fn (int $value) => in_array($value, [0, 90, 180, 270], true) ? $value : 0)
             ->values()
             ->all();
 
-        return new AiResult($category, $confidence, $fields, $rotations);
+        $trims = collect((array) ($decoded['trims'] ?? []))
+            ->map(function ($trim) {
+                $clamp = fn ($value) => is_numeric($value) ? max(0, min(45, (int) $value)) : 0;
+
+                return [
+                    'top' => $clamp($trim['top'] ?? 0),
+                    'right' => $clamp($trim['right'] ?? 0),
+                    'bottom' => $clamp($trim['bottom'] ?? 0),
+                    'left' => $clamp($trim['left'] ?? 0),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return new AiResult($category, $confidence, $fields, $rotations, $trims);
     }
 
     /**
