@@ -14,6 +14,7 @@ FROM php:8.4-apache
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libpng-dev libjpeg62-turbo-dev libwebp-dev libzip-dev unzip \
+        poppler-utils \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install pdo_mysql gd zip exif \
     # PHP requires the prefork MPM; ensure no second MPM stays enabled or
