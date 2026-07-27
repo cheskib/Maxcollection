@@ -38,6 +38,7 @@ class ItemController extends Controller
                 'fields' => $fields,
                 'processing' => $lastJob === null ? null : [
                     'status' => $lastJob->status,
+                    'model' => $lastJob->model,
                     'error' => $lastJob->error_message,
                     'finishedAt' => $lastJob->finished_at?->format('M j, Y g:i A'),
                     'logs' => $lastJob->logs()->orderBy('id')->get()

@@ -15,7 +15,11 @@ use RuntimeException;
  */
 class AiService
 {
-    public function identify(Item $item, ProcessingJob $job): AiResult
+    public const TIER_STANDARD = 'standard';
+
+    public const TIER_PREMIUM = 'premium';
+
+    public function identify(Item $item, ProcessingJob $job, string $tier = self::TIER_STANDARD): AiResult
     {
         $apiKey = config('services.openai.key');
 
@@ -23,9 +27,15 @@ class AiService
             throw new RuntimeException('OpenAI API key is not configured.');
         }
 
+        $model = $tier === self::TIER_PREMIUM
+            ? config('services.openai.premium_model')
+            : config('services.openai.model');
+
+        $job->update(['model' => $model]);
+
         $response = Http::withToken($apiKey)
             ->timeout((int) config('services.openai.timeout'))
-            ->post(rtrim(config('services.openai.base_url'), '/').'/responses', $this->buildPayload($item));
+            ->post(rtrim(config('services.openai.base_url'), '/').'/responses', $this->buildPayload($item, $model));
 
         // Store the response exactly as returned before any parsing (DECISIONS.md).
         $job->update(['raw_response' => $response->body()]);
@@ -40,7 +50,7 @@ class AiService
     /**
      * @return array<string, mixed>
      */
-    private function buildPayload(Item $item): array
+    private function buildPayload(Item $item, string $model): array
     {
         $content = [['type' => 'input_text', 'text' => $this->prompt()]];
 
@@ -72,7 +82,7 @@ class AiService
         }
 
         return [
-            'model' => config('services.openai.model'),
+            'model' => $model,
             'input' => [['role' => 'user', 'content' => $content]],
             'text' => [
                 'format' => [
