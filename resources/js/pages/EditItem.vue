@@ -121,8 +121,11 @@ const visibleFields = computed(() => {
     const cardType = ((form as Record<string, any>).card_type ?? '').toLowerCase();
     const isReprint = REPRINT_TYPES.includes(cardType);
     const hasPlayer = !NO_PLAYER_TYPES.includes(cardType);
+    // Card type only appears once a sport is chosen (owner rule).
+    const hasSport = Boolean((form as Record<string, any>).sport);
     return fields.filter(
         (field) =>
+            (field !== 'card_type' || hasSport) &&
             (field !== 'original_year' || isReprint) &&
             (!['player_name', 'team'].includes(field) || hasPlayer),
     );
