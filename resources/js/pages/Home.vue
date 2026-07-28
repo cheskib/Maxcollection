@@ -202,10 +202,6 @@ function logout(): void {
                     <p class="text-xs text-gray-400">{{ stats.value.valuedCount }} item(s) valued</p>
                 </template>
             </Link>
-            <Link href="/sets" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
-                <span class="text-2xl">📚</span>
-                <p class="mt-1 font-semibold text-gray-900">Sets</p>
-            </Link>
         </div>
 
         <p class="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-400">Maintenance</p>

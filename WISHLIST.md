@@ -20,6 +20,16 @@ ranges: Our Value (manual, authoritative) and AI Ballpark (rough,
 refreshed on each processing run).
 *(Owner decision 2026-07-28 when card value was added.)*
 
+## Re-enable the Sets catalog
+
+The Sets catalog (self-building set profiles with AI design histories)
+is hidden — owner decision, "get rid of sets for now… or maybe just
+hide it." Profiles still accrue silently; descriptions are not written
+while hidden. To re-enable: restore the Home tile, the summary's By
+Set section, and the DescribeSetJob dispatch in
+ProcessingService::registerCardSet.
+*(2026-07-28.)*
+
 ## Other items deferred in discussion
 
 - **Set completion tracking** — "1987 Topps has 792 cards, you own 14"

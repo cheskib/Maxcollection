@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\DescribeSetJob;
 use App\Jobs\ProcessItemJob;
 use App\Models\Batch;
 use App\Models\CardSet;
@@ -259,15 +258,13 @@ class ProcessingService
             return;
         }
 
-        $set = CardSet::firstOrCreate([
+        // Profiles keep accruing so the catalog is ready if re-enabled,
+        // but while it is hidden no AI descriptions are written (no cost).
+        CardSet::firstOrCreate([
             'sport' => $metadata->sport ?? '',
             'manufacturer' => $metadata->manufacturer,
             'year' => $metadata->year,
         ]);
-
-        if ($set->description === null) {
-            DescribeSetJob::dispatch($set->id);
-        }
     }
 
     /**
