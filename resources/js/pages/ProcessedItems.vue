@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 interface ProcessedItem {
@@ -87,6 +87,52 @@ function clearFilters(): void {
     filters.value = { category: '', sport: '', year: '', team: '', manufacturer: '', card_type: '', publisher: '', country: '' };
     apply();
 }
+
+// ---- Bulk edit: select cards, set fields once, apply to all ----
+const page_ = usePage<{ flash: { status: string | null } }>();
+
+const selecting = ref(false);
+const selected = ref<number[]>([]);
+const applying = ref(false);
+
+const SPORTS = ['Baseball', 'Basketball', 'Football', 'Hockey', 'Soccer', 'Golf', 'Tennis', 'Boxing', 'Wrestling', 'Racing', 'Other'];
+const CARD_TYPES = [
+    'Base', 'All-Star', 'Team Leaders', 'League Leaders', 'Record Breaker', 'Highlights',
+    'Turn Back the Clock', 'Reprint', 'Rookie Subset', 'Future Stars', 'Checklist', 'Traded', 'Insert',
+];
+const YES_NO = ['Yes', 'No'];
+
+const bulk = ref({ sport: '', team: '', year: '', manufacturer: '', card_type: '', rookie_card: '', autograph: '', collection_id: '' });
+
+function toggleSelect(id: number): void {
+    selected.value = selected.value.includes(id) ? selected.value.filter((entry) => entry !== id) : [...selected.value, id];
+}
+
+function selectPage(): void {
+    selected.value = props.items.map((item) => item.id);
+}
+
+function exitSelecting(): void {
+    selecting.value = false;
+    selected.value = [];
+    bulk.value = { sport: '', team: '', year: '', manufacturer: '', card_type: '', rookie_card: '', autograph: '', collection_id: '' };
+}
+
+function applyBulk(): void {
+    if (selected.value.length === 0) return;
+    const { collection_id, ...fields } = bulk.value;
+    const filled = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== ''));
+
+    router.post(
+        '/items/bulk-edit',
+        { item_ids: selected.value, fields: filled, collection_id: collection_id || undefined },
+        {
+            onStart: () => (applying.value = true),
+            onFinish: () => (applying.value = false),
+            onSuccess: () => exitSelecting(),
+        },
+    );
+}
 </script>
 
 <template>
@@ -94,7 +140,60 @@ function clearFilters(): void {
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">{{ keyOnly ? '⭐ Key Cards' : 'Processed Items' }}</h1>
-            <Link href="/" class="text-sm font-semibold text-blue-600">Home</Link>
+            <div class="flex shrink-0 gap-4">
+                <button class="text-sm font-semibold text-blue-600" @click="selecting ? exitSelecting() : (selecting = true)">
+                    {{ selecting ? 'Cancel' : 'Select' }}
+                </button>
+                <Link href="/" class="text-sm font-semibold text-blue-600">Home</Link>
+            </div>
+        </div>
+
+        <p v-if="page_.props.flash.status" class="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+            ✓ {{ page_.props.flash.status }}
+        </p>
+
+        <div v-if="selecting" class="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div class="flex items-center justify-between text-sm">
+                <p class="font-semibold text-gray-900">{{ selected.length }} selected</p>
+                <div class="flex gap-3">
+                    <button class="font-semibold text-blue-600" @click="selectPage">Select page</button>
+                    <button class="font-semibold text-gray-500" @click="selected = []">Clear</button>
+                </div>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">Fill only the fields you want to change — blanks are left untouched.</p>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+                <select v-model="bulk.sport" class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+                    <option value="">Sport — no change</option>
+                    <option v-for="sport in SPORTS" :key="sport" :value="sport">{{ sport }}</option>
+                </select>
+                <select v-model="bulk.card_type" class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+                    <option value="">Card Type — no change</option>
+                    <option v-for="cardType in CARD_TYPES" :key="cardType" :value="cardType">{{ cardType }}</option>
+                </select>
+                <input v-model="bulk.team" type="text" placeholder="Team — no change" class="rounded-lg border border-gray-300 px-2 py-2 text-sm" />
+                <input v-model="bulk.year" type="text" placeholder="Year — no change" class="rounded-lg border border-gray-300 px-2 py-2 text-sm" />
+                <input v-model="bulk.manufacturer" type="text" placeholder="Manufacturer — no change" class="rounded-lg border border-gray-300 px-2 py-2 text-sm" />
+                <select v-model="bulk.collection_id" class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+                    <option value="">Collection — no change</option>
+                    <option v-for="entry in collections" :key="entry.id" :value="String(entry.id)">{{ entry.name }}</option>
+                    <option value="unassigned">Unassigned</option>
+                </select>
+                <select v-model="bulk.rookie_card" class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+                    <option value="">Rookie — no change</option>
+                    <option v-for="option in YES_NO" :key="option" :value="option">{{ option }}</option>
+                </select>
+                <select v-model="bulk.autograph" class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+                    <option value="">Autograph — no change</option>
+                    <option v-for="option in YES_NO" :key="option" :value="option">{{ option }}</option>
+                </select>
+            </div>
+            <button
+                :disabled="applying || selected.length === 0"
+                class="mt-3 w-full rounded-lg bg-blue-600 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300"
+                @click="applyBulk"
+            >
+                {{ applying ? 'Applying…' : `Apply to ${selected.length} item(s)` }}
+            </button>
         </div>
 
         <form class="mt-4 flex gap-2" @submit.prevent="apply">
@@ -151,12 +250,22 @@ function clearFilters(): void {
         <p v-if="items.length === 0" class="mt-10 text-center text-gray-500">No processed items yet.</p>
 
         <div class="mt-4 flex flex-col gap-3">
-            <Link
+            <component
+                :is="selecting ? 'div' : Link"
                 v-for="item in items"
                 :key="item.id"
-                :href="`/items/${item.id}`"
+                :href="selecting ? undefined : `/items/${item.id}`"
                 class="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm"
+                :class="selecting && selected.includes(item.id) ? 'ring-2 ring-blue-500' : ''"
+                @click="selecting ? toggleSelect(item.id) : undefined"
             >
+                <span
+                    v-if="selecting"
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold"
+                    :class="selected.includes(item.id) ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300 text-transparent'"
+                >
+                    ✓
+                </span>
                 <img
                     v-if="item.thumbnailImageId"
                     :src="`/thumbnails/${item.thumbnailImageId}?v=${item.thumbnailVersion}`"
@@ -175,8 +284,8 @@ function clearFilters(): void {
                         <span v-if="!item.value.isOurs" class="font-normal text-gray-400">(AI)</span>
                     </p>
                 </div>
-                <span class="text-sm font-semibold text-blue-600">View</span>
-            </Link>
+                <span v-if="!selecting" class="text-sm font-semibold text-blue-600">View</span>
+            </component>
         </div>
 
         <div v-if="page.last > 1" class="mt-4 flex items-center justify-between">
