@@ -74,9 +74,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
     Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 
-    Route::get('/settings', function () {
-        return Inertia::render('ComingSoon');
-    })->name('settings');
+    Route::get('/duplicates', [\App\Http\Controllers\DuplicatesController::class, 'index'])->name('duplicates');
+    Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

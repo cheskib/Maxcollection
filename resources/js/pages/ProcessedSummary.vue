@@ -19,6 +19,7 @@ const props = defineProps<{
         unassigned: number;
     };
     sets: { id: number; name: string; count: number }[];
+    duplicates: number;
 }>();
 
 const search = ref('');
@@ -129,6 +130,15 @@ function money(from: number | null, to: number | null): string | null {
                     </Link>
                 </div>
             </template>
+
+            <Link
+                v-if="duplicates > 0"
+                href="/duplicates"
+                class="mt-6 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm hover:bg-gray-50"
+            >
+                <p class="text-sm text-gray-700">📇 Duplicates — cards owned more than once</p>
+                <span class="font-bold text-gray-900">{{ duplicates }} ›</span>
+            </Link>
 
             <template v-if="sets.length">
                 <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">By set</p>
