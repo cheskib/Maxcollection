@@ -27,6 +27,22 @@ class ItemController extends Controller
         $metadata = $item->metadata;
         $lastJob = $item->processingJobs()->latest('id')->first();
 
+        // Duplicate awareness: other copies of this exact card
+        // (manufacturer + year + player + card number).
+        $otherCopies = collect();
+        if ($metadata !== null && $metadata->category === 'sports_card'
+            && filled($metadata->manufacturer) && filled($metadata->year)
+            && (filled($metadata->player_name) || filled($metadata->card_number))) {
+            $otherCopies = Metadata::where('category', 'sports_card')
+                ->where('manufacturer', $metadata->manufacturer)
+                ->where('year', $metadata->year)
+                ->whereRaw("coalesce(player_name, '') = ?", [$metadata->player_name ?? ''])
+                ->whereRaw("coalesce(card_number, '') = ?", [$metadata->card_number ?? ''])
+                ->where('item_id', '!=', $item->id)
+                ->orderBy('item_id')
+                ->pluck('item_id');
+        }
+
         // Only the values that were actually pulled or entered; blanks are
         // noise here (the Edit screen still offers every field).
         $fields = [];
@@ -58,6 +74,10 @@ class ItemController extends Controller
                 'value' => [
                     'ours' => ['from' => $metadata?->value_from, 'to' => $metadata?->value_to],
                     'ai' => ['from' => $metadata?->ai_value_from, 'to' => $metadata?->ai_value_to],
+                ],
+                'copies' => [
+                    'count' => $otherCopies->count() + 1,
+                    'others' => $otherCopies->values()->all(),
                 ],
                 'processing' => $lastJob === null ? null : [
                     'status' => $lastJob->status,

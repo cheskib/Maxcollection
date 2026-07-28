@@ -83,6 +83,7 @@ class ProcessedSummaryController extends Controller
             'cardTypes' => [],
             'collections' => ['named' => [], 'unassigned' => 0],
             'sets' => [],
+            'duplicates' => 0,
         ];
 
         // Level 3: a sport is chosen — break it down by card type.
@@ -128,9 +129,20 @@ class ProcessedSummaryController extends Controller
 
         $unassigned = Item::where('status', Item::STATUS_PROCESSED)->whereNull('collection_id')->count();
 
+        $duplicates = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED))
+            ->where('category', 'sports_card')
+            ->whereNotNull('manufacturer')
+            ->whereNotNull('year')
+            ->selectRaw('count(*) as copies')
+            ->groupByRaw("manufacturer, year, coalesce(player_name, ''), coalesce(card_number, '')")
+            ->havingRaw('count(*) > 1')
+            ->get()
+            ->count();
+
         return Inertia::render('ProcessedSummary', [
             ...$shared,
             'categories' => $categories,
+            'duplicates' => $duplicates,
             'collections' => [
                 'named' => $collections->map(fn (Collection $collection) => [
                     'id' => $collection->id,

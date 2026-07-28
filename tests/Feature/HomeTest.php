@@ -52,14 +52,14 @@ class HomeTest extends TestCase
             );
     }
 
-    public function test_settings_shows_coming_soon(): void
+    public function test_settings_page_renders(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->get('/settings')
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->component('ComingSoon'));
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Settings'));
     }
 
     public function test_settings_requires_authentication(): void

@@ -32,6 +32,7 @@ const props = defineProps<{
             ours: { from: number | null; to: number | null };
             ai: { from: number | null; to: number | null };
         };
+        copies: { count: number; others: number[] };
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
 }>();
@@ -162,6 +163,12 @@ function back(): void {
         </p>
         <p v-if="item.reviewReason" class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
             Needs review: {{ item.reviewReason }}
+        </p>
+        <p v-if="item.copies.count > 1" class="mt-3 rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">
+            📇 You own <strong>×{{ item.copies.count }}</strong> of this card —
+            <template v-for="(copyId, index) in item.copies.others" :key="copyId">
+                <Link :href="`/items/${copyId}`" class="font-semibold underline">copy {{ index + 2 }}</Link><span v-if="index < item.copies.others.length - 1">, </span>
+            </template>
         </p>
         <p
             v-if="item.status === 'queued' || item.status === 'processing'"
