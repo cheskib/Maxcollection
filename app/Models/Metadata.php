@@ -64,16 +64,18 @@ class Metadata extends Model
     ];
 
     /**
-     * The owner's manual value range; applies to every category and is
-     * never written by the AI.
+     * The owner's manual money fields — the value range, what was paid,
+     * and the insured amount. They apply to every category and are never
+     * written by the AI.
      *
      * @var array<int, string>
      */
-    public const VALUE_FIELDS = ['value_from', 'value_to'];
+    public const VALUE_FIELDS = ['value_from', 'value_to', 'purchase_price', 'insurance_value'];
 
     protected $fillable = [
         'item_id', 'category', 'confidence',
-        'value_from', 'value_to', 'ai_value_from', 'ai_value_to',
+        'value_from', 'value_to', 'purchase_price', 'insurance_value',
+        'ai_value_from', 'ai_value_to',
         'market_value', 'market_match', 'market_checked_at', 'key_card',
         'player_name', 'team', 'sport', 'year', 'manufacturer', 'set_name',
         'card_type', 'original_year',
@@ -89,6 +91,8 @@ class Metadata extends Model
             'confidence' => 'float',
             'value_from' => 'float',
             'value_to' => 'float',
+            'purchase_price' => 'float',
+            'insurance_value' => 'float',
             'ai_value_from' => 'float',
             'ai_value_to' => 'float',
             'market_value' => 'float',

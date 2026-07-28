@@ -169,6 +169,23 @@ class ItemPagesTest extends TestCase
         $this->assertNotNull($item->metadataHistory()->firstWhere('field_name', 'value_from'));
     }
 
+    public function test_purchase_price_and_insurance_value_can_be_saved(): void
+    {
+        $item = $this->processedItem();
+
+        $this->actingAs($this->user)->put("/items/{$item->id}/metadata", [
+            'category' => 'sports_card',
+            'player_name' => 'Sample Player',
+            'purchase_price' => '750.50',
+            'insurance_value' => '2500',
+        ]);
+
+        $metadata = $item->fresh()->metadata;
+        $this->assertSame(750.5, $metadata->purchase_price);
+        $this->assertSame(2500.0, $metadata->insurance_value);
+        $this->assertNotNull($item->metadataHistory()->firstWhere('field_name', 'insurance_value'));
+    }
+
     public function test_unchanged_fields_produce_no_history(): void
     {
         $item = $this->processedItem();

@@ -73,6 +73,8 @@ class ItemController extends Controller
                 'fields' => $fields,
                 'value' => [
                     'ours' => ['from' => $metadata?->value_from, 'to' => $metadata?->value_to],
+                    'purchase' => $metadata?->purchase_price,
+                    'insurance' => $metadata?->insurance_value,
                     'ai' => ['from' => $metadata?->ai_value_from, 'to' => $metadata?->ai_value_to],
                     'market' => [
                         'value' => $metadata?->market_value,

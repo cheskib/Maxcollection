@@ -30,6 +30,8 @@ const props = defineProps<{
         fields: Field[];
         value: {
             ours: { from: number | null; to: number | null };
+            purchase: number | null;
+            insurance: number | null;
             ai: { from: number | null; to: number | null };
             market: { value: number | null; match: string | null; checkedAt: string | null };
         };
@@ -297,6 +299,14 @@ function back(): void {
                 <div v-if="item.value.ours.from !== null || item.value.ours.to !== null" class="flex justify-between gap-3 py-2 text-sm">
                     <dt class="text-gray-500">Our Value</dt>
                     <dd class="text-right font-medium text-gray-900">{{ money(item.value.ours.from, item.value.ours.to) }}</dd>
+                </div>
+                <div v-if="item.value.purchase !== null" class="flex justify-between gap-3 py-2 text-sm">
+                    <dt class="text-gray-500">Purchase Price</dt>
+                    <dd class="text-right font-medium text-gray-900">{{ money(item.value.purchase, item.value.purchase) }}</dd>
+                </div>
+                <div v-if="item.value.insurance !== null" class="flex justify-between gap-3 py-2 text-sm">
+                    <dt class="text-gray-500">Insurance Value</dt>
+                    <dd class="text-right font-medium text-gray-900">{{ money(item.value.insurance, item.value.insurance) }}</dd>
                 </div>
                 <div v-if="item.value.ai.from !== null || item.value.ai.to !== null" class="flex justify-between gap-3 py-2 text-sm">
                     <dt class="text-gray-500">AI Ballpark</dt>

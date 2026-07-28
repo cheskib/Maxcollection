@@ -285,6 +285,31 @@ function rotateImage(imageId: number): void {
                 </p>
             </div>
 
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="purchase_price" class="block text-sm font-medium text-gray-700">Purchase Price ($)</label>
+                    <input
+                        id="purchase_price"
+                        v-model="(form as Record<string, any>).purchase_price"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                </div>
+                <div>
+                    <label for="insurance_value" class="block text-sm font-medium text-gray-700">Insurance Value ($)</label>
+                    <input
+                        id="insurance_value"
+                        v-model="(form as Record<string, any>).insurance_value"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                </div>
+            </div>
+
             <div v-if="pairFields.length" class="grid grid-cols-2 gap-3">
                 <div v-for="field in pairFields" :key="field">
                     <label :for="field" class="block text-sm font-medium text-gray-700">{{ fieldLabels[field] }}</label>

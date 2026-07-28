@@ -23,6 +23,8 @@ class UpdateMetadataRequest extends FormRequest
             'condition_notes' => ['nullable', 'string', 'max:5000'],
             'value_from' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'value_to' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'purchase_price' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'insurance_value' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
         ];
 
         foreach (array_keys(Metadata::FIELD_LABELS) as $field) {

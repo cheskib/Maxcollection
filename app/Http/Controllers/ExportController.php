@@ -26,7 +26,8 @@ class ExportController extends Controller
                 'Item ID', 'Status', 'Collection', 'Batch', 'Category', 'Card Type', 'Player Name', 'Team',
                 'Sport', 'Year', 'Manufacturer', 'Card Number', 'Rookie Card', 'Autograph', 'Parallel',
                 'Serial Number', 'Original Card Year', 'Condition Notes', 'Confidence', 'Key Card',
-                'Our Value From', 'Our Value To', 'AI Value From', 'AI Value To',
+                'Our Value From', 'Our Value To', 'Purchase Price', 'Insurance Value',
+                'AI Value From', 'AI Value To',
                 'Market Value', 'Market Match', 'Market Checked', 'Photos', 'Uploaded At', 'Processed At',
             ]);
 
@@ -59,6 +60,8 @@ class ExportController extends Controller
                             $metadata?->key_card ? 'Yes' : 'No',
                             $metadata?->value_from,
                             $metadata?->value_to,
+                            $metadata?->purchase_price,
+                            $metadata?->insurance_value,
                             $metadata?->ai_value_from,
                             $metadata?->ai_value_to,
                             $metadata?->market_value,
