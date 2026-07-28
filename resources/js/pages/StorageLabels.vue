@@ -39,7 +39,7 @@ function submit(): void {
                 </select>
             </div>
 
-            <div v-if="form.type !== 'divider'">
+            <div>
                 <label for="count" class="block text-sm font-medium text-gray-700">How many</label>
                 <input
                     id="count"
@@ -52,16 +52,19 @@ function submit(): void {
                 <p v-if="form.errors.count" class="mt-1 text-sm text-red-600">{{ form.errors.count }}</p>
             </div>
 
-            <div v-else>
-                <label for="names" class="block text-sm font-medium text-gray-700">Divider names — one per line</label>
+            <div v-if="form.type === 'divider'">
+                <label for="names" class="block text-sm font-medium text-gray-700">Names (optional) — one per line</label>
                 <textarea
                     id="names"
                     v-model="form.names"
-                    rows="6"
-                    placeholder="Baseball 80s&#10;Football Stars&#10;Mixed"
+                    rows="4"
+                    placeholder="Leave blank for numbered dividers"
                     class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
                 ></textarea>
-                <p class="mt-1 text-xs text-gray-400">Names are printed on the labels; the barcode itself stays a neutral CAT number.</p>
+                <p class="mt-1 text-xs text-gray-400">
+                    A divider only marks a location in a box — its ID says nothing about the cards behind it. Names are
+                    optional decoration applied to the first labels in order.
+                </p>
                 <p v-if="form.errors.names" class="mt-1 text-sm text-red-600">{{ form.errors.names }}</p>
             </div>
 
