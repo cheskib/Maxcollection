@@ -70,6 +70,15 @@ trail (`storage_events`), and batch finalization by bag barcode
 location lives only in storage tables; metadata never changes because a
 card moves.
 
+## 2026-07-28 — Terminology: divider cards, not category cards
+
+Owner correction after Milestone 1: the physical section marker is a
+"divider card" — there is no such thing as a "category card". The barcode
+prefix is `DIV-` (was `CAT-`), the registry type is `divider`, all screens
+say "Divider", and `storage_sections.category_barcode_id` was renamed to
+`divider_barcode_id`. Renamed before any labels were printed, so no
+physical labels are affected.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

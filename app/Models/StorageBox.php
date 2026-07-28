@@ -45,6 +45,6 @@ class StorageBox extends Model
      */
     public function pendingSection(): ?StorageSection
     {
-        return $this->sections()->whereNull('category_barcode_id')->reorder()->orderByDesc('position')->first();
+        return $this->sections()->whereNull('divider_barcode_id')->reorder()->orderByDesc('position')->first();
     }
 }

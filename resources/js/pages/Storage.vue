@@ -8,7 +8,7 @@ const props = defineProps<{
         code: string;
         pendingBagCount: number;
         pendingPosition: number | null;
-        sections: { position: number; category: string; bagCount: number }[];
+        sections: { position: number; divider: string; bagCount: number }[];
     } | null;
     boxes: { id: number; code: string; closedAt: string; bagCount: number; sectionCount: number; cardCount: number }[];
     recentEvents: { id: number; action: string; code: string | null; at: string }[];
@@ -166,7 +166,7 @@ function completeBox(confirmed = false): void {
                         :key="section.position"
                         class="flex items-center justify-between py-2 text-sm"
                     >
-                        <p class="text-gray-700">Section {{ section.position }} · {{ section.category }}</p>
+                        <p class="text-gray-700">Section {{ section.position }} · {{ section.divider }}</p>
                         <span class="font-semibold text-gray-900">{{ section.bagCount }} bag(s)</span>
                     </div>
                     <div class="flex items-center justify-between py-2 text-sm">

@@ -10,13 +10,13 @@ class Barcode extends Model
 
     public const TYPE_BOX = 'box';
 
-    public const TYPE_CATEGORY = 'category';
+    public const TYPE_DIVIDER = 'divider';
 
-    /** Code prefix for each type: BAG-000123, BOX-000042, CAT-000087. */
+    /** Code prefix for each type: BAG-000123, BOX-000042, DIV-000087. */
     public const PREFIXES = [
         self::TYPE_BAG => 'BAG',
         self::TYPE_BOX => 'BOX',
-        self::TYPE_CATEGORY => 'CAT',
+        self::TYPE_DIVIDER => 'DIV',
     ];
 
     protected $fillable = ['type', 'code', 'label', 'print_run', 'printed_at'];

@@ -136,7 +136,7 @@ class BatchController extends Controller
             ]);
 
         // Physical location, when the finalized bag has been boxed.
-        $section = $batch->storageSection?->load(['box.barcode', 'categoryBarcode']);
+        $section = $batch->storageSection?->load(['box.barcode', 'dividerBarcode']);
 
         return Inertia::render('BatchDetail', [
             'batch' => [
@@ -151,7 +151,7 @@ class BatchController extends Controller
                 'location' => $section === null ? null : [
                     'box' => $section->box->barcode->code,
                     'boxId' => $section->box->id,
-                    'section' => $section->categoryBarcode?->displayLabel() ?? 'No Divider Assigned',
+                    'section' => $section->dividerBarcode?->displayLabel() ?? 'No Divider Assigned',
                     'sealed' => $section->box->status === \App\Models\StorageBox::STATUS_CLOSED,
                 ],
             ],

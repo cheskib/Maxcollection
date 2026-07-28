@@ -31,7 +31,7 @@ class StorageService
      * exist in the registry from this moment — a scanned code that is
      * not registered is always a misread or a rogue label.
      *
-     * @param  array<int, string>  $names divider names (category type only)
+     * @param  array<int, string>  $names divider card names (divider type only)
      * @return string the print run id
      */
     public function generateLabels(string $type, int $count, array $names = []): string
@@ -46,7 +46,7 @@ class StorageService
             Barcode::create([
                 'type' => $type,
                 'code' => sprintf('%s-%06d', $prefix, $next++),
-                'label' => $type === Barcode::TYPE_CATEGORY ? ($names[$i - 1] ?? null) : null,
+                'label' => $type === Barcode::TYPE_DIVIDER ? ($names[$i - 1] ?? null) : null,
                 'print_run' => $run,
                 'printed_at' => now(),
             ]);
@@ -70,7 +70,7 @@ class StorageService
         $code = $this->normalize($raw);
 
         if ($code === null) {
-            return $this->error('Not a valid barcode: "'.Str::limit(trim($raw), 24).'". Expected BAG-, BOX- or CAT- followed by 6 digits.');
+            return $this->error('Not a valid barcode: "'.Str::limit(trim($raw), 24).'". Expected BAG-, BOX- or DIV- followed by 6 digits.');
         }
 
         $barcode = Barcode::where('code', $code)->first();
@@ -86,7 +86,7 @@ class StorageService
         return match ($barcode->type) {
             Barcode::TYPE_BOX => $this->scanBox($user, $barcode),
             Barcode::TYPE_BAG => $this->scanBag($user, $barcode),
-            Barcode::TYPE_CATEGORY => $this->scanDivider($user, $barcode),
+            Barcode::TYPE_DIVIDER => $this->scanDivider($user, $barcode),
             default => $this->error("Barcode {$code} has an unsupported type."),
         };
     }
@@ -99,7 +99,7 @@ class StorageService
     {
         $code = strtoupper((string) preg_replace('/\s+/', '', $raw));
 
-        return preg_match('/^(BAG|BOX|CAT)-\d{6}$/', $code) === 1 ? $code : null;
+        return preg_match('/^(BAG|BOX|DIV)-\d{6}$/', $code) === 1 ? $code : null;
     }
 
     private function isDuplicateRead(User $user, Barcode $barcode): bool
@@ -175,7 +175,7 @@ class StorageService
         }
 
         // A physical divider exists in exactly one place.
-        $used = StorageSection::where('category_barcode_id', $barcode->id)->first();
+        $used = StorageSection::where('divider_barcode_id', $barcode->id)->first();
         if ($used !== null) {
             return $this->error("Divider {$barcode->code} is already used in box {$used->box->barcode->code}.");
         }
@@ -186,7 +186,7 @@ class StorageService
             return $this->error("No bags scanned yet — scan the section's bags before its divider.");
         }
 
-        $section->update(['category_barcode_id' => $barcode->id]);
+        $section->update(['divider_barcode_id' => $barcode->id]);
         $box->sections()->create(['position' => $section->position + 1]);
         $this->record($user, StorageEvent::DIVIDER_SCANNED, $barcode, box: $box, section: $section);
 
@@ -241,12 +241,12 @@ class StorageService
         if ($event->action === StorageEvent::DIVIDER_SCANNED) {
             $section = StorageSection::find($event->storage_section_id);
             $pending = $box->pendingSection();
-            if ($section === null || $section->category_barcode_id !== $event->barcode_id
+            if ($section === null || $section->divider_barcode_id !== $event->barcode_id
                 || $pending === null || $pending->batches()->count() > 0) {
                 return $this->error('Nothing to undo — bags were already scanned into the next section.');
             }
             $pending->delete();
-            $section->update(['category_barcode_id' => null]);
+            $section->update(['divider_barcode_id' => null]);
             $this->record($user, StorageEvent::SCAN_UNDONE, $event->barcode, box: $box, section: $section);
 
             return $this->success("Undone — divider {$code} removed; its section is open again.");

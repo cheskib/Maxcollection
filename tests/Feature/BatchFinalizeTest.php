@@ -114,13 +114,13 @@ class BatchFinalizeTest extends TestCase
     {
         $bag = Barcode::create(['type' => 'bag', 'code' => 'BAG-000001']);
         $boxBarcode = Barcode::create(['type' => 'box', 'code' => 'BOX-000001']);
-        $cat = Barcode::create(['type' => 'category', 'code' => 'CAT-000001', 'label' => 'Baseball 80s']);
+        $cat = Barcode::create(['type' => 'divider', 'code' => 'DIV-000001', 'label' => 'Baseball 80s']);
 
         $batch = $this->batchWithItem();
         $batch->update(['barcode_id' => $bag->id, 'status' => Batch::STATUS_CLOSED, 'finalized_at' => now()]);
 
         $box = StorageBox::create(['user_id' => $this->user->id, 'barcode_id' => $boxBarcode->id, 'status' => 'closed', 'closed_at' => now()]);
-        $section = $box->sections()->create(['position' => 1, 'category_barcode_id' => $cat->id]);
+        $section = $box->sections()->create(['position' => 1, 'divider_barcode_id' => $cat->id]);
         $batch->update(['storage_section_id' => $section->id]);
 
         $this->actingAs($this->user)

@@ -11,8 +11,8 @@ defineProps<{
         cardCount: number | null;
         sections: {
             position: number;
-            category: string | null;
-            categoryCode: string | null;
+            divider: string | null;
+            dividerCode: string | null;
             bags: { batchId: number; code: string; itemCount: number }[];
         }[];
     };
@@ -35,10 +35,10 @@ defineProps<{
 
         <div v-for="section in box.sections" :key="section.position" class="mt-4 rounded-xl bg-white p-4 shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="font-semibold" :class="section.category ? 'text-gray-900' : 'text-amber-700'">
-                    Section {{ section.position }} · {{ section.category ?? 'No Divider Assigned' }}
+                <p class="font-semibold" :class="section.divider ? 'text-gray-900' : 'text-amber-700'">
+                    Section {{ section.position }} · {{ section.divider ?? 'No Divider Assigned' }}
                 </p>
-                <span v-if="section.categoryCode" class="font-mono text-xs text-gray-400">{{ section.categoryCode }}</span>
+                <span v-if="section.dividerCode" class="font-mono text-xs text-gray-400">{{ section.dividerCode }}</span>
             </div>
             <div class="mt-2 divide-y divide-gray-100">
                 <Link
