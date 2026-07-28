@@ -74,6 +74,11 @@ class ItemController extends Controller
                 'value' => [
                     'ours' => ['from' => $metadata?->value_from, 'to' => $metadata?->value_to],
                     'ai' => ['from' => $metadata?->ai_value_from, 'to' => $metadata?->ai_value_to],
+                    'market' => [
+                        'value' => $metadata?->market_value,
+                        'match' => $metadata?->market_match,
+                        'checkedAt' => $metadata?->market_checked_at?->format('M j, Y'),
+                    ],
                 ],
                 'copies' => [
                     'count' => $otherCopies->count() + 1,

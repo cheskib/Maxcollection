@@ -94,6 +94,41 @@ class DuplicatesTest extends TestCase
         $this->assertSame('90', \App\Models\Setting::value('confidence_threshold'));
     }
 
+    public function test_market_price_lookup_stores_the_match(): void
+    {
+        config(['services.pricecharting.token' => 'test-token']);
+        \Illuminate\Support\Facades\Http::fake([
+            'www.pricecharting.com/*' => \Illuminate\Support\Facades\Http::response([
+                'product-name' => '1987 Topps Don Mattingly #500',
+                'loose-price' => 1250,
+            ]),
+        ]);
+
+        $item = $this->card(['player_name' => 'Don Mattingly', 'card_number' => '500']);
+
+        $this->actingAs($this->user)
+            ->post("/items/{$item->id}/market-value")
+            ->assertRedirect();
+
+        $metadata = $item->fresh()->metadata;
+        $this->assertSame(12.5, $metadata->market_value);
+        $this->assertSame('1987 Topps Don Mattingly #500', $metadata->market_match);
+        $this->assertNotNull($metadata->market_checked_at);
+    }
+
+    public function test_market_price_requires_the_token(): void
+    {
+        config(['services.pricecharting.token' => null]);
+        $item = $this->card(['player_name' => 'Don Mattingly']);
+
+        $this->actingAs($this->user)
+            ->post("/items/{$item->id}/market-value")
+            ->assertRedirect()
+            ->assertSessionHas('status', fn (string $status) => str_contains($status, 'PRICECHARTING_TOKEN'));
+
+        $this->assertNull($item->fresh()->metadata->market_value);
+    }
+
     public function test_duplicates_require_authentication(): void
     {
         $this->get('/duplicates')->assertRedirect('/login');
