@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
-import { collectionPayload, loadLastCollection, saveLastCollection } from '../composables/lastCollection';
+import { collectionPayload } from '../composables/lastCollection';
 
 interface CaptureImage {
     id: number;
@@ -36,6 +36,13 @@ const STEP_COPY: Record<Step, { title: string; hint: string }> = {
 };
 
 const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
+// Choosing the collection is the wizard's first question; the camera
+// only appears once it's answered.
+const collectionConfirmed = ref(false);
+const collectionChosen = computed(() => {
+    const choice = collectionChoice.value;
+    return typeof choice.collectionId === 'number' || (choice.collectionId === 'new' && choice.newName.trim() !== '');
+});
 const uploading = ref(false);
 const finishing = ref(false);
 const hasAutograph = ref(false);
@@ -44,9 +51,8 @@ const error = ref<string | null>(null);
 const cameraInput = ref<HTMLInputElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-onMounted(() => {
-    collectionChoice.value = loadLastCollection(props.collections);
-});
+// No last-used default here: the collection must be chosen consciously
+// every session so cards never land in the wrong one unnoticed.
 
 function roleForStep(): string {
     if (step.value === 'front') return 'front';
@@ -61,9 +67,6 @@ function upload(event: Event): void {
     if (!photo) return;
 
     error.value = null;
-    if (typeof collectionChoice.value.collectionId === 'number') {
-        saveLastCollection(collectionChoice.value.collectionId);
-    }
 
     router.post(
         '/capture/images',
@@ -104,12 +107,23 @@ const ROLE_LABELS: Record<string, string> = { front: 'Front', back: 'Back', deta
         </div>
 
         <div v-if="!item" class="mt-4 rounded-xl bg-white p-4 shadow-sm">
-            <p class="text-sm font-medium text-gray-700">Collection</p>
+            <p class="text-sm font-medium text-gray-700">
+                {{ collectionConfirmed ? 'Collection' : 'First — which collection does this go in?' }}
+            </p>
             <div class="mt-2">
                 <CollectionPicker v-model="collectionChoice" :collections="collections" />
             </div>
+            <button
+                v-if="!collectionConfirmed"
+                :disabled="!collectionChosen"
+                class="mt-3 w-full rounded-lg bg-blue-600 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300"
+                @click="collectionConfirmed = true"
+            >
+                Continue →
+            </button>
         </div>
 
+        <template v-if="item || collectionConfirmed">
         <div class="mt-4 rounded-xl bg-blue-50 p-4 text-center">
             <p class="font-semibold text-blue-900">{{ STEP_COPY[step].title }}</p>
             <p v-if="STEP_COPY[step].hint" class="mt-1 text-sm text-blue-700">{{ STEP_COPY[step].hint }}</p>
@@ -177,5 +191,6 @@ const ROLE_LABELS: Record<string, string> = { front: 'Front', back: 'Back', deta
                 ← Back to pictures
             </button>
         </div>
+        </template>
     </div>
 </template>
