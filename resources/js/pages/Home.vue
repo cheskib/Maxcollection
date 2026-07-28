@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 
-defineProps<{
+const props = defineProps<{
     stats: {
         itemsCaptured: number;
         itemsProcessed: number;
@@ -22,8 +22,67 @@ function money(from: number | null, to: number | null): string | null {
 
 const page = usePage<{ flash: { status: string | null } }>();
 
+// Live progress after pressing Process: completions counted against a
+// baseline taken at the click, so the number can never move backwards.
+const runStartedAt = ref<number | null>(null);
+const runFinishedAt = ref<number | null>(null);
+const runTotal = ref(0);
+const runBaselineDone = ref(0);
+const nowTick = ref(Date.now());
+let clock: ReturnType<typeof setInterval> | null = null;
+let poll: ReturnType<typeof setInterval> | null = null;
+
+function stopTimers(): void {
+    if (clock) clearInterval(clock);
+    if (poll) clearInterval(poll);
+    clock = poll = null;
+}
+onUnmounted(stopTimers);
+
+const progress = computed(() => {
+    if (runStartedAt.value === null || runTotal.value === 0) return null;
+    const doneNow = props.stats.itemsProcessed + props.stats.needsReview - runBaselineDone.value;
+    const done = Math.min(runTotal.value, Math.max(0, doneNow));
+    const remaining = runTotal.value - done;
+    const elapsedMs = (runFinishedAt.value ?? nowTick.value) - runStartedAt.value;
+    const format = (ms: number) => {
+        const seconds = Math.round(ms / 1000);
+        return seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`;
+    };
+    return {
+        done,
+        remaining,
+        total: runTotal.value,
+        percent: Math.round((done / runTotal.value) * 100),
+        elapsed: format(elapsedMs),
+        eta: done > 0 && remaining > 0 ? format((elapsedMs / done) * remaining) : null,
+        finished: remaining === 0,
+    };
+});
+
+watch(progress, (current) => {
+    if (current?.finished && runFinishedAt.value === null) {
+        runFinishedAt.value = Date.now();
+        stopTimers();
+    }
+});
+
 function processItems(): void {
-    router.post('/process');
+    const total = props.stats.unprocessed;
+    const baseline = props.stats.itemsProcessed + props.stats.needsReview;
+
+    router.post('/process', {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            runTotal.value = total;
+            runBaselineDone.value = baseline;
+            runStartedAt.value = Date.now();
+            runFinishedAt.value = null;
+            stopTimers();
+            clock = setInterval(() => (nowTick.value = Date.now()), 1000);
+            poll = setInterval(() => router.reload({ only: ['stats'] }), 4000);
+        },
+    });
 }
 
 // Re-run the AI over the whole collection, asking which photos it reads.
@@ -96,42 +155,18 @@ function logout(): void {
             <template v-else>Nothing waiting to process</template>
         </button>
 
-        <button
-            class="mt-2 w-full rounded-xl bg-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-300"
-            @click="choosingReprocessSource = !choosingReprocessSource"
-        >
-            ↻ Reprocess Everything
-        </button>
-        <button
-            class="mt-2 w-full rounded-xl bg-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-300"
-            @click="router.post('/revalue-all')"
-        >
-            💲 Update AI Values
-        </button>
-        <div v-if="choosingReprocessSource" class="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-4">
-            <p class="text-sm font-semibold text-gray-900">Which photos should the AI read?</p>
-            <p class="mt-1 text-xs text-gray-500">Every item will be re-run at the standard tier; current details will be replaced.</p>
-            <div class="mt-3 flex flex-col gap-2">
-                <button
-                    class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
-                    @click="runReprocessAll('cleaned')"
-                >
-                    Cleaned photos
-                    <span class="block text-xs font-normal text-blue-100">Keep all adjustments — just re-read every item as shown.</span>
-                </button>
-                <button
-                    class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
-                    @click="runReprocessAll('original')"
-                >
-                    Original photos
-                    <span class="block text-xs font-normal text-blue-100">Start fresh — clears hand-trims; photos return to original framing.</span>
-                </button>
-                <button
-                    class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
-                    @click="choosingReprocessSource = false"
-                >
-                    Cancel
-                </button>
+        <div v-if="progress" class="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <template v-if="!progress.finished">
+                <p class="text-sm font-semibold text-gray-900">
+                    ⚙️ Processing… {{ progress.done }} of {{ progress.total }} done · {{ progress.remaining }} remaining
+                </p>
+                <p class="mt-0.5 text-xs text-gray-500">
+                    Elapsed {{ progress.elapsed }}<span v-if="progress.eta"> · about {{ progress.eta }} left</span>
+                </p>
+            </template>
+            <p v-else class="text-sm font-semibold text-green-700">✅ All {{ progress.total }} item(s) processed in {{ progress.elapsed }}.</p>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                <div class="h-full bg-blue-600 transition-all" :style="{ width: `${progress.percent}%` }"></div>
             </div>
         </div>
 
@@ -172,6 +207,46 @@ function logout(): void {
                 <p class="mt-1 font-semibold text-gray-900">Sets</p>
             </Link>
         </div>
+
+        <p class="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-400">Maintenance</p>
+        <button
+            class="mt-2 w-full rounded-xl bg-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+            @click="choosingReprocessSource = !choosingReprocessSource"
+        >
+            ↻ Reprocess Everything
+        </button>
+        <div v-if="choosingReprocessSource" class="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <p class="text-sm font-semibold text-gray-900">Which photos should the AI read?</p>
+            <p class="mt-1 text-xs text-gray-500">Every item will be re-run at the standard tier; current details will be replaced.</p>
+            <div class="mt-3 flex flex-col gap-2">
+                <button
+                    class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="runReprocessAll('cleaned')"
+                >
+                    Cleaned photos
+                    <span class="block text-xs font-normal text-blue-100">Keep all adjustments — just re-read every item as shown.</span>
+                </button>
+                <button
+                    class="rounded-lg bg-blue-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="runReprocessAll('original')"
+                >
+                    Original photos
+                    <span class="block text-xs font-normal text-blue-100">Start fresh — clears hand-trims; photos return to original framing.</span>
+                </button>
+                <button
+                    class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                    @click="choosingReprocessSource = false"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+        <button
+            class="mt-2 w-full rounded-xl bg-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+            @click="router.post('/revalue-all')"
+        >
+            💲 Update AI Values
+        </button>
 
         <div class="mt-8 flex items-center justify-center gap-6 text-sm">
             <Link href="/settings" class="font-medium text-gray-500 hover:text-gray-700">Settings</Link>
