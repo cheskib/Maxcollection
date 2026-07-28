@@ -55,6 +55,10 @@ class ItemController extends Controller
                 'processedAt' => $item->processed_at?->format('M j, Y g:i A'),
                 'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag(), 'adjusted' => $image->isAdjusted(), 'canUndo' => $image->previous_adjustments !== null])->all(),
                 'fields' => $fields,
+                'value' => [
+                    'ours' => ['from' => $metadata?->value_from, 'to' => $metadata?->value_to],
+                    'ai' => ['from' => $metadata?->ai_value_from, 'to' => $metadata?->ai_value_to],
+                ],
                 'processing' => $lastJob === null ? null : [
                     'status' => $lastJob->status,
                     'model' => $lastJob->model,

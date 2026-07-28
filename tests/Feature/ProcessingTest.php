@@ -420,6 +420,31 @@ class ProcessingTest extends TestCase
         $this->assertSame('1987 Topps All-Star Don Mattingly', $metadata->primaryTitle());
     }
 
+    public function test_ai_ballpark_value_range_is_saved(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 95,
+                'fields' => ['player_name' => 'Valued Player'],
+                'value_low' => 8,
+                'value_high' => 15.5,
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $item->metadata()->create(['category' => 'sports_card', 'value_from' => 100, 'value_to' => 200]);
+
+        $this->actingAs($this->user)->post('/process');
+
+        $metadata = $item->fresh()->metadata;
+        $this->assertSame(8.0, $metadata->ai_value_from);
+        $this->assertSame(15.5, $metadata->ai_value_to);
+        // The owner's manual range is never touched by processing.
+        $this->assertSame(100.0, $metadata->value_from);
+        $this->assertSame(200.0, $metadata->value_to);
+    }
+
     public function test_checklist_cards_do_not_need_a_player_name(): void
     {
         Http::fake([

@@ -21,12 +21,17 @@ class EditItemController extends Controller
             $values[$field] = $metadata?->{$field};
         }
 
+        foreach (Metadata::VALUE_FIELDS as $field) {
+            $values[$field] = $metadata?->{$field};
+        }
+
         return Inertia::render('EditItem', [
             'item' => [
                 'id' => $item->id,
                 'title' => $metadata?->primaryTitle() ?? "Item #{$item->id}",
                 'category' => $metadata?->category ?? 'unsupported',
                 'values' => $values,
+                'aiValue' => ['from' => $metadata?->ai_value_from, 'to' => $metadata?->ai_value_to],
                 'images' => $item->images()->orderBy('id')->get()->map(fn ($image) => ['id' => $image->id, 'original_filename' => $image->original_filename, 'version' => $image->versionTag()])->all(),
             ],
             'categoryFields' => Metadata::CATEGORY_FIELDS,

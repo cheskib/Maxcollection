@@ -297,6 +297,11 @@ For sports cards, be careful with years and special cards:
 Report an overall confidence score from 0 to 100 for the identification and
 extracted metadata as a whole.
 
+Also report "value_low" and "value_high": a conservative estimated resale
+value range in United States dollars for this exact item in the condition
+shown, based on what such items typically sell for. Plain numbers only.
+Use null for BOTH when you cannot estimate responsibly.
+
 Also report "rotations": for each photograph, in the order provided, the
 clockwise rotation in degrees (0, 90, 180, or 270) needed so the item is
 correctly oriented — the front standing upright, and the back turned so its
@@ -333,6 +338,8 @@ PROMPT;
             'properties' => [
                 'category' => ['type' => 'string', 'enum' => AiResult::CATEGORIES],
                 'confidence' => ['type' => 'number'],
+                'value_low' => ['type' => ['number', 'null']],
+                'value_high' => ['type' => ['number', 'null']],
                 'fields' => [
                     'type' => 'object',
                     'additionalProperties' => false,
@@ -348,7 +355,7 @@ PROMPT;
                     'items' => ['type' => 'string', 'enum' => ['front', 'back', 'detail', 'unknown']],
                 ],
             ],
-            'required' => ['category', 'confidence', 'fields', 'rotations', 'roles'],
+            'required' => ['category', 'confidence', 'value_low', 'value_high', 'fields', 'rotations', 'roles'],
         ];
     }
 
@@ -398,7 +405,17 @@ PROMPT;
             ->values()
             ->all();
 
-        return new AiResult($category, $confidence, $fields, $rotations, $roles);
+        // The ballpark is a range or nothing: both ends numeric, ordered.
+        $valueLow = is_numeric($decoded['value_low'] ?? null) ? round(max(0, (float) $decoded['value_low']), 2) : null;
+        $valueHigh = is_numeric($decoded['value_high'] ?? null) ? round(max(0, (float) $decoded['value_high']), 2) : null;
+
+        if ($valueLow === null || $valueHigh === null) {
+            $valueLow = $valueHigh = null;
+        } elseif ($valueLow > $valueHigh) {
+            [$valueLow, $valueHigh] = [$valueHigh, $valueLow];
+        }
+
+        return new AiResult($category, $confidence, $fields, $rotations, $roles, $valueLow, $valueHigh);
     }
 
     /**

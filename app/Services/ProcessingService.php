@@ -112,6 +112,10 @@ class ProcessingService
         $item->metadata()->updateOrCreate([], [
             'category' => $result->category,
             'confidence' => $result->confidence,
+            // The AI's ballpark refreshes each run; the owner's manual
+            // value range (value_from/value_to) is never written here.
+            'ai_value_from' => $result->valueLow,
+            'ai_value_to' => $result->valueHigh,
             ...$fields,
         ]);
 

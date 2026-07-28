@@ -34,6 +34,8 @@ class AiResult
         public readonly array $fields,
         public readonly array $rotations = [],
         public readonly array $roles = [],
+        public readonly ?float $valueLow = null,
+        public readonly ?float $valueHigh = null,
     ) {
     }
 

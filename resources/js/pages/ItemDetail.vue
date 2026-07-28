@@ -28,6 +28,10 @@ const props = defineProps<{
         processedAt: string | null;
         images: { id: number; original_filename: string; version: string; adjusted: boolean; canUndo: boolean }[];
         fields: Field[];
+        value: {
+            ours: { from: number | null; to: number | null };
+            ai: { from: number | null; to: number | null };
+        };
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
 }>();
@@ -124,6 +128,12 @@ function saveCollection(): void {
 function deleteItem(): void {
     if (!confirm('Delete this item? Its photographs, details, and history will be permanently removed.')) return;
     router.delete(`/items/${props.item.id}`);
+}
+
+function money(from: number | null, to: number | null): string {
+    const fmt = (v: number) => `$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    if (from !== null && to !== null) return from === to ? fmt(from) : `${fmt(from)} – ${fmt(to)}`;
+    return fmt((from ?? to) as number);
 }
 
 function back(): void {
@@ -267,6 +277,23 @@ function back(): void {
                     Save Collection
                 </button>
             </div>
+        </div>
+
+        <div
+            v-if="item.value.ours.from !== null || item.value.ours.to !== null || item.value.ai.from !== null || item.value.ai.to !== null"
+            class="mt-6 rounded-xl bg-white p-4 shadow-sm"
+        >
+            <h2 class="font-semibold text-gray-900">Value</h2>
+            <dl class="mt-2 divide-y divide-gray-100">
+                <div v-if="item.value.ours.from !== null || item.value.ours.to !== null" class="flex justify-between gap-3 py-2 text-sm">
+                    <dt class="text-gray-500">Our Value</dt>
+                    <dd class="text-right font-medium text-gray-900">{{ money(item.value.ours.from, item.value.ours.to) }}</dd>
+                </div>
+                <div v-if="item.value.ai.from !== null || item.value.ai.to !== null" class="flex justify-between gap-3 py-2 text-sm">
+                    <dt class="text-gray-500">AI Ballpark</dt>
+                    <dd class="text-right font-medium text-gray-900">{{ money(item.value.ai.from, item.value.ai.to) }}</dd>
+                </div>
+            </dl>
         </div>
 
         <div v-if="item.fields.length" class="mt-6 rounded-xl bg-white p-4 shadow-sm">

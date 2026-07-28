@@ -40,6 +40,20 @@ class MetadataService
                 }
             }
 
+            // The owner's value range applies to every category.
+            foreach (Metadata::VALUE_FIELDS as $field) {
+                if (! array_key_exists($field, $values)) {
+                    continue;
+                }
+
+                $new = is_numeric($values[$field]) ? round((float) $values[$field], 2) : null;
+                $current = $metadata->{$field} !== null ? round((float) $metadata->{$field}, 2) : null;
+
+                if ($current !== $new) {
+                    $changes[$field] = $new;
+                }
+            }
+
             foreach ($changes as $field => $new) {
                 $item->metadataHistory()->create([
                     'user_id' => $user->id,
