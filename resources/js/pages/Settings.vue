@@ -120,6 +120,20 @@ function save(): void {
         </div>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">Export</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Download the entire collection — every card, every field, all values — as a CSV that opens directly in
+                Excel. Your backup and insurance documentation.
+            </p>
+            <a
+                href="/export"
+                class="mt-3 block w-full rounded-lg bg-blue-600 py-3 text-center font-semibold text-white hover:bg-blue-700"
+            >
+                ⬇ Download CSV Export
+            </a>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
             <h2 class="font-semibold text-gray-900">⭐ Key names watchlist</h2>
             <p class="mt-1 text-sm text-gray-500">
                 Cards whose player matches a name here are flagged ⭐ the moment they're processed — regardless of the AI's
