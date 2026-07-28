@@ -17,6 +17,7 @@ class SettingsController extends Controller
             // Informational: the models are configured on the server.
             'standardModel' => (string) config('services.openai.model'),
             'premiumModel' => (string) config('services.openai.premium_model'),
+            'marketConfigured' => filled(config('services.pricecharting.token')),
         ]);
     }
 
