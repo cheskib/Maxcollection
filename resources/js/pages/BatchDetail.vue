@@ -5,7 +5,15 @@ import CollectionPicker, { type CollectionChoice } from '../components/Collectio
 import { collectionPayload } from '../composables/lastCollection';
 
 const props = defineProps<{
-    batch: { id: number; label: string; uploadedAt: string; pendingCount: number };
+    batch: {
+        id: number;
+        label: string;
+        uploadedAt: string;
+        pendingCount: number;
+        bagCode: string | null;
+        finalizedAt: string | null;
+        location: { box: string; boxId: number; section: string; sealed: boolean } | null;
+    };
     items: {
         id: number;
         thumbnailImageId: number | null;
@@ -19,7 +27,24 @@ const props = defineProps<{
     collections: { id: number; name: string }[];
 }>();
 
-const page = usePage<{ flash: { status: string | null } }>();
+type Scan = { ok: boolean; tone: string; message: string };
+const page = usePage<{ flash: { status: string | null; scan: Scan | null } }>();
+
+// Finalize: scanning (or typing) the bag barcode gives the batch its
+// permanent identity. Re-scanning is allowed until the bag is sealed
+// inside a completed box.
+const bagInput = ref('');
+const changingBag = ref(false);
+
+function assignBag(): void {
+    const code = bagInput.value.trim();
+    if (!code) return;
+    router.post(`/batches/${props.batch.id}/bag`, { code }, {
+        preserveScroll: true,
+        onFinish: () => (bagInput.value = ''),
+        onSuccess: () => (changingBag.value = false),
+    });
+}
 
 const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
 
@@ -81,6 +106,61 @@ onUnmounted(stopPolling);
         <p v-if="page.props.flash.status" class="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
             {{ page.props.flash.status }}
         </p>
+        <p
+            v-if="page.props.flash.scan"
+            class="mt-3 rounded-lg p-3 text-sm font-semibold"
+            :class="page.props.flash.scan.ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'"
+        >
+            {{ page.props.flash.scan.ok ? '✓' : '✕' }} {{ page.props.flash.scan.message }}
+        </p>
+
+<!-- The physical bag: finalize by scanning its barcode -->
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <template v-if="batch.bagCode && !changingBag">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-mono text-lg font-bold text-gray-900">🏷️ {{ batch.bagCode }}</p>
+                        <p class="text-xs text-gray-500">Finalized {{ batch.finalizedAt }}</p>
+                        <p v-if="batch.location" class="mt-1 text-sm text-gray-700">
+                            📦 Box
+                            <Link :href="`/storage/boxes/${batch.location.boxId}`" class="font-semibold text-blue-600">{{ batch.location.box }}</Link>
+                            · {{ batch.location.section }}
+                            <span v-if="batch.location.sealed" class="text-gray-400">(sealed)</span>
+                        </p>
+                        <p v-else class="mt-1 text-sm text-gray-400">Not boxed yet.</p>
+                    </div>
+                    <button
+                        v-if="!batch.location || !batch.location.sealed"
+                        class="text-sm font-semibold text-blue-600"
+                        @click="changingBag = true"
+                    >
+                        Change
+                    </button>
+                </div>
+            </template>
+            <template v-else>
+                <p class="text-sm font-medium text-gray-700">
+                    {{ batch.bagCode ? 'Scan the new bag barcode' : 'Finalize — scan the bag barcode' }}
+                </p>
+                <div class="mt-2 flex gap-2">
+                    <input
+                        v-model="bagInput"
+                        type="text"
+                        autocomplete="off"
+                        placeholder="BAG-000123"
+                        class="block w-full rounded-lg border border-gray-300 px-3 py-2.5 font-mono"
+                        @keydown.enter.prevent="assignBag"
+                    />
+                    <button
+                        class="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                        @click="assignBag"
+                    >
+                        Assign
+                    </button>
+                </div>
+                <button v-if="changingBag" class="mt-2 text-sm text-gray-500" @click="changingBag = false">Cancel</button>
+            </template>
+        </div>
         <p v-if="batch.pendingCount > 0" class="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
             ⏳ {{ batch.pendingCount }} item(s) still processing… this page updates by itself.
         </p>

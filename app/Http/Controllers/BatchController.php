@@ -43,6 +43,16 @@ class BatchController extends Controller
     }
 
     /**
+     * Finalize the batch by scanning its bag barcode — the permanent ID.
+     */
+    public function assignBag(Request $request, Batch $batch, \App\Services\StorageService $storage): RedirectResponse
+    {
+        $validated = $request->validate(['code' => ['required', 'string', 'max:64']]);
+
+        return back()->with('scan', $storage->assignBag($request->user(), $batch, $validated['code']));
+    }
+
+    /**
      * Move every item in the batch into a collection at once.
      */
     public function assignCollection(Request $request, Batch $batch, CollectionService $collections): RedirectResponse
@@ -125,6 +135,9 @@ class BatchController extends Controller
                 'keyCard' => (bool) $item->metadata?->key_card,
             ]);
 
+        // Physical location, when the finalized bag has been boxed.
+        $section = $batch->storageSection?->load(['box.barcode', 'categoryBarcode']);
+
         return Inertia::render('BatchDetail', [
             'batch' => [
                 'id' => $batch->id,
@@ -133,6 +146,14 @@ class BatchController extends Controller
                 'pendingCount' => $batch->items()->whereIn('status', [
                     Item::STATUS_CAPTURED, Item::STATUS_QUEUED, Item::STATUS_PROCESSING,
                 ])->count(),
+                'bagCode' => $batch->barcode?->code,
+                'finalizedAt' => $batch->finalized_at?->format('M j, Y g:i A'),
+                'location' => $section === null ? null : [
+                    'box' => $section->box->barcode->code,
+                    'boxId' => $section->box->id,
+                    'section' => $section->categoryBarcode?->displayLabel() ?? 'No Divider Assigned',
+                    'sealed' => $section->box->status === \App\Models\StorageBox::STATUS_CLOSED,
+                ],
             ],
             'items' => $items->all(),
             'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),

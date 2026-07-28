@@ -8,12 +8,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Batch extends Model
 {
-    protected $fillable = ['user_id', 'source', 'label', 'content_hash', 'converted_at'];
+    public const STATUS_OPEN = 'open';
+
+    public const STATUS_CLOSED = 'closed';
+
+    protected $fillable = [
+        'user_id', 'source', 'label', 'content_hash', 'converted_at',
+        'barcode_id', 'status', 'finalized_at', 'archived_at', 'storage_section_id',
+    ];
 
     protected function casts(): array
     {
         return [
             'converted_at' => 'datetime',
+            'finalized_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -27,8 +36,19 @@ class Batch extends Model
         return $this->hasMany(Item::class);
     }
 
+    public function barcode(): BelongsTo
+    {
+        return $this->belongsTo(Barcode::class);
+    }
+
+    public function storageSection(): BelongsTo
+    {
+        return $this->belongsTo(StorageSection::class);
+    }
+
     public function displayLabel(): string
     {
-        return $this->label ?? "Batch #{$this->id}";
+        // Once finalized, the bag barcode is the batch's permanent identity.
+        return $this->barcode?->code ?? $this->label ?? "Batch #{$this->id}";
     }
 }

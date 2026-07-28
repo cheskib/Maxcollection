@@ -42,6 +42,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'status' => $request->session()->get('status'),
+                // Structured result of the last barcode scan (storage flows).
+                'scan' => $request->session()->get('scan'),
             ],
         ];
     }

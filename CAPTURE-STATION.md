@@ -1,6 +1,8 @@
 # Max Collection Capture Station — Architecture
 
-Status: **PROPOSED — awaiting owner approval. No implementation has begun.**
+Status: **APPROVED 2026-07-28** — all assumptions resolved (see "Approved
+Decisions" at the end). Milestone 1 (Laravel storage foundation) is in
+progress per the build order in this document.
 
 This document is the response to the Capture Station design specification.
 The specification defines WHAT the Capture Station is; this document defines
@@ -428,6 +430,35 @@ Dropbox upload retries via the queue and surfaces on the batch page as
 | 10 | **Divider semantics drift** — physical categories (dividers) vs AI metadata categories could be conflated by future code. | Dividers are stored as opaque `category_barcode` strings in storage tables only, never joined to metadata. The spec's rule is enforced structurally. |
 
 ---
+
+## Approved Decisions (owner rulings, 2026-07-28)
+
+1. **Windows PC at the scan desk** — confirmed.
+2. **Labels are printed by us** — the web app generates Code 128 label
+   sheets; the owner prints them, guided.
+3. **Logical rename approved** — the permanent bag ID is applied in the
+   database, the UI, and the Dropbox archive naming; stored original files
+   are never renamed. Additionally, **every barcode is pre-registered at
+   print time** (owner-requested): an unknown scan is instantly a misread,
+   and printed-but-never-used labels are traceable.
+4. **AI runs automatically on station uploads** — and always on the server
+   (Railway), never on the scanning desk PC.
+5. **Divider categories are free-form** — neutral CAT-xxxxxx codes with a
+   printed display name, unrelated to AI metadata.
+6. **Dropbox confirmed** — owner has 2 TB; full 300k-card archive projected
+   at roughly 200–450 GB.
+7. **Shelf level deferred** until a workflow needs it.
+
+The owner's Milestone 1 review added ten binding requirements, reflected in
+the implementation: registry-FK design everywhere (no copied code strings);
+precise pending-section semantics; one open box **per user** (never a global
+limit); undo + double-read protection + audit trail (`storage_events`);
+finalize blocks on unprocessed items but not on Needs Review;
+`finalized_at` distinct from `archived_at`; strict normalization
+(`XXX-000000`, registry + type validated, never prefix alone); scanner-first
+browser UX with an explicit "Start Packing Session" gesture; unlabeled final
+sections preserved as "No Divider Assigned" after explicit confirmation;
+snapshot counts that stay recalculable from relations.
 
 ## Assumptions Requiring Approval (per CLAUDE.md §4)
 
