@@ -7,8 +7,20 @@ const props = defineProps<{
     standardModel: string;
     premiumModel: string;
     marketConfigured: boolean;
+    dropbox: {
+        configured: boolean;
+        connected: boolean;
+        connectedAt: string | null;
+        archivedCount: number;
+        pendingCount: number;
+    };
     keyNames: Record<string, { id: number; name: string }[]>;
 }>();
+
+function disconnectDropbox(): void {
+    if (!confirm('Disconnect Dropbox? Archiving stops; copies already in Dropbox stay there.')) return;
+    router.post('/settings/dropbox/disconnect', {}, { preserveScroll: true });
+}
 
 const SPORTS = ['Baseball', 'Basketball', 'Football', 'Hockey', 'Soccer', 'Golf', 'Tennis', 'Boxing', 'Wrestling', 'Racing', 'Other'];
 
@@ -131,6 +143,44 @@ function save(): void {
             >
                 ⬇ Download CSV Export
             </a>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">☁️ Dropbox Archive</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Every finalized bag's original photos are copied to your Dropbox under its bag number — the off-site
+                safety net for the whole collection.
+            </p>
+
+            <p v-if="!dropbox.configured" class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+                Add DROPBOX_APP_KEY and DROPBOX_APP_SECRET in Railway to enable connecting.
+            </p>
+
+            <a
+                v-else-if="!dropbox.connected"
+                href="/settings/dropbox/connect"
+                class="mt-3 block w-full rounded-lg bg-blue-600 py-3 text-center font-semibold text-white hover:bg-blue-700"
+            >
+                🔗 Connect Dropbox
+            </a>
+
+            <template v-else>
+                <p class="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+                    ✓ Connected<span v-if="dropbox.connectedAt"> since {{ dropbox.connectedAt }}</span> ·
+                    {{ dropbox.archivedCount }} batch(es) archived<span v-if="dropbox.pendingCount"> ·
+                    <span class="font-semibold text-amber-700">{{ dropbox.pendingCount }} pending</span></span>
+                </p>
+                <button
+                    v-if="dropbox.pendingCount"
+                    class="mt-2 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="router.post('/settings/dropbox/archive-pending', {}, { preserveScroll: true })"
+                >
+                    ☁️ Archive {{ dropbox.pendingCount }} pending batch(es)
+                </button>
+                <button class="mt-2 w-full text-sm text-gray-400 hover:text-gray-600" @click="disconnectDropbox">
+                    Disconnect
+                </button>
+            </template>
         </div>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">

@@ -48,4 +48,10 @@ return [
         'token' => env('PRICECHARTING_TOKEN'),
     ],
 
+    // Off-site archive of original images (App Folder-scoped app).
+    'dropbox' => [
+        'key' => env('DROPBOX_APP_KEY'),
+        'secret' => env('DROPBOX_APP_SECRET'),
+    ],
+
 ];

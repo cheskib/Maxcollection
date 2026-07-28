@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/sets/{cardSet}', [\App\Http\Controllers\CardSetController::class, 'update'])->name('sets.update');
     Route::get('/batches/{batch}', [BatchController::class, 'show'])->name('batches.show');
     Route::post('/batches/{batch}/bag', [BatchController::class, 'assignBag'])->name('batches.bag');
+    Route::post('/batches/{batch}/archive', [BatchController::class, 'archive'])->name('batches.archive');
 
     Route::get('/storage', [\App\Http\Controllers\StorageController::class, 'index'])->name('storage');
     Route::post('/storage/scan', [\App\Http\Controllers\StorageController::class, 'scan'])->name('storage.scan');
@@ -97,6 +98,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/export', [\App\Http\Controllers\ExportController::class, 'csv'])->name('export');
     Route::get('/stats', [\App\Http\Controllers\StatsController::class, 'index'])->name('stats');
     Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
+    Route::get('/settings/dropbox/connect', [\App\Http\Controllers\DropboxController::class, 'connect'])->name('settings.dropbox.connect');
+    Route::get('/settings/dropbox/callback', [\App\Http\Controllers\DropboxController::class, 'callback'])->name('settings.dropbox.callback');
+    Route::post('/settings/dropbox/disconnect', [\App\Http\Controllers\DropboxController::class, 'disconnect'])->name('settings.dropbox.disconnect');
+    Route::post('/settings/dropbox/archive-pending', [\App\Http\Controllers\DropboxController::class, 'archivePending'])->name('settings.dropbox.archive');
     Route::post('/settings', [\App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/key-names', [\App\Http\Controllers\SettingsController::class, 'addKeyName'])->name('settings.keynames.add');
     Route::delete('/settings/key-names/{keyName}', [\App\Http\Controllers\SettingsController::class, 'removeKeyName'])->name('settings.keynames.remove');

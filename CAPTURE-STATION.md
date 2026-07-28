@@ -1,8 +1,9 @@
 # Max Collection Capture Station — Architecture
 
 Status: **APPROVED 2026-07-28** — all assumptions resolved (see "Approved
-Decisions" at the end). Milestone 1 (Laravel storage foundation) is in
-progress per the build order in this document.
+Decisions" at the end). Milestones 1 (Laravel storage foundation) and
+2 (Dropbox archive) are complete; next per the build order is the Station
+App skeleton (barcode workflows), then TWAIN integration on hardware.
 
 This document is the response to the Capture Station design specification.
 The specification defines WHAT the Capture Station is; this document defines

@@ -12,6 +12,8 @@ const props = defineProps<{
         pendingCount: number;
         bagCode: string | null;
         finalizedAt: string | null;
+        archivedAt: string | null;
+        archiveReady: boolean;
         location: { box: string; boxId: number; section: string; sealed: boolean } | null;
     };
     items: {
@@ -128,6 +130,14 @@ onUnmounted(stopPolling);
                             <span v-if="batch.location.sealed" class="text-gray-400">(sealed)</span>
                         </p>
                         <p v-else class="mt-1 text-sm text-gray-400">Not boxed yet.</p>
+                        <p v-if="batch.archivedAt" class="mt-1 text-xs text-green-700">☁️ Archived to Dropbox {{ batch.archivedAt }}</p>
+                        <button
+                            v-else-if="batch.archiveReady"
+                            class="mt-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                            @click="router.post(`/batches/${batch.id}/archive`, {}, { preserveScroll: true })"
+                        >
+                            ☁️ Archive pending — run now
+                        </button>
                     </div>
                     <button
                         v-if="!batch.location || !batch.location.sealed"
