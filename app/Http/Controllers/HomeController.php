@@ -10,8 +10,12 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function index(): Response
+    public function index(\App\Services\ProcessingService $processing): Response
     {
+        // Heal any card whose processing job died, so nothing sits in
+        // "processing" forever (Home is also polled during live progress).
+        $processing->rescueStalledItems();
+
         // Collection-wide value: each card's Our Value, falling back to
         // its AI Ballpark, plus how many cards carry a value at all.
         $value = DB::table('metadata')

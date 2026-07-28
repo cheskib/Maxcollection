@@ -218,6 +218,34 @@ class ProcessingService
     }
 
     /**
+     * Self-healing: items stuck in queued/processing for over ten minutes
+     * (job timeout is five) lost their job to a timeout or restart. Move
+     * them to Needs Review so they are visible and reprocessable.
+     */
+    public function rescueStalledItems(): int
+    {
+        $stalled = Item::whereIn('status', [Item::STATUS_QUEUED, Item::STATUS_PROCESSING])
+            ->where('updated_at', '<', now()->subMinutes(10))
+            ->get();
+
+        foreach ($stalled as $item) {
+            $item->update([
+                'status' => Item::STATUS_NEEDS_REVIEW,
+                'review_reason' => 'ai_failure',
+                'processed_at' => now(),
+            ]);
+
+            $item->processingJobs()->latest('id')->first()?->update([
+                'status' => ProcessingJob::STATUS_FAILED,
+                'error_message' => 'Processing stalled and was rescued.',
+                'finished_at' => now(),
+            ]);
+        }
+
+        return $stalled->count();
+    }
+
+    /**
      * The Sets catalog builds itself: the first card seen from a
      * sport/manufacturer/year creates the set profile, and a one-time
      * background job writes its design history.
