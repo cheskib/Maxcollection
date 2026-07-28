@@ -6,21 +6,40 @@ use App\Models\CardSet;
 use App\Models\Collection;
 use App\Models\Item;
 use App\Models\Metadata;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The Items Processed click-through: breakdowns of the processed
- * collection, every row opening the Processed Items list pre-filtered.
+ * The Items Processed click-through: a drill-down of summaries, never a
+ * flat list. Category first, then (for sports cards) sport, then card
+ * type; the final tap opens the Processed Items list pre-filtered.
  */
 class ProcessedSummaryController extends Controller
 {
-    public function index(): Response
+    /**
+     * The natural second drill-down level for each category: sports cards
+     * group by sport (then card type), comics by publisher, coins and
+     * stamps by country.
+     */
+    private const CATEGORY_GROUPS = [
+        'sports_card' => 'sport',
+        'comic_book' => 'publisher',
+        'coin' => 'country',
+        'stamp' => 'country',
+    ];
+
+    public function index(Request $request): Response
     {
+        $category = trim($request->string('category')->toString());
+        $sport = trim($request->string('sport')->toString());
+
         $processedMetadata = fn () => Metadata::whereHas(
             'item',
             fn ($query) => $query->where('status', Item::STATUS_PROCESSED),
-        );
+        )
+            ->when($category !== '', fn ($query) => $query->where('category', $category))
+            ->when($sport !== '', fn ($query) => $query->where('sport', $sport));
 
         $countBy = function (string $field) use ($processedMetadata): array {
             return $processedMetadata()
@@ -33,6 +52,41 @@ class ProcessedSummaryController extends Controller
                 ->all();
         };
 
+        $shared = [
+            'category' => $category !== '' ? $category : null,
+            'categoryLabel' => $category !== '' ? (new Metadata(['category' => $category]))->categoryLabel() : null,
+            'sport' => $sport !== '' ? $sport : null,
+            'total' => $processedMetadata()->count(),
+            'categories' => [],
+            'groupField' => null,
+            'groups' => [],
+            'cardTypes' => [],
+            'collections' => ['named' => [], 'unassigned' => 0],
+            'sets' => [],
+        ];
+
+        // Level 3: a sport is chosen — break it down by card type.
+        if ($sport !== '') {
+            return Inertia::render('ProcessedSummary', [
+                ...$shared,
+                'cardTypes' => $countBy('card_type'),
+            ]);
+        }
+
+        // Level 2: a category is chosen — break it down by its natural
+        // grouping (sport, publisher, or country).
+        if ($category !== '') {
+            $groupField = self::CATEGORY_GROUPS[$category] ?? null;
+
+            return Inertia::render('ProcessedSummary', [
+                ...$shared,
+                'groupField' => $groupField,
+                'groups' => $groupField !== null ? $countBy($groupField) : [],
+            ]);
+        }
+
+        // Level 1: the overview — pick a category (plus the cross-category
+        // views by collection and by set).
         $categories = collect($countBy('category'))
             ->map(fn (array $row) => [
                 ...$row,
@@ -46,10 +100,8 @@ class ProcessedSummaryController extends Controller
         $unassigned = Item::where('status', Item::STATUS_PROCESSED)->whereNull('collection_id')->count();
 
         return Inertia::render('ProcessedSummary', [
-            'total' => Item::where('status', Item::STATUS_PROCESSED)->count(),
+            ...$shared,
             'categories' => $categories,
-            'sports' => $countBy('sport'),
-            'cardTypes' => $countBy('card_type'),
             'collections' => [
                 'named' => $collections->map(fn (Collection $collection) => [
                     'id' => $collection->id,

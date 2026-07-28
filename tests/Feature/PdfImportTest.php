@@ -134,6 +134,28 @@ class PdfImportTest extends TestCase
         $this->assertSame(2, Item::first()->images()->count());
     }
 
+    public function test_the_same_pdf_cannot_be_uploaded_twice(): void
+    {
+        $first = $this->pdfWithPages(2);
+        // Same bytes, different filename: still the same batch.
+        $copy = new UploadedFile($first->getRealPath(), 'renamed.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($this->user)->post('/capture/bulk/pdf', [
+            'pdf' => $first,
+            'photos_per_item' => 2,
+        ])->assertStatus(202);
+
+        $response = $this->actingAs($this->user)->postJson('/capture/bulk/pdf', [
+            'pdf' => $copy,
+            'photos_per_item' => 2,
+        ]);
+
+        $response->assertStatus(409);
+        $this->assertStringContainsString('Reprocess Batch', $response->json('message'));
+        $this->assertDatabaseCount('batches', 1);
+        $this->assertDatabaseCount('items', 1);
+    }
+
     public function test_non_pdf_files_are_rejected(): void
     {
         $response = $this->actingAs($this->user)->postJson('/capture/bulk/pdf', [

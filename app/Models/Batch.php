@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Batch extends Model
 {
-    protected $fillable = ['user_id', 'source', 'label', 'converted_at'];
+    protected $fillable = ['user_id', 'source', 'label', 'content_hash', 'converted_at'];
 
     protected function casts(): array
     {

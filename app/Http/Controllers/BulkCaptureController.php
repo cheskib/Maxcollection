@@ -66,12 +66,28 @@ class BulkCaptureController extends Controller
             ...CollectionService::rules(),
         ]);
 
+        // Guardrail: the same PDF must not be uploaded twice — re-running
+        // the AI is done with Reprocess Batch on the existing batch.
+        $hash = hash_file('sha256', $request->file('pdf')->getRealPath());
+        $existing = Batch::where('content_hash', $hash)->first();
+
+        if ($existing !== null) {
+            return response()->json([
+                'message' => sprintf(
+                    'This PDF was already uploaded as "%s" on %s. Open that batch and use Reprocess Batch instead.',
+                    $existing->displayLabel(),
+                    $existing->created_at->format('M j, Y'),
+                ),
+            ], 409);
+        }
+
         $path = $request->file('pdf')->store('imports', 'local');
 
         $batch = Batch::create([
             'user_id' => $request->user()->id,
             'source' => 'pdf',
             'label' => $request->file('pdf')->getClientOriginalName(),
+            'content_hash' => $hash,
         ]);
 
         $collectionId = $collections->resolveFromRequest($request, $request->user());
