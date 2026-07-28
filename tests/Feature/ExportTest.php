@@ -28,6 +28,8 @@ class ExportTest extends TestCase
             'manufacturer' => 'Topps',
             'value_from' => 1000,
             'value_to' => 2000,
+            'purchase_price' => 750.5,
+            'insurance_value' => 2500,
             'key_card' => true,
         ]);
         Item::create(['user_id' => $user->id]);
@@ -43,6 +45,10 @@ class ExportTest extends TestCase
         $this->assertStringContainsString('Mickey Mantle', $csv);
         $this->assertStringContainsString("Cheski's", $csv);
         $this->assertStringContainsString('Yes', $csv);
+        $this->assertStringContainsString('Purchase Price', $csv);
+        $this->assertStringContainsString('Insurance Value', $csv);
+        $this->assertStringContainsString('750.5', $csv);
+        $this->assertStringContainsString('2500', $csv);
         // Both items exported: header + 2 rows.
         $this->assertSame(3, substr_count(trim($csv), "\n") + 1);
     }
