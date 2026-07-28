@@ -23,8 +23,15 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+// The branded front door: guests see the landing page; signed-in users
+// go straight to the functional home.
+Route::get('/', function () {
+    return auth()->check()
+        ? app()->call([app(HomeController::class), 'index'])
+        : Inertia::render('Landing');
+})->name('home');
+
 Route::middleware('auth')->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
 
     Route::get('/capture', [CaptureController::class, 'create'])->name('capture.create');
     Route::get('/capture/bulk', [BulkCaptureController::class, 'create'])->name('capture.bulk');

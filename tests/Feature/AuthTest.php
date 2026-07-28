@@ -16,9 +16,16 @@ class AuthTest extends TestCase
         $this->get('/login')->assertOk();
     }
 
-    public function test_guests_are_redirected_to_login(): void
+    public function test_guests_see_the_landing_page(): void
     {
-        $this->get('/')->assertRedirect('/login');
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Landing'));
+    }
+
+    public function test_guests_are_redirected_to_login_from_inner_pages(): void
+    {
+        $this->get('/capture')->assertRedirect('/login');
     }
 
     public function test_seeded_administrator_can_login(): void
