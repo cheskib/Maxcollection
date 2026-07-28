@@ -23,7 +23,7 @@ class Metadata extends Model
             'card_type',
             'player_name', 'team', 'sport', 'year', 'manufacturer',
             'card_number', 'condition_notes',
-            'rookie_card', 'autograph', 'set_name', 'original_year',
+            'rookie_card', 'autograph', 'original_year',
             'parallel', 'serial_number',
         ],
         'comic_book' => ['title', 'issue_number', 'publisher', 'year', 'variant', 'condition_notes'],

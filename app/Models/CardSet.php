@@ -10,14 +10,13 @@ class CardSet extends Model
     protected $fillable = ['sport', 'manufacturer', 'year', 'set_name', 'description'];
 
     /**
-     * How the set reads in listings: "1987 Topps Baseball" or
-     * "1987 Topps Baseball — Traded".
+     * How the set reads in listings: "1987 Topps Baseball". A set is
+     * defined by manufacturer + year + sport (owner decision — set names
+     * added nothing for this collection and multiplied profiles).
      */
     public function displayName(): string
     {
-        $name = collect([$this->year, $this->manufacturer, $this->sport])->filter()->implode(' ');
-
-        return $this->set_name !== '' ? "{$name} — {$this->set_name}" : $name;
+        return collect([$this->year, $this->manufacturer, $this->sport])->filter()->implode(' ');
     }
 
     /**
@@ -31,7 +30,6 @@ class CardSet extends Model
             ->where('manufacturer', $this->manufacturer)
             ->where('year', $this->year)
             ->when($this->sport !== '', fn ($query) => $query->where('sport', $this->sport))
-            ->when($this->set_name !== '', fn ($query) => $query->where('set_name', $this->set_name))
             ->whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED));
     }
 }

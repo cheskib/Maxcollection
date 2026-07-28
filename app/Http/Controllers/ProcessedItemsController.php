@@ -15,7 +15,7 @@ class ProcessedItemsController extends Controller
      * The metadata columns covered by keyword search (PROJECT.md section 18).
      */
     private const SEARCH_FIELDS = [
-        'player_name', 'title', 'manufacturer', 'set_name',
+        'player_name', 'title', 'manufacturer',
         'year', 'card_number', 'issue_number', 'country',
     ];
 
