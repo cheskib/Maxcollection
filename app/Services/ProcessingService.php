@@ -263,7 +263,6 @@ class ProcessingService
             'sport' => $metadata->sport ?? '',
             'manufacturer' => $metadata->manufacturer,
             'year' => $metadata->year,
-            'set_name' => $metadata->set_name ?? '',
         ]);
 
         if ($set->description === null) {

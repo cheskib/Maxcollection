@@ -132,18 +132,16 @@ const visibleFields = computed(() => {
     );
 });
 
-// Compact bottom section: rookie + autograph share a row, and the three
+// Compact bottom section: rookie + autograph share a row, and the
 // rarely-used fields hide behind an "Add …" link unless already filled.
 const PAIR_FIELDS = ['rookie_card', 'autograph'];
-const MISC_FIELDS = ['set_name', 'parallel', 'serial_number'];
+const MISC_FIELDS = ['parallel', 'serial_number'];
 
 const mainFields = computed(() => visibleFields.value.filter((field) => !PAIR_FIELDS.includes(field) && !MISC_FIELDS.includes(field)));
 const pairFields = computed(() => visibleFields.value.filter((field) => PAIR_FIELDS.includes(field)));
 const miscFields = computed(() => visibleFields.value.filter((field) => MISC_FIELDS.includes(field)));
 
-const showMisc = ref(
-    Boolean(props.item.values.set_name || props.item.values.parallel || props.item.values.serial_number),
-);
+const showMisc = ref(Boolean(props.item.values.parallel || props.item.values.serial_number));
 
 function submit(): void {
     form.put(`/items/${props.item.id}/metadata`);
@@ -308,7 +306,7 @@ function rotateImage(imageId: number): void {
                     class="text-left text-sm font-semibold text-blue-600 hover:text-blue-700"
                     @click="showMisc = true"
                 >
-                    ＋ Add Set Name, Parallel, and Serial #
+                    ＋ Add Parallel and Serial #
                 </button>
                 <div v-else class="flex flex-col gap-4">
                     <div v-for="field in miscFields" :key="field">
