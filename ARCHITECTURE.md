@@ -414,4 +414,28 @@ If the answer is No,
 do not implement it.
 
 ============================================================
+16. IMAGE AUTHORITY PRINCIPLE (owner directive, 2026-07-29)
+============================================================
+
+The original uploaded image is the authoritative source. It is never
+modified, replaced, compressed, cropped, rotated, resized, or deleted
+by any automated process. Only an explicit user action (delete photo,
+delete item, delete batch) removes an original.
+
+Everything else is a derived image, regenerable from the original at
+any time and therefore disposable:
+
+Original       -> exactly what the user uploaded. Read-only.
+Thumbnail      -> rotation + trim + 400px, cached on disk for lists,
+                  invalidated when adjustments change.
+Display image  -> rotation + trim at full size, rendered per request,
+                  never stored.
+AI image       -> downscaled copy (or the untouched original when the
+                  user chooses "Original photos"), sent to the model
+                  and discarded, never stored.
+
+All derived forms are produced by the single shared render pipeline
+(ImageRenderService), so they always agree with each other.
+
+============================================================
 END OF ARCHITECTURE
