@@ -153,6 +153,46 @@ class CollectionTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page->has('items', 2));
     }
 
+    public function test_collections_show_value_totals(): void
+    {
+        $collection = Collection::create(['user_id' => $this->user->id, 'name' => "Cheski's"]);
+
+        // Manual value overrides the AI ballpark; AI fills in elsewhere.
+        $manual = $this->item(['collection_id' => $collection->id, 'status' => Item::STATUS_PROCESSED]);
+        $manual->metadata()->create(['category' => 'sports_card', 'value_from' => 100, 'value_to' => 200, 'ai_value_from' => 1, 'ai_value_to' => 2]);
+
+        $aiOnly = $this->item(['collection_id' => $collection->id, 'status' => Item::STATUS_PROCESSED]);
+        $aiOnly->metadata()->create(['category' => 'sports_card', 'ai_value_from' => 10, 'ai_value_to' => 20]);
+
+        $this->actingAs($this->user)
+            ->get('/collections')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('collections.0.value.from', 110)
+                ->where('collections.0.value.to', 220)
+            );
+    }
+
+    public function test_collection_items_can_be_sorted_by_value(): void
+    {
+        $collection = Collection::create(['user_id' => $this->user->id, 'name' => 'Box']);
+
+        $cheap = $this->item(['collection_id' => $collection->id]);
+        $cheap->metadata()->create(['category' => 'sports_card', 'ai_value_from' => 1, 'ai_value_to' => 2]);
+        $pricey = $this->item(['collection_id' => $collection->id]);
+        $pricey->metadata()->create(['category' => 'sports_card', 'value_from' => 500, 'value_to' => 900]);
+        $unvalued = $this->item(['collection_id' => $collection->id]);
+
+        $this->actingAs($this->user)
+            ->get("/collections/{$collection->id}?sort=value")
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('items.0.id', $pricey->id)
+                ->where('items.1.id', $cheap->id)
+                ->where('items.2.id', $unvalued->id)
+                ->where('collection.value.from', 501)
+                ->where('collection.value.to', 902)
+            );
+    }
+
     public function test_collections_require_authentication(): void
     {
         $this->get('/collections')->assertRedirect('/login');
