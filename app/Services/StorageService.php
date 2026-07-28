@@ -22,6 +22,10 @@ class StorageService
     /** Seconds within which the same code from the same user is a double-read. */
     private const DUPLICATE_SCAN_SECONDS = 3;
 
+    public function __construct(private readonly DropboxService $dropbox)
+    {
+    }
+
     // ---------------------------------------------------------------
     // Labels
     // ---------------------------------------------------------------
@@ -363,8 +367,14 @@ class StorageService
             'barcode_id' => $barcode->id,
             'status' => Batch::STATUS_CLOSED,
             'finalized_at' => $batch->finalized_at ?? now(),
+            // A (re)assigned identity always archives fresh under its name.
+            'archived_at' => null,
         ]);
         $this->record($user, StorageEvent::BAG_ASSIGNED, $barcode, batch: $batch);
+
+        if ($this->dropbox->connected()) {
+            \App\Jobs\ArchiveBatchJob::dispatch($batch->id);
+        }
 
         return $this->success("Batch finalized as {$code}. Place the cards in the bag and seal it.");
     }

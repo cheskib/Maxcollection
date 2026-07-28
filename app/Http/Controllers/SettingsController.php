@@ -12,7 +12,7 @@ use Inertia\Response;
 
 class SettingsController extends Controller
 {
-    public function index(): Response
+    public function index(\App\Services\DropboxService $dropbox): Response
     {
         return Inertia::render('Settings', [
             'confidenceThreshold' => (int) Setting::value('confidence_threshold', '75'),
@@ -20,6 +20,13 @@ class SettingsController extends Controller
             'standardModel' => (string) config('services.openai.model'),
             'premiumModel' => (string) config('services.openai.premium_model'),
             'marketConfigured' => filled(config('services.pricecharting.token')),
+            'dropbox' => [
+                'configured' => $dropbox->configured(),
+                'connected' => $dropbox->connected(),
+                'connectedAt' => $dropbox->connectedAt(),
+                'archivedCount' => \App\Models\Batch::whereNotNull('archived_at')->count(),
+                'pendingCount' => \App\Models\Batch::whereNotNull('barcode_id')->whereNull('archived_at')->count(),
+            ],
             'keyNames' => KeyName::orderBy('sport')->orderBy('name')
                 ->get(['id', 'sport', 'name'])
                 ->groupBy('sport')

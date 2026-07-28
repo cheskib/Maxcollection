@@ -53,6 +53,21 @@ class BatchController extends Controller
     }
 
     /**
+     * (Re)queue this batch's Dropbox archive — the per-batch recovery
+     * path after a failed upload run.
+     */
+    public function archive(Batch $batch, \App\Services\DropboxService $dropbox): RedirectResponse
+    {
+        if (! $dropbox->connected() || $batch->barcode === null) {
+            return back()->with('status', 'Archiving needs a connected Dropbox and a finalized batch.');
+        }
+
+        \App\Jobs\ArchiveBatchJob::dispatch($batch->id);
+
+        return back()->with('status', 'Archiving to Dropbox in the background.');
+    }
+
+    /**
      * Move every item in the batch into a collection at once.
      */
     public function assignCollection(Request $request, Batch $batch, CollectionService $collections): RedirectResponse
@@ -148,6 +163,9 @@ class BatchController extends Controller
                 ])->count(),
                 'bagCode' => $batch->barcode?->code,
                 'finalizedAt' => $batch->finalized_at?->format('M j, Y g:i A'),
+                'archivedAt' => $batch->archived_at?->format('M j, Y g:i A'),
+                'archiveReady' => $batch->barcode !== null && $batch->archived_at === null
+                    && app(\App\Services\DropboxService::class)->connected(),
                 'location' => $section === null ? null : [
                     'box' => $section->box->barcode->code,
                     'boxId' => $section->box->id,
