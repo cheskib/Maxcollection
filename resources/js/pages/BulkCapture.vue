@@ -117,17 +117,30 @@ async function onPdf(event: Event): Promise<void> {
 }
 
 // Live progress after pressing Process: done vs remaining, elapsed
-// clock, and a rough time-left estimate from the pace so far.
+// clock, and a rough time-left estimate from the pace so far. Progress
+// counts actual completions in the batches this run queued (against a
+// baseline taken at the click), so uploads or PDF conversions landing
+// mid-run can never make the number move backwards.
 const runStartedAt = ref<number | null>(null);
 const runFinishedAt = ref<number | null>(null);
 const runTotal = ref(0);
+const runBatchIds = ref<number[]>([]);
+const runBaseline = ref<Record<number, number>>({});
 const nowTick = ref(Date.now());
 let clock: ReturnType<typeof setInterval> | null = null;
 
 const progress = computed(() => {
     if (runStartedAt.value === null) return null;
-    const remaining = batches.value.reduce((sum, batch) => sum + batch.captured + batch.inProgress, 0);
-    const done = Math.max(0, runTotal.value - remaining);
+    const done = Math.min(
+        runTotal.value,
+        batches.value
+            .filter((batch) => runBatchIds.value.includes(batch.id))
+            .reduce((sum, batch) => {
+                const finishedNow = batch.processed + batch.needsReview;
+                return sum + Math.max(0, finishedNow - (runBaseline.value[batch.id] ?? 0));
+            }, 0),
+    );
+    const remaining = runTotal.value - done;
     const elapsedMs = (runFinishedAt.value ?? nowTick.value) - runStartedAt.value;
     const format = (ms: number) => {
         const seconds = Math.round(ms / 1000);
@@ -182,6 +195,12 @@ async function processAll(): Promise<void> {
         runStartedAt.value = Date.now();
         runFinishedAt.value = null;
         runTotal.value = data.queued;
+        runBatchIds.value = ready;
+        runBaseline.value = Object.fromEntries(
+            batches.value
+                .filter((batch) => ready.includes(batch.id))
+                .map((batch) => [batch.id, batch.processed + batch.needsReview]),
+        );
         if (clock === null) clock = setInterval(() => (nowTick.value = Date.now()), 1000);
         void refreshStatus();
     } catch (e) {
