@@ -43,4 +43,9 @@ return [
         'timeout' => env('OPENAI_TIMEOUT', 120),
     ],
 
+    // Live market pricing (PriceCharting / SportsCardsPro).
+    'pricecharting' => [
+        'token' => env('PRICECHARTING_TOKEN'),
+    ],
+
 ];

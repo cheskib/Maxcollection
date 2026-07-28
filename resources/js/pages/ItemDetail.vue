@@ -31,6 +31,7 @@ const props = defineProps<{
         value: {
             ours: { from: number | null; to: number | null };
             ai: { from: number | null; to: number | null };
+            market: { value: number | null; match: string | null; checkedAt: string | null };
         };
         copies: { count: number; others: number[] };
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
@@ -286,10 +287,7 @@ function back(): void {
             </div>
         </div>
 
-        <div
-            v-if="item.value.ours.from !== null || item.value.ours.to !== null || item.value.ai.from !== null || item.value.ai.to !== null"
-            class="mt-6 rounded-xl bg-white p-4 shadow-sm"
-        >
+        <div class="mt-6 rounded-xl bg-white p-4 shadow-sm">
             <h2 class="font-semibold text-gray-900">Value</h2>
             <dl class="mt-2 divide-y divide-gray-100">
                 <div v-if="item.value.ours.from !== null || item.value.ours.to !== null" class="flex justify-between gap-3 py-2 text-sm">
@@ -300,7 +298,23 @@ function back(): void {
                     <dt class="text-gray-500">AI Ballpark</dt>
                     <dd class="text-right font-medium text-gray-900">{{ money(item.value.ai.from, item.value.ai.to) }}</dd>
                 </div>
+                <div v-if="item.value.market.value !== null" class="flex justify-between gap-3 py-2 text-sm">
+                    <dt class="text-gray-500">
+                        Market
+                        <span v-if="item.value.market.checkedAt" class="block text-xs text-gray-400">as of {{ item.value.market.checkedAt }}</span>
+                    </dt>
+                    <dd class="text-right font-medium text-gray-900">
+                        {{ money(item.value.market.value, item.value.market.value) }}
+                        <span v-if="item.value.market.match" class="block text-xs font-normal text-gray-400">{{ item.value.market.match }}</span>
+                    </dd>
+                </div>
             </dl>
+            <button
+                class="mt-2 w-full rounded-lg bg-gray-100 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+                @click="router.post(`/items/${item.id}/market-value`, {}, { preserveScroll: true })"
+            >
+                💹 {{ item.value.market.value !== null ? 'Refresh Market Price' : 'Get Market Price' }}
+            </button>
         </div>
 
         <div v-if="item.fields.length" class="mt-6 rounded-xl bg-white p-4 shadow-sm">

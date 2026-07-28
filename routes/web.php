@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 
     Route::get('/duplicates', [\App\Http\Controllers\DuplicatesController::class, 'index'])->name('duplicates');
+    Route::post('/items/{item}/market-value', [\App\Http\Controllers\MarketValueController::class, 'store'])->name('items.market');
     Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
 
