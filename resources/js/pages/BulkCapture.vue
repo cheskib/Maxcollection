@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
 import { collectionPayload, loadLastCollection, saveLastCollection } from '../composables/lastCollection';
 
@@ -39,6 +39,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     if (poller) clearInterval(poller);
+    if (clock) clearInterval(clock);
 });
 
 function xsrfToken(): string {
@@ -115,6 +116,42 @@ async function onPdf(event: Event): Promise<void> {
     }
 }
 
+// Live progress after pressing Process: done vs remaining, elapsed
+// clock, and a rough time-left estimate from the pace so far.
+const runStartedAt = ref<number | null>(null);
+const runFinishedAt = ref<number | null>(null);
+const runTotal = ref(0);
+const nowTick = ref(Date.now());
+let clock: ReturnType<typeof setInterval> | null = null;
+
+const progress = computed(() => {
+    if (runStartedAt.value === null) return null;
+    const remaining = batches.value.reduce((sum, batch) => sum + batch.captured + batch.inProgress, 0);
+    const done = Math.max(0, runTotal.value - remaining);
+    const elapsedMs = (runFinishedAt.value ?? nowTick.value) - runStartedAt.value;
+    const format = (ms: number) => {
+        const seconds = Math.round(ms / 1000);
+        return seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`;
+    };
+    const eta = done > 0 && remaining > 0 ? format((elapsedMs / done) * remaining) : null;
+    return {
+        done,
+        remaining,
+        total: runTotal.value,
+        percent: runTotal.value > 0 ? Math.round((done / runTotal.value) * 100) : 0,
+        elapsed: format(elapsedMs),
+        eta,
+        finished: remaining === 0,
+    };
+});
+
+// Freeze the clock the moment the run completes.
+watch(progress, (current) => {
+    if (current?.finished && runFinishedAt.value === null) {
+        runFinishedAt.value = Date.now();
+    }
+});
+
 async function processAll(): Promise<void> {
     const ready = batches.value.filter((batch) => batch.captured > 0).map((batch) => batch.id);
     if (!ready.length) return;
@@ -131,6 +168,10 @@ async function processAll(): Promise<void> {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.message ?? `Request failed (${response.status})`);
         notice.value = `${data.queued} item(s) queued for AI processing.`;
+        runStartedAt.value = Date.now();
+        runFinishedAt.value = null;
+        runTotal.value = data.queued;
+        if (clock === null) clock = setInterval(() => (nowTick.value = Date.now()), 1000);
         void refreshStatus();
     } catch (e) {
         error.value = e instanceof Error ? e.message : 'Processing request failed.';
@@ -184,6 +225,21 @@ async function processAll(): Promise<void> {
 
         <p v-if="error" class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
         <p v-if="notice" class="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">{{ notice }}</p>
+
+        <div v-if="progress" class="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <template v-if="!progress.finished">
+                <p class="text-sm font-semibold text-gray-900">
+                    ⚙️ Processing… {{ progress.done }} of {{ progress.total }} done · {{ progress.remaining }} remaining
+                </p>
+                <p class="mt-0.5 text-xs text-gray-500">
+                    Elapsed {{ progress.elapsed }}<span v-if="progress.eta"> · about {{ progress.eta }} left</span>
+                </p>
+            </template>
+            <p v-else class="text-sm font-semibold text-green-700">✅ All {{ progress.total }} item(s) processed in {{ progress.elapsed }}.</p>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                <div class="h-full bg-blue-600 transition-all" :style="{ width: `${progress.percent}%` }"></div>
+            </div>
+        </div>
 
         <div v-if="batches.length" class="mt-5">
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">This session's batches</p>
