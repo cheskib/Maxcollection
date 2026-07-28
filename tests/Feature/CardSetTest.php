@@ -66,7 +66,7 @@ class CardSetTest extends TestCase
         return $item;
     }
 
-    public function test_processing_a_card_creates_its_set_profile_with_description(): void
+    public function test_processing_a_card_creates_its_set_profile(): void
     {
         $this->processCard([
             'player_name' => 'Don Mattingly',
@@ -78,21 +78,21 @@ class CardSetTest extends TestCase
         $set = CardSet::first();
         $this->assertNotNull($set);
         $this->assertSame('1987 Topps Baseball', $set->displayName());
-        $this->assertStringContainsString('Wood-grain', $set->description);
+        // The catalog is hidden for now: no AI description is written.
+        $this->assertNull($set->description);
         $this->assertSame(1, $set->cardsQuery()->count());
     }
 
     public function test_cards_from_the_same_set_share_one_profile(): void
     {
-        // One sequence for the whole run: identify #1, describe the new
-        // set, identify #2 (the set already has its write-up by then).
+        // One sequence for the whole run: identify #1, identify #2 (no
+        // set description while the catalog is hidden).
         Http::fakeSequence('api.openai.com/*')
             ->push($this->openAiResponse([
                 'category' => 'sports_card',
                 'confidence' => 95,
                 'fields' => ['player_name' => 'Don Mattingly', 'sport' => 'Baseball', 'manufacturer' => 'Topps', 'year' => '1987'],
             ]))
-            ->push($this->openAiResponse(['description' => 'Wood-grain borders.']))
             ->push($this->openAiResponse([
                 'category' => 'sports_card',
                 'confidence' => 95,

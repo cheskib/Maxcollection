@@ -139,15 +139,9 @@ class ProcessedSummaryController extends Controller
                 ])->all(),
                 'unassigned' => $unassigned,
             ],
-            'sets' => CardSet::orderByDesc('year')->orderBy('manufacturer')->get()
-                ->map(fn (CardSet $set) => [
-                    'id' => $set->id,
-                    'name' => $set->displayName(),
-                    'count' => $set->cardsQuery()->count(),
-                ])
-                ->filter(fn (array $set) => $set['count'] > 0)
-                ->values()
-                ->all(),
+            // The Sets catalog is hidden for now (owner decision); the
+            // section stays empty so the page simply omits it.
+            'sets' => [],
         ]);
     }
 }
