@@ -1,12 +1,34 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const props = defineProps<{
     confidenceThreshold: number;
     standardModel: string;
     premiumModel: string;
     marketConfigured: boolean;
+    keyNames: Record<string, { id: number; name: string }[]>;
 }>();
+
+const SPORTS = ['Baseball', 'Basketball', 'Football', 'Hockey', 'Soccer', 'Golf', 'Tennis', 'Boxing', 'Wrestling', 'Racing', 'Other'];
+
+const newKeySport = ref('Baseball');
+const newKeyName = ref('');
+const openSport = ref<string | null>(null);
+
+function addKeyName(): void {
+    if (!newKeyName.value.trim()) return;
+    router.post(
+        '/settings/key-names',
+        { sport: newKeySport.value, name: newKeyName.value.trim() },
+        { preserveScroll: true, onSuccess: () => (newKeyName.value = '') },
+    );
+}
+
+function removeKeyName(id: number, name: string): void {
+    if (!confirm(`Remove "${name}" from the watchlist?`)) return;
+    router.delete(`/settings/key-names/${id}`, { preserveScroll: true });
+}
 
 // Pricing-data landscape, kept here for reference at any time.
 const RESOURCES = {
@@ -95,6 +117,52 @@ function save(): void {
                 </div>
             </dl>
             <p class="mt-2 text-xs text-gray-400">Models are configured on the server (Railway variables OPENAI_MODEL / OPENAI_PREMIUM_MODEL).</p>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">⭐ Key names watchlist</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Cards whose player matches a name here are flagged ⭐ the moment they're processed — regardless of the AI's
+                value estimate.
+            </p>
+
+            <div class="mt-3 flex gap-2">
+                <select v-model="newKeySport" class="rounded-lg border border-gray-300 px-2 py-2 text-sm">
+                    <option v-for="sport in SPORTS" :key="sport" :value="sport">{{ sport }}</option>
+                </select>
+                <input
+                    v-model="newKeyName"
+                    type="text"
+                    placeholder="Add a name…"
+                    class="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    @keyup.enter="addKeyName"
+                />
+                <button class="shrink-0 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white hover:bg-blue-700" @click="addKeyName">
+                    Add
+                </button>
+            </div>
+
+            <div class="mt-3 divide-y divide-gray-100">
+                <div v-for="(names, sport) in keyNames" :key="sport" class="py-2">
+                    <button
+                        class="flex w-full items-center justify-between text-left text-sm font-semibold text-gray-700"
+                        @click="openSport = openSport === String(sport) ? null : String(sport)"
+                    >
+                        <span>{{ sport }}</span>
+                        <span class="text-xs text-gray-400">{{ names.length }} name(s) {{ openSport === String(sport) ? '▾' : '▸' }}</span>
+                    </button>
+                    <div v-if="openSport === String(sport)" class="mt-2 flex flex-wrap gap-1.5">
+                        <span
+                            v-for="entry in names"
+                            :key="entry.id"
+                            class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700"
+                        >
+                            {{ entry.name }}
+                            <button class="font-bold text-gray-400 hover:text-red-600" @click="removeKeyName(entry.id, entry.name)">✕</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">

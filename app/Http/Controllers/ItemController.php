@@ -80,6 +80,7 @@ class ItemController extends Controller
                         'checkedAt' => $metadata?->market_checked_at?->format('M j, Y'),
                     ],
                 ],
+                'keyCard' => (bool) $metadata?->key_card,
                 'copies' => [
                     'count' => $otherCopies->count() + 1,
                     'others' => $otherCopies->values()->all(),

@@ -20,6 +20,7 @@ const props = defineProps<{
     };
     sets: { id: number; name: string; count: number }[];
     duplicates: number;
+    keyCards: number;
 }>();
 
 const search = ref('');
@@ -130,6 +131,15 @@ function money(from: number | null, to: number | null): string | null {
                     </Link>
                 </div>
             </template>
+
+            <Link
+                v-if="keyCards > 0"
+                href="/items?key=1"
+                class="mt-6 flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 p-4 hover:bg-yellow-100"
+            >
+                <p class="text-sm font-semibold text-yellow-800">⭐ Key Cards — possible high-value names</p>
+                <span class="font-bold text-yellow-900">{{ keyCards }} ›</span>
+            </Link>
 
             <Link
                 v-if="duplicates > 0"

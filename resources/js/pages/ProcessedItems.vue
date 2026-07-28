@@ -11,6 +11,7 @@ interface ProcessedItem {
     confidence: number | null;
     processedAt: string | null;
     value: { from: number | null; to: number | null; isOurs: boolean };
+    keyCard: boolean;
 }
 
 function money(from: number | null, to: number | null): string | null {
@@ -24,6 +25,7 @@ type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer' | 'ca
 
 const props = defineProps<{
     items: ProcessedItem[];
+    keyOnly: boolean;
     page: { current: number; last: number; total: number };
     sort: string;
     search?: string;
@@ -91,7 +93,7 @@ function clearFilters(): void {
     <Head title="Processed Items" />
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
         <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900">Processed Items</h1>
+            <h1 class="text-2xl font-bold text-gray-900">{{ keyOnly ? '⭐ Key Cards' : 'Processed Items' }}</h1>
             <Link href="/" class="text-sm font-semibold text-blue-600">Home</Link>
         </div>
 
@@ -163,7 +165,7 @@ function clearFilters(): void {
                 />
                 <div v-else class="h-20 w-16 rounded-lg bg-gray-200"></div>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate font-semibold text-gray-900">{{ item.title }}</p>
+                    <p class="truncate font-semibold text-gray-900"><span v-if="item.keyCard">⭐ </span>{{ item.title }}</p>
                     <p class="text-sm text-gray-500">{{ item.category }}</p>
                     <p class="text-xs text-gray-400">
                         <span v-if="item.confidence !== null">{{ Math.round(item.confidence) }}% · </span>{{ item.processedAt }}

@@ -13,6 +13,7 @@ interface BatchStatus {
     inProgress: number;
     processed: number;
     needsReview: number;
+    keyCards?: number;
 }
 
 const props = defineProps<{
@@ -309,6 +310,7 @@ async function processAll(): Promise<void> {
                         <span v-if="batch.inProgress" class="text-gray-500">{{ batch.inProgress }} processing…</span>
                         <span v-if="batch.processed" class="text-green-700">{{ batch.processed }} processed</span>
                         <span v-if="batch.needsReview" class="text-amber-700">{{ batch.needsReview }} needs review</span>
+                        <span v-if="batch.keyCards" class="font-semibold text-yellow-600">⭐ {{ batch.keyCards }} possible key card(s)</span>
                     </div>
                 </div>
             </div>

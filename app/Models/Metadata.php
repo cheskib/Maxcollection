@@ -74,7 +74,7 @@ class Metadata extends Model
     protected $fillable = [
         'item_id', 'category', 'confidence',
         'value_from', 'value_to', 'ai_value_from', 'ai_value_to',
-        'market_value', 'market_match', 'market_checked_at',
+        'market_value', 'market_match', 'market_checked_at', 'key_card',
         'player_name', 'team', 'sport', 'year', 'manufacturer', 'set_name',
         'card_type', 'original_year',
         'card_number', 'rookie_card', 'parallel', 'serial_number', 'autograph',
@@ -93,6 +93,7 @@ class Metadata extends Model
             'ai_value_to' => 'float',
             'market_value' => 'float',
             'market_checked_at' => 'datetime',
+            'key_card' => 'boolean',
         ];
     }
 

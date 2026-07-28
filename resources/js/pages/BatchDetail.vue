@@ -14,6 +14,7 @@ const props = defineProps<{
         status: string;
         reason: string | null;
         confidence: number | null;
+        keyCard: boolean;
     }[];
     collections: { id: number; name: string }[];
 }>();
@@ -153,7 +154,7 @@ onUnmounted(stopPolling);
                 />
                 <div v-else class="h-20 w-16 rounded-lg bg-gray-200"></div>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate font-semibold text-gray-900">{{ item.title }}</p>
+                    <p class="truncate font-semibold text-gray-900"><span v-if="item.keyCard">⭐ </span>{{ item.title }}</p>
                     <p
                         class="text-sm"
                         :class="{

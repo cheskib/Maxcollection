@@ -122,6 +122,7 @@ class BatchController extends Controller
                 },
                 'reason' => $item->reviewReasonLabel(),
                 'confidence' => $item->metadata?->confidence,
+                'keyCard' => (bool) $item->metadata?->key_card,
             ]);
 
         return Inertia::render('BatchDetail', [

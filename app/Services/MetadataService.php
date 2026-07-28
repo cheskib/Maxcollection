@@ -54,7 +54,21 @@ class MetadataService
                 }
             }
 
+            // A corrected player name re-evaluates the key-card flag.
+            if (array_key_exists('player_name', $changes)) {
+                $flag = \App\Models\KeyName::matches($changes['player_name']);
+
+                if ($metadata->key_card !== $flag) {
+                    $changes['key_card'] = $flag;
+                }
+            }
+
             foreach ($changes as $field => $new) {
+                // The key-card flag is system-derived, not a user edit.
+                if ($field === 'key_card') {
+                    continue;
+                }
+
                 $item->metadataHistory()->create([
                     'user_id' => $user->id,
                     'field_name' => $field,

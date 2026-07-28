@@ -35,7 +35,10 @@ class ProcessedItemsController extends Controller
             $filters[$field] = $request->string($field)->toString();
         }
 
+        $keyOnly = $request->boolean('key');
+
         $items = Item::where('status', Item::STATUS_PROCESSED)
+            ->when($keyOnly, fn ($query) => $query->whereHas('metadata', fn ($metadata) => $metadata->where('key_card', true)))
             ->when($collection === 'unassigned', fn ($query) => $query->whereNull('collection_id'))
             ->when($collection !== '' && $collection !== 'unassigned', fn ($query) => $query->where('collection_id', (int) $collection))
             ->where(function ($query) use ($filters) {
@@ -86,6 +89,7 @@ class ProcessedItemsController extends Controller
                     'to' => $item->metadata?->value_to ?? $item->metadata?->ai_value_to,
                     'isOurs' => $item->metadata?->value_from !== null || $item->metadata?->value_to !== null,
                 ],
+                'keyCard' => (bool) $item->metadata?->key_card,
             ]);
 
         // Each dropdown offers only values that exist among processed items.
@@ -101,6 +105,7 @@ class ProcessedItemsController extends Controller
 
         return Inertia::render('ProcessedItems', [
             'items' => $pageItems->all(),
+            'keyOnly' => $keyOnly,
             'page' => [
                 'current' => $paginated->currentPage(),
                 'last' => $paginated->lastPage(),
