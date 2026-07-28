@@ -57,6 +57,19 @@ The owner requested two capture approaches: one item at a time (unchanged) and b
 
 The owner scans cards one at a time, producing PDFs whose pages alternate front, back, front, back. Bulk Capture accepts a PDF upload: pages are rendered to JPEG (poppler, 200 dpi) in the background queue and grouped by the same 1-or-2 photos-per-item setting into ordinary captured items. The uploaded PDF and working files are deleted after import.
 
+## 2026-07-28 — Capture Station approved; physical storage foundation
+
+The Capture Station architecture (CAPTURE-STATION.md) was approved with all
+assumptions resolved and ten additional owner requirements. Milestone 1
+implements the Laravel side: a pre-registered barcode registry (`barcodes`,
+the source of truth — all objects reference it by id), printable Code 128
+label sheets, the barcode-driven packing workflow (box → bags → divider,
+one open box per user), undo with double-read protection, a storage audit
+trail (`storage_events`), and batch finalization by bag barcode
+(`finalized_at` distinct from the future Dropbox `archived_at`). Physical
+location lives only in storage tables; metadata never changes because a
+card moves.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

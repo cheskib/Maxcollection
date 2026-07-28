@@ -74,6 +74,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/sets/{cardSet}', [\App\Http\Controllers\CardSetController::class, 'show'])->name('sets.show');
     Route::put('/sets/{cardSet}', [\App\Http\Controllers\CardSetController::class, 'update'])->name('sets.update');
     Route::get('/batches/{batch}', [BatchController::class, 'show'])->name('batches.show');
+    Route::post('/batches/{batch}/bag', [BatchController::class, 'assignBag'])->name('batches.bag');
+
+    Route::get('/storage', [\App\Http\Controllers\StorageController::class, 'index'])->name('storage');
+    Route::post('/storage/scan', [\App\Http\Controllers\StorageController::class, 'scan'])->name('storage.scan');
+    Route::post('/storage/undo', [\App\Http\Controllers\StorageController::class, 'undo'])->name('storage.undo');
+    Route::post('/storage/complete', [\App\Http\Controllers\StorageController::class, 'complete'])->name('storage.complete');
+    Route::get('/storage/labels', [\App\Http\Controllers\LabelController::class, 'form'])->name('labels');
+    Route::post('/storage/labels', [\App\Http\Controllers\LabelController::class, 'generate'])->name('labels.generate');
+    Route::get('/storage/labels/{run}', [\App\Http\Controllers\LabelController::class, 'print'])->name('labels.print');
+    Route::get('/storage/boxes/{box}', [\App\Http\Controllers\StorageController::class, 'showBox'])->name('storage.box');
     Route::post('/batches/{batch}/collection', [BatchController::class, 'assignCollection'])->name('batches.collection');
     Route::post('/batches/{batch}/reprocess', [BatchController::class, 'reprocess'])->name('batches.reprocess');
     Route::delete('/batches/{batch}', [BatchController::class, 'destroy'])->name('batches.destroy');
