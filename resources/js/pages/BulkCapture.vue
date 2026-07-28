@@ -2,7 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
-import { collectionPayload, loadLastCollection, saveLastCollection } from '../composables/lastCollection';
+import { collectionPayload } from '../composables/lastCollection';
 
 interface BatchStatus {
     id: number;
@@ -32,9 +32,21 @@ const notice = ref<string | null>(null);
 const pdfInput = ref<HTMLInputElement | null>(null);
 let poller: ReturnType<typeof setInterval> | null = null;
 
+// No last-used default: the collection is chosen consciously each
+// session so batches never land in the wrong one unnoticed.
 onMounted(() => {
-    collectionChoice.value = loadLastCollection(props.collections);
     poller = setInterval(refreshStatus, 4000);
+});
+
+const collectionChosen = computed(() => {
+    const choice = collectionChoice.value;
+    return typeof choice.collectionId === 'number' || (choice.collectionId === 'new' && choice.newName.trim() !== '');
+});
+
+const collectionName = computed(() => {
+    const choice = collectionChoice.value;
+    if (choice.collectionId === 'new') return choice.newName.trim() || null;
+    return props.collections.find((entry) => entry.id === choice.collectionId)?.name ?? null;
 });
 
 onBeforeUnmount(() => {
@@ -94,7 +106,6 @@ async function onPdf(event: Event): Promise<void> {
 
             if (typeof data.collectionId === 'number') {
                 collectionChoice.value = { collectionId: data.collectionId, newName: '' };
-                saveLastCollection(data.collectionId);
             }
 
             batches.value.push({
@@ -221,7 +232,7 @@ async function processAll(): Promise<void> {
         <p class="mt-1 text-sm text-gray-500">Upload scanner PDFs — each becomes its own batch below.</p>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
-            <p class="text-sm font-medium text-gray-700">Collection</p>
+            <p class="text-sm font-medium text-gray-700">First — which collection do these go in?</p>
             <div class="mt-2">
                 <CollectionPicker v-model="collectionChoice" :collections="collections" />
             </div>
@@ -245,12 +256,15 @@ async function processAll(): Promise<void> {
         </div>
 
         <input ref="pdfInput" type="file" accept="application/pdf" multiple class="hidden" @change="onPdf" />
+        <p v-if="collectionChosen && collectionName" class="mt-4 text-center text-sm text-gray-600">
+            Everything below goes into <span class="font-bold text-gray-900">{{ collectionName }}</span>
+        </p>
         <button
-            :disabled="uploading"
-            class="mt-4 w-full rounded-xl bg-blue-600 py-4 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+            :disabled="uploading || !collectionChosen"
+            class="mt-2 w-full rounded-xl bg-blue-600 py-4 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:bg-gray-300"
             @click="pdfInput?.click()"
         >
-            {{ uploading ? 'Uploading…' : '⬆ Add Batch PDF(s)' }}
+            {{ uploading ? 'Uploading…' : collectionChosen ? '⬆ Add Batch PDF(s)' : 'Select a collection first' }}
         </button>
 
         <p v-if="error" class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
