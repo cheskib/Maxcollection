@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
 import { collectionPayload, loadLastCollection, saveLastCollection } from '../composables/lastCollection';
@@ -152,6 +152,17 @@ watch(progress, (current) => {
     }
 });
 
+// Remove a stuck or mistaken batch entirely (items and files included).
+function removeBatch(batch: BatchStatus): void {
+    const what = batch.itemCount > 0 ? `"${batch.label}" and its ${batch.itemCount} card(s)` : `"${batch.label}"`;
+    if (!confirm(`Delete ${what}? This cannot be undone.`)) return;
+    router.delete(`/batches/${batch.id}`, {
+        onSuccess: () => {
+            batches.value = batches.value.filter((entry) => entry.id !== batch.id);
+        },
+    });
+}
+
 async function processAll(): Promise<void> {
     const ready = batches.value.filter((batch) => batch.captured > 0).map((batch) => batch.id);
     if (!ready.length) return;
@@ -247,7 +258,16 @@ async function processAll(): Promise<void> {
                 <div v-for="batch in batches" :key="batch.id" class="rounded-xl bg-white p-4 shadow-sm">
                     <div class="flex items-center justify-between">
                         <p class="min-w-0 truncate font-semibold text-gray-900">{{ batch.label }}</p>
-                        <Link :href="`/batches/${batch.id}`" class="ml-2 shrink-0 text-sm font-semibold text-blue-600">View</Link>
+                        <div class="ml-2 flex shrink-0 gap-3">
+                            <Link :href="`/batches/${batch.id}`" class="text-sm font-semibold text-blue-600">View</Link>
+                            <button
+                                class="text-sm font-semibold text-red-500 hover:text-red-700"
+                                title="Delete this batch and its cards"
+                                @click="removeBatch(batch)"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
                     <p v-if="batch.converting" class="mt-1 text-sm text-gray-500">⏳ Converting PDF into items…</p>
                     <div v-else class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">

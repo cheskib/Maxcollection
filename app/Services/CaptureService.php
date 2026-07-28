@@ -69,4 +69,16 @@ class CaptureService
 
         $item->delete();
     }
+
+    /**
+     * Delete a batch together with every item (and file) it contains.
+     */
+    public function deleteBatch(\App\Models\Batch $batch): void
+    {
+        foreach ($batch->items()->get() as $item) {
+            $this->deleteItem($item);
+        }
+
+        $batch->delete();
+    }
 }

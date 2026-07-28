@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/batches/{batch}', [BatchController::class, 'show'])->name('batches.show');
     Route::post('/batches/{batch}/collection', [BatchController::class, 'assignCollection'])->name('batches.collection');
     Route::post('/batches/{batch}/reprocess', [BatchController::class, 'reprocess'])->name('batches.reprocess');
+    Route::delete('/batches/{batch}', [BatchController::class, 'destroy'])->name('batches.destroy');
 
     Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
     Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
