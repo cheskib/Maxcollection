@@ -145,8 +145,12 @@ class BulkCaptureController extends Controller
     /**
      * Live per-batch numbers for the bulk workspace.
      */
-    public function status(Request $request): JsonResponse
+    public function status(Request $request, ProcessingService $processing): JsonResponse
     {
+        // The polled status endpoint doubles as the stall rescuer, so a
+        // stuck card heals itself while someone is watching the numbers.
+        $processing->rescueStalledItems();
+
         $ids = collect(explode(',', $request->string('ids')->toString()))
             ->filter(fn ($id) => ctype_digit($id))
             ->map(fn ($id) => (int) $id)

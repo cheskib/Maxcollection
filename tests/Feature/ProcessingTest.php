@@ -670,6 +670,25 @@ class ProcessingTest extends TestCase
         $this->assertSame(0, $item->images()->first()->rotation);
     }
 
+    public function test_stalled_items_are_rescued_to_needs_review(): void
+    {
+        $stuck = $this->captureItem();
+        $stuck->update(['status' => Item::STATUS_PROCESSING]);
+        $stuck->processingJobs()->create(['status' => ProcessingJob::STATUS_PROCESSING]);
+        Item::whereKey($stuck->id)->update(['updated_at' => now()->subMinutes(15)]);
+
+        // A recent one is left alone.
+        $fresh = $this->captureItem();
+        $fresh->update(['status' => Item::STATUS_PROCESSING]);
+
+        $this->actingAs($this->user)->get('/');
+
+        $this->assertSame(Item::STATUS_NEEDS_REVIEW, $stuck->fresh()->status);
+        $this->assertSame('ai_failure', $stuck->fresh()->review_reason);
+        $this->assertSame(ProcessingJob::STATUS_FAILED, $stuck->processingJobs()->latest('id')->first()->status);
+        $this->assertSame(Item::STATUS_PROCESSING, $fresh->fresh()->status);
+    }
+
     public function test_home_stats_reflect_processing_results(): void
     {
         Http::fake([

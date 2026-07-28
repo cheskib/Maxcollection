@@ -35,4 +35,32 @@ class ProcessItemJob implements ShouldQueue
 
         $service->processJob($job, $this->tier, $this->source);
     }
+
+    /**
+     * A timeout or worker crash kills the process before processJob's own
+     * error handling can run; without this the item would stay stuck in
+     * "processing" forever.
+     */
+    public function failed(?\Throwable $exception): void
+    {
+        $job = ProcessingJob::find($this->processingJobId);
+        $item = $job?->item;
+
+        if ($job === null || $item === null) {
+            return;
+        }
+
+        $job->update([
+            'status' => ProcessingJob::STATUS_FAILED,
+            'error_message' => $exception?->getMessage() ?? 'Processing was interrupted.',
+            'finished_at' => now(),
+        ]);
+        $job->logs()->create(['level' => 'error', 'message' => 'Processing was interrupted (timeout or restart).']);
+
+        $item->update([
+            'status' => \App\Models\Item::STATUS_NEEDS_REVIEW,
+            'review_reason' => 'ai_failure',
+            'processed_at' => now(),
+        ]);
+    }
 }
