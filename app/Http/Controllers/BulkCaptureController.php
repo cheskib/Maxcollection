@@ -164,6 +164,7 @@ class BulkCaptureController extends Controller
                 'items as in_progress_count' => fn ($query) => $query->whereIn('status', [Item::STATUS_QUEUED, Item::STATUS_PROCESSING]),
                 'items as processed_count' => fn ($query) => $query->where('status', Item::STATUS_PROCESSED),
                 'items as needs_review_count' => fn ($query) => $query->where('status', Item::STATUS_NEEDS_REVIEW),
+                'items as key_card_count' => fn ($query) => $query->whereHas('metadata', fn ($metadata) => $metadata->where('key_card', true)),
             ])
             ->get();
 
@@ -177,6 +178,7 @@ class BulkCaptureController extends Controller
                 'inProgress' => $batch->in_progress_count,
                 'processed' => $batch->processed_count,
                 'needsReview' => $batch->needs_review_count,
+                'keyCards' => $batch->key_card_count,
             ])->all(),
         ]);
     }

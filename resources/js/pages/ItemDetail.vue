@@ -33,6 +33,7 @@ const props = defineProps<{
             ai: { from: number | null; to: number | null };
             market: { value: number | null; match: string | null; checkedAt: string | null };
         };
+        keyCard: boolean;
         copies: { count: number; others: number[] };
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
@@ -164,6 +165,9 @@ function back(): void {
         </p>
         <p v-if="item.reviewReason" class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
             Needs review: {{ item.reviewReason }}
+        </p>
+        <p v-if="item.keyCard" class="mt-3 rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm font-semibold text-yellow-800">
+            ⭐ Possible key card — this player is on your key names watchlist. Worth a closer look.
         </p>
         <p v-if="item.copies.count > 1" class="mt-3 rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">
             📇 You own <strong>×{{ item.copies.count }}</strong> of this card —

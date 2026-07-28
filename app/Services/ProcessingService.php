@@ -119,6 +119,9 @@ class ProcessingService
             // value range (value_from/value_to) is never written here.
             'ai_value_from' => $result->valueLow,
             'ai_value_to' => $result->valueHigh,
+            // Watchlist flag: by name match alone, independent of what
+            // the AI thinks the card is worth (owner directive).
+            'key_card' => \App\Models\KeyName::matches($fields['player_name'] ?? null),
             ...$fields,
         ]);
 
