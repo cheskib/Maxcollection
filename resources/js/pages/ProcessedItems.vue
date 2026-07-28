@@ -26,6 +26,7 @@ type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer' | 'ca
 const props = defineProps<{
     items: ProcessedItem[];
     keyOnly: boolean;
+    confidenceBelow: number | null;
     page: { current: number; last: number; total: number };
     sort: string;
     search?: string;
@@ -39,6 +40,7 @@ const search = ref(props.search ?? '');
 const sort = ref(props.sort);
 const collection = ref(props.collection);
 const filters = ref({ ...props.filters });
+const confidenceBelow = ref(props.confidenceBelow !== null ? String(props.confidenceBelow) : '');
 
 const FILTER_LABELS: Record<FilterField, string> = {
     category: 'Category',
@@ -70,6 +72,8 @@ function queryParams(): Record<string, any> {
         q: search.value || undefined,
         sort: sort.value,
         collection: collection.value || undefined,
+        key: props.keyOnly ? 1 : undefined,
+        confidence_below: confidenceBelow.value || undefined,
         ...Object.fromEntries(Object.entries(filters.value).filter(([, value]) => value !== '')),
     };
 }
@@ -85,6 +89,7 @@ function goToPage(page: number): void {
 
 function clearFilters(): void {
     filters.value = { category: '', sport: '', year: '', team: '', manufacturer: '', card_type: '', publisher: '', country: '' };
+    confidenceBelow.value = '';
     apply();
 }
 
@@ -219,6 +224,7 @@ function applyBulk(): void {
                 <option value="oldest">Oldest first</option>
                 <option value="title">By title</option>
                 <option value="value">Highest value</option>
+                <option value="confidence">Lowest confidence</option>
             </select>
         </div>
 
@@ -239,6 +245,17 @@ function applyBulk(): void {
                         <option v-for="option in filterOptions[field]" :key="option" :value="option">
                             {{ optionLabel(field, option) }}
                         </option>
+                    </select>
+                </label>
+                <label class="text-xs font-medium text-gray-500">
+                    Confidence
+                    <select
+                        v-model="confidenceBelow"
+                        class="mt-1 block w-full rounded-lg border border-gray-300 px-2 py-2 text-sm text-gray-900"
+                        @change="apply"
+                    >
+                        <option value="">All</option>
+                        <option v-for="level in ['95', '90', '85', '80', '75', '60']" :key="level" :value="level">Below {{ level }}%</option>
                     </select>
                 </label>
             </div>

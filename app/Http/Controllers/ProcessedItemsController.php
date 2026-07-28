@@ -36,9 +36,13 @@ class ProcessedItemsController extends Controller
         }
 
         $keyOnly = $request->boolean('key');
+        // Review triage: only cards the AI was less sure about.
+        $confidenceBelow = (int) $request->integer('confidence_below');
+        $confidenceBelow = $confidenceBelow > 0 && $confidenceBelow <= 100 ? $confidenceBelow : null;
 
         $items = Item::where('status', Item::STATUS_PROCESSED)
             ->when($keyOnly, fn ($query) => $query->whereHas('metadata', fn ($metadata) => $metadata->where('key_card', true)))
+            ->when($confidenceBelow !== null, fn ($query) => $query->whereHas('metadata', fn ($metadata) => $metadata->where('confidence', '<', $confidenceBelow)))
             ->when($collection === 'unassigned', fn ($query) => $query->whereNull('collection_id'))
             ->when($collection !== '' && $collection !== 'unassigned', fn ($query) => $query->where('collection_id', (int) $collection))
             ->where(function ($query) use ($filters) {
@@ -69,6 +73,11 @@ class ProcessedItemsController extends Controller
                 ->leftJoin('metadata', 'metadata.item_id', '=', 'items.id')
                 ->orderByRaw('coalesce(metadata.value_to, metadata.ai_value_to) is null')
                 ->orderByRaw('coalesce(metadata.value_to, metadata.ai_value_to) desc')
+                ->select('items.*'),
+            'confidence' => $items
+                ->leftJoin('metadata', 'metadata.item_id', '=', 'items.id')
+                ->orderByRaw('metadata.confidence is null')
+                ->orderBy('metadata.confidence')
                 ->select('items.*'),
             default => $items->orderByDesc('items.id'),
         };
@@ -106,6 +115,7 @@ class ProcessedItemsController extends Controller
         return Inertia::render('ProcessedItems', [
             'items' => $pageItems->all(),
             'keyOnly' => $keyOnly,
+            'confidenceBelow' => $confidenceBelow,
             'page' => [
                 'current' => $paginated->currentPage(),
                 'last' => $paginated->lastPage(),

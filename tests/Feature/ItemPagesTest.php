@@ -58,6 +58,31 @@ class ItemPagesTest extends TestCase
             );
     }
 
+    public function test_confidence_filter_and_sort_triage_uncertain_cards(): void
+    {
+        $shaky = $this->processedItem(['player_name' => 'Shaky Read']);
+        $shaky->metadata()->update(['confidence' => 62]);
+        $solid = $this->processedItem(['player_name' => 'Solid Read']);
+        $solid->metadata()->update(['confidence' => 98]);
+
+        // Filter: only cards below the chosen confidence.
+        $this->actingAs($this->user)
+            ->get('/items?confidence_below=80')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('items', 1)
+                ->where('items.0.id', $shaky->id)
+                ->where('confidenceBelow', 80)
+            );
+
+        // Sort: least confident first.
+        $this->actingAs($this->user)
+            ->get('/items?sort=confidence')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('items.0.id', $shaky->id)
+                ->where('items.1.id', $solid->id)
+            );
+    }
+
     public function test_processed_items_are_paginated(): void
     {
         for ($i = 0; $i < 61; $i++) {
