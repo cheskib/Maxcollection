@@ -65,16 +65,36 @@ class OverviewPagesTest extends TestCase
         // Unprocessed items stay out of every breakdown.
         $this->item(Item::STATUS_CAPTURED, ['sport' => 'Baseball']);
 
+        // Level 1: categories (plus collections and sets), no card types.
         $this->actingAs($this->user)
             ->get('/items/summary')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('ProcessedSummary')
                 ->where('total', 2)
-                ->has('sports', 2)
-                ->where('cardTypes.0.value', 'All-Star')
+                ->where('categories.0.value', 'sports_card')
+                ->where('categories.0.count', 2)
+                ->where('cardTypes', [])
                 ->where('collections.named.0.count', 1)
                 ->where('collections.unassigned', 1)
+            );
+
+        // Level 2: inside the category, break down by its natural group.
+        $this->actingAs($this->user)
+            ->get('/items/summary?category=sports_card')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('total', 2)
+                ->where('groupField', 'sport')
+                ->has('groups', 2)
+                ->where('cardTypes', [])
+            );
+
+        // Level 3: inside a sport, break down by card type.
+        $this->actingAs($this->user)
+            ->get('/items/summary?category=sports_card&sport=Baseball')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('total', 1)
+                ->where('cardTypes.0.value', 'All-Star')
             );
     }
 
