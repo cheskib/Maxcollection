@@ -156,6 +156,28 @@ class PdfImportTest extends TestCase
         $this->assertDatabaseCount('items', 1);
     }
 
+    public function test_batch_file_names_must_be_unique(): void
+    {
+        // Different contents, same filename: rejected by name.
+        $first = $this->pdfWithPages(2);
+        $second = $this->pdfWithPages(3);
+        $sameName = new UploadedFile($second->getRealPath(), 'scan.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($this->user)->post('/capture/bulk/pdf', [
+            'pdf' => $first,
+            'photos_per_item' => 2,
+        ])->assertStatus(202);
+
+        $response = $this->actingAs($this->user)->postJson('/capture/bulk/pdf', [
+            'pdf' => $sameName,
+            'photos_per_item' => 2,
+        ]);
+
+        $response->assertStatus(409);
+        $this->assertStringContainsString('Rename the file', $response->json('message'));
+        $this->assertDatabaseCount('batches', 1);
+    }
+
     public function test_non_pdf_files_are_rejected(): void
     {
         $response = $this->actingAs($this->user)->postJson('/capture/bulk/pdf', [
