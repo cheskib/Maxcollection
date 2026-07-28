@@ -17,11 +17,14 @@ interface BatchStatus {
 
 const props = defineProps<{
     collections: { id: number; name: string }[];
+    pendingBatches: BatchStatus[];
 }>();
 
 const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
 const photosPerItem = ref<1 | 2>(2);
-const batches = ref<BatchStatus[]>([]);
+// Seeded with any batches still converting or awaiting processing, so
+// leaving the page and coming back never loses them.
+const batches = ref<BatchStatus[]>([...props.pendingBatches]);
 const uploading = ref(false);
 const processing = ref(false);
 const error = ref<string | null>(null);
