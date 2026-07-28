@@ -272,6 +272,21 @@ class ProcessingService
     }
 
     /**
+     * Queue an AI Ballpark refresh for every item that has metadata.
+     * Values only — nothing else about the items is touched.
+     */
+    public function revalueAll(): int
+    {
+        $ids = Item::whereHas('metadata')->pluck('id');
+
+        foreach ($ids as $id) {
+            \App\Jobs\RevalueItemJob::dispatch($id);
+        }
+
+        return $ids->count();
+    }
+
+    /**
      * Queue only the captured items belonging to the given batches.
      */
     public function queueBatches(array $batchIds): int

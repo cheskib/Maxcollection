@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/photos', [\App\Http\Controllers\PhotoSummaryController::class, 'index'])->name('photos');
     Route::post('/process', [ProcessController::class, 'store'])->name('process');
     Route::post('/reprocess-all', [\App\Http\Controllers\ReprocessController::class, 'all'])->name('reprocess.all');
+    Route::post('/revalue-all', [\App\Http\Controllers\ReprocessController::class, 'values'])->name('revalue.all');
 
     Route::get('/items', [ProcessedItemsController::class, 'index'])->name('items.index');
     Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');

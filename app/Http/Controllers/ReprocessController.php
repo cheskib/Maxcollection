@@ -31,6 +31,16 @@ class ReprocessController extends Controller
     }
 
     /**
+     * Refresh only the AI Ballpark values across the collection.
+     */
+    public function values(ProcessingService $service): RedirectResponse
+    {
+        $count = $service->revalueAll();
+
+        return back()->with('status', "{$count} item(s) queued for AI valuation.");
+    }
+
+    /**
      * Re-run the AI over the entire collection at the standard tier.
      */
     public function all(Request $request, ProcessingService $service): RedirectResponse

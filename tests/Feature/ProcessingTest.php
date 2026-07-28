@@ -420,6 +420,35 @@ class ProcessingTest extends TestCase
         $this->assertSame('1987 Topps All-Star Don Mattingly', $metadata->primaryTitle());
     }
 
+    public function test_revalue_all_updates_only_ai_values(): void
+    {
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'value_low' => 12,
+                'value_high' => 30,
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $item->update(['status' => Item::STATUS_PROCESSED]);
+        $item->metadata()->create([
+            'category' => 'sports_card',
+            'player_name' => 'Untouched Player',
+            'value_from' => 100,
+            'value_to' => 200,
+        ]);
+
+        $this->actingAs($this->user)->post('/revalue-all')->assertRedirect();
+
+        $metadata = $item->fresh()->metadata;
+        // Only the AI Ballpark changed.
+        $this->assertSame(12.0, $metadata->ai_value_from);
+        $this->assertSame(30.0, $metadata->ai_value_to);
+        $this->assertSame('Untouched Player', $metadata->player_name);
+        $this->assertSame(100.0, $metadata->value_from);
+        $this->assertSame(Item::STATUS_PROCESSED, $item->fresh()->status);
+    }
+
     public function test_ai_ballpark_value_range_is_saved(): void
     {
         Http::fake([

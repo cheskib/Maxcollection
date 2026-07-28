@@ -108,6 +108,87 @@ class AiService
     }
 
     /**
+     * Estimate only the resale value range for an item from its photos.
+     * Touches nothing else — used to (re)value the collection without
+     * re-reading metadata. Returns ['low' => float, 'high' => float] or
+     * null when no responsible estimate is possible.
+     *
+     * @return array{low: float, high: float}|null
+     */
+    public function estimateValue(Item $item): ?array
+    {
+        $apiKey = config('services.openai.key');
+
+        if (blank($apiKey)) {
+            return null;
+        }
+
+        $content = [[
+            'type' => 'input_text',
+            'text' => 'Estimate a conservative resale value range in United States dollars for the collectible shown '
+                .'in these photographs, in the condition shown, based on what such items typically sell for. '
+                .'Plain numbers only. Use null for BOTH values when you cannot estimate responsibly.',
+        ]];
+
+        $attached = 0;
+
+        foreach ($item->images()->orderBy('id')->get() as $image) {
+            $binary = $this->renderer->render($image, 1024);
+
+            if ($binary === null) {
+                continue;
+            }
+
+            $content[] = [
+                'type' => 'input_image',
+                'image_url' => 'data:image/jpeg;base64,'.base64_encode($binary),
+            ];
+            $attached++;
+        }
+
+        if ($attached === 0) {
+            return null;
+        }
+
+        $response = Http::withToken($apiKey)
+            ->timeout((int) config('services.openai.timeout'))
+            ->post(rtrim(config('services.openai.base_url'), '/').'/responses', [
+                'model' => config('services.openai.model'),
+                'input' => [['role' => 'user', 'content' => $content]],
+                'text' => [
+                    'format' => [
+                        'type' => 'json_schema',
+                        'name' => 'value_estimate',
+                        'strict' => true,
+                        'schema' => [
+                            'type' => 'object',
+                            'additionalProperties' => false,
+                            'properties' => [
+                                'value_low' => ['type' => ['number', 'null']],
+                                'value_high' => ['type' => ['number', 'null']],
+                            ],
+                            'required' => ['value_low', 'value_high'],
+                        ],
+                    ],
+                ],
+            ]);
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        $decoded = json_decode($this->outputText($response->json()) ?? '', true);
+        $low = is_numeric($decoded['value_low'] ?? null) ? round(max(0, (float) $decoded['value_low']), 2) : null;
+        $high = is_numeric($decoded['value_high'] ?? null) ? round(max(0, (float) $decoded['value_high']), 2) : null;
+
+        if ($low === null || $high === null) {
+            return null;
+        }
+
+        return $low <= $high ? ['low' => $low, 'high' => $high] : ['low' => $high, 'high' => $low];
+    }
+
+    /**
      * Classify scanned PDF pages as card fronts or backs, in order, so the
      * importer can pair them even when a back is missing. Returns one
      * 'front'/'back' per page, or null when classification is unavailable
