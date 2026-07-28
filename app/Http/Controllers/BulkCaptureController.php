@@ -81,12 +81,27 @@ class BulkCaptureController extends Controller
             ], 409);
         }
 
+        // Guardrail: batch file names must be unique so every batch stays
+        // unambiguously identifiable.
+        $label = $request->file('pdf')->getClientOriginalName();
+        $sameName = Batch::where('label', $label)->first();
+
+        if ($sameName !== null) {
+            return response()->json([
+                'message' => sprintf(
+                    'A batch named "%s" already exists (uploaded %s). Rename the file and try again.',
+                    $label,
+                    $sameName->created_at->format('M j, Y'),
+                ),
+            ], 409);
+        }
+
         $path = $request->file('pdf')->store('imports', 'local');
 
         $batch = Batch::create([
             'user_id' => $request->user()->id,
             'source' => 'pdf',
-            'label' => $request->file('pdf')->getClientOriginalName(),
+            'label' => $label,
             'content_hash' => $hash,
         ]);
 
