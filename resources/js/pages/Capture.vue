@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import CameraCapture from '../components/CameraCapture.vue';
 import CollectionPicker, { type CollectionChoice } from '../components/CollectionPicker.vue';
 import { collectionPayload } from '../composables/lastCollection';
 
@@ -60,12 +61,21 @@ function roleForStep(): string {
     return 'detail';
 }
 
-function upload(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const photo = input.files?.[0];
-    input.value = '';
-    if (!photo) return;
+// The in-page camera is the main path; if the browser refuses camera
+// access we fall back to the classic take/upload buttons.
+const cameraUnsupported = ref(false);
 
+const frontThumb = computed(() => {
+    const image = props.item?.images.find((entry) => entry.role === 'front') ?? props.item?.images[0];
+    return image ? `/thumbnails/${image.id}?v=${image.version}` : null;
+});
+const backThumb = computed(() => {
+    const image = props.item?.images.find((entry) => entry.role === 'back');
+    return image ? `/thumbnails/${image.id}?v=${image.version}` : null;
+});
+const detailCount = computed(() => props.item?.images.filter((entry) => entry.role === 'detail').length ?? 0);
+
+function postPhoto(photo: File): void {
     error.value = null;
 
     router.post(
@@ -78,11 +88,23 @@ function upload(event: Event): void {
         },
         {
             forceFormData: true,
+            // Keep the page component (and the live camera) alive across
+            // the upload round-trip.
+            preserveState: true,
             onStart: () => (uploading.value = true),
             onFinish: () => (uploading.value = false),
             onError: (errors) => (error.value = errors.photo ?? Object.values(errors)[0] ?? 'Upload failed.'),
         },
     );
+}
+
+function upload(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const photo = input.files?.[0];
+    input.value = '';
+    if (!photo) return;
+
+    postPhoto(photo);
 }
 
 function deleteImage(image: CaptureImage): void {
@@ -124,6 +146,21 @@ const ROLE_LABELS: Record<string, string> = { front: 'Front', back: 'Back', deta
         </div>
 
         <template v-if="item || collectionConfirmed">
+        <CameraCapture
+            v-if="step !== 'autograph' && !cameraUnsupported"
+            :step="step"
+            :front-thumb="frontThumb"
+            :back-thumb="backThumb"
+            :detail-count="detailCount"
+            :can-finish="Boolean(item)"
+            :uploading="uploading"
+            @photo="postPhoto"
+            @gallery="fileInput?.click()"
+            @finish="finishing = true"
+            @exit="router.visit('/')"
+            @unsupported="cameraUnsupported = true"
+        />
+
         <div class="mt-4 rounded-xl bg-blue-50 p-4 text-center">
             <p class="font-semibold text-blue-900">{{ STEP_COPY[step].title }}</p>
             <p v-if="STEP_COPY[step].hint" class="mt-1 text-sm text-blue-700">{{ STEP_COPY[step].hint }}</p>
