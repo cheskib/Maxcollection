@@ -19,8 +19,33 @@ class BulkCaptureController extends Controller
 {
     public function create(): Response
     {
+        // Batches still converting or holding unprocessed cards reappear in
+        // the workspace, so navigating away never loses the Process button.
+        $pending = Batch::withCount([
+            'items',
+            'items as captured_count' => fn ($query) => $query->where('status', Item::STATUS_CAPTURED),
+            'items as in_progress_count' => fn ($query) => $query->whereIn('status', [Item::STATUS_QUEUED, Item::STATUS_PROCESSING]),
+            'items as processed_count' => fn ($query) => $query->where('status', Item::STATUS_PROCESSED),
+            'items as needs_review_count' => fn ($query) => $query->where('status', Item::STATUS_NEEDS_REVIEW),
+        ])
+            ->where(fn ($query) => $query
+                ->where(fn ($converting) => $converting->where('source', 'pdf')->whereNull('converted_at'))
+                ->orWhereHas('items', fn ($items) => $items->where('status', Item::STATUS_CAPTURED)))
+            ->orderBy('id')
+            ->get();
+
         return Inertia::render('BulkCapture', [
             'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
+            'pendingBatches' => $pending->map(fn (Batch $batch) => [
+                'id' => $batch->id,
+                'label' => $batch->displayLabel(),
+                'converting' => $batch->source === 'pdf' && $batch->converted_at === null,
+                'itemCount' => $batch->items_count,
+                'captured' => $batch->captured_count,
+                'inProgress' => $batch->in_progress_count,
+                'processed' => $batch->processed_count,
+                'needsReview' => $batch->needs_review_count,
+            ])->all(),
         ]);
     }
 

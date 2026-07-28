@@ -22,6 +22,27 @@ class BulkCaptureTest extends TestCase
         $this->user = User::factory()->create();
     }
 
+    public function test_unprocessed_batches_reappear_in_the_workspace(): void
+    {
+        $awaiting = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'bulk']);
+        \App\Models\Item::create(['user_id' => $this->user->id, 'batch_id' => $awaiting->id]);
+
+        $converting = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'pdf', 'label' => 'mid.pdf']);
+
+        // Fully processed batches stay out of the workspace.
+        $done = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'pdf', 'label' => 'done.pdf', 'converted_at' => now()]);
+        \App\Models\Item::create(['user_id' => $this->user->id, 'batch_id' => $done->id, 'status' => \App\Models\Item::STATUS_PROCESSED]);
+
+        $this->actingAs($this->user)
+            ->get('/capture/bulk')
+            ->assertInertia(fn ($page) => $page
+                ->has('pendingBatches', 2)
+                ->where('pendingBatches.0.id', $awaiting->id)
+                ->where('pendingBatches.0.captured', 1)
+                ->where('pendingBatches.1.converting', true)
+            );
+    }
+
     public function test_bulk_capture_screen_renders(): void
     {
         $this->actingAs($this->user)->get('/capture/bulk')->assertOk();
