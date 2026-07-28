@@ -94,6 +94,12 @@ function logout(): void {
         >
             ↻ Reprocess Everything
         </button>
+        <button
+            class="mt-2 w-full rounded-xl bg-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+            @click="router.post('/revalue-all')"
+        >
+            💲 Update AI Values
+        </button>
         <div v-if="choosingReprocessSource" class="mt-2 rounded-xl border border-blue-200 bg-blue-50 p-4">
             <p class="text-sm font-semibold text-gray-900">Which photos should the AI read?</p>
             <p class="mt-1 text-xs text-gray-500">Every item will be re-run at the standard tier; current details will be replaced.</p>
