@@ -98,6 +98,30 @@ class OverviewPagesTest extends TestCase
             );
     }
 
+    public function test_summary_can_be_scoped_to_a_collection(): void
+    {
+        $collection = Collection::create(['name' => "Cheski's", 'user_id' => $this->user->id]);
+        $inside = $this->item(Item::STATUS_PROCESSED, ['sport' => 'Baseball', 'player_name' => 'In Player', 'ai_value_from' => 10, 'ai_value_to' => 20]);
+        $inside->update(['collection_id' => $collection->id]);
+        // Outside the collection: excluded from counts and totals.
+        $this->item(Item::STATUS_PROCESSED, ['sport' => 'Baseball', 'player_name' => 'Out Player', 'ai_value_from' => 500, 'ai_value_to' => 900]);
+
+        $this->actingAs($this->user)
+            ->get("/items/summary?collection={$collection->id}")
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('ProcessedSummary')
+                ->where('collectionName', "Cheski's")
+                ->where('total', 1)
+                ->where('value.from', 10)
+                ->where('value.to', 20)
+                ->where('categories.0.count', 1)
+                // Cross-collection sections stay hidden inside a collection.
+                ->where('collections.named', [])
+                ->where('sets', [])
+            );
+    }
+
     public function test_photo_summary_flags_single_photo_cards(): void
     {
         $complete = $this->item(Item::STATUS_PROCESSED, ['player_name' => 'Two Sides']);

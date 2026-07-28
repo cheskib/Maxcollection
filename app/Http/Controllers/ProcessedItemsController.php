@@ -62,6 +62,11 @@ class ProcessedItemsController extends Controller
                 ->leftJoin('metadata', 'metadata.item_id', '=', 'items.id')
                 ->orderByRaw("coalesce(metadata.player_name, metadata.title, metadata.country, '')")
                 ->select('items.*'),
+            'value' => $items
+                ->leftJoin('metadata', 'metadata.item_id', '=', 'items.id')
+                ->orderByRaw('coalesce(metadata.value_to, metadata.ai_value_to) is null')
+                ->orderByRaw('coalesce(metadata.value_to, metadata.ai_value_to) desc')
+                ->select('items.*'),
             default => $items->orderByDesc('items.id'),
         };
 
@@ -76,6 +81,11 @@ class ProcessedItemsController extends Controller
                 'category' => $item->metadata?->categoryLabel() ?? 'Unknown',
                 'confidence' => $item->metadata?->confidence,
                 'processedAt' => $item->processed_at?->format('M j, Y g:i A'),
+                'value' => [
+                    'from' => $item->metadata?->value_from ?? $item->metadata?->ai_value_from,
+                    'to' => $item->metadata?->value_to ?? $item->metadata?->ai_value_to,
+                    'isOurs' => $item->metadata?->value_from !== null || $item->metadata?->value_to !== null,
+                ],
             ]);
 
         // Each dropdown offers only values that exist among processed items.

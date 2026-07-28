@@ -10,6 +10,14 @@ interface ProcessedItem {
     category: string;
     confidence: number | null;
     processedAt: string | null;
+    value: { from: number | null; to: number | null; isOurs: boolean };
+}
+
+function money(from: number | null, to: number | null): string | null {
+    if (from === null && to === null) return null;
+    const fmt = (v: number) => `$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    if (from !== null && to !== null) return from === to ? fmt(from) : `${fmt(from)} – ${fmt(to)}`;
+    return fmt((from ?? to) as number);
 }
 
 type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer' | 'card_type' | 'publisher' | 'country';
@@ -109,6 +117,7 @@ function clearFilters(): void {
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
                 <option value="title">By title</option>
+                <option value="value">Highest value</option>
             </select>
         </div>
 
@@ -158,6 +167,10 @@ function clearFilters(): void {
                     <p class="text-sm text-gray-500">{{ item.category }}</p>
                     <p class="text-xs text-gray-400">
                         <span v-if="item.confidence !== null">{{ Math.round(item.confidence) }}% · </span>{{ item.processedAt }}
+                    </p>
+                    <p v-if="money(item.value.from, item.value.to)" class="text-sm font-medium text-green-700">
+                        {{ money(item.value.from, item.value.to) }}
+                        <span v-if="!item.value.isOurs" class="font-normal text-gray-400">(AI)</span>
                     </p>
                 </div>
                 <span class="text-sm font-semibold text-blue-600">View</span>
