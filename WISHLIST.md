@@ -11,6 +11,15 @@ Mattinglys"). Duplicates are fully allowed today; this would turn them
 from coexisting items into a counted feature.
 *(Owner added 2026-07-28, following the batch-guardrail discussion.)*
 
+## Live market value data
+
+Replace or inform the AI Ballpark with real sold-price data (eBay sold
+listings, PriceCharting-style services). Needs an external data source
+with credentials plus card-matching logic. Until then, value is two
+ranges: Our Value (manual, authoritative) and AI Ballpark (rough,
+refreshed on each processing run).
+*(Owner decision 2026-07-28 when card value was added.)*
+
 ## Other items deferred in discussion
 
 - **Set completion tracking** — "1987 Topps has 792 cards, you own 14"

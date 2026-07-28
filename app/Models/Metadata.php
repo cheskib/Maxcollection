@@ -63,8 +63,17 @@ class Metadata extends Model
         'condition_notes' => 'Condition Notes',
     ];
 
+    /**
+     * The owner's manual value range; applies to every category and is
+     * never written by the AI.
+     *
+     * @var array<int, string>
+     */
+    public const VALUE_FIELDS = ['value_from', 'value_to'];
+
     protected $fillable = [
         'item_id', 'category', 'confidence',
+        'value_from', 'value_to', 'ai_value_from', 'ai_value_to',
         'player_name', 'team', 'sport', 'year', 'manufacturer', 'set_name',
         'card_type', 'original_year',
         'card_number', 'rookie_card', 'parallel', 'serial_number', 'autograph',
@@ -77,6 +86,10 @@ class Metadata extends Model
     {
         return [
             'confidence' => 'float',
+            'value_from' => 'float',
+            'value_to' => 'float',
+            'ai_value_from' => 'float',
+            'ai_value_to' => 'float',
         ];
     }
 

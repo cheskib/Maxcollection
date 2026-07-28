@@ -127,6 +127,23 @@ class ItemPagesTest extends TestCase
         $this->assertSame($this->user->id, $playerChange->user_id);
     }
 
+    public function test_our_value_range_can_be_saved(): void
+    {
+        $item = $this->processedItem();
+
+        $this->actingAs($this->user)->put("/items/{$item->id}/metadata", [
+            'category' => 'sports_card',
+            'player_name' => 'Sample Player',
+            'value_from' => '12.50',
+            'value_to' => '25',
+        ]);
+
+        $metadata = $item->fresh()->metadata;
+        $this->assertSame(12.5, $metadata->value_from);
+        $this->assertSame(25.0, $metadata->value_to);
+        $this->assertNotNull($item->metadataHistory()->firstWhere('field_name', 'value_from'));
+    }
+
     public function test_unchanged_fields_produce_no_history(): void
     {
         $item = $this->processedItem();

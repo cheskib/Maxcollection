@@ -21,6 +21,8 @@ class UpdateMetadataRequest extends FormRequest
         $rules = [
             'category' => ['required', Rule::in(['sports_card', 'comic_book', 'coin', 'stamp', 'unsupported'])],
             'condition_notes' => ['nullable', 'string', 'max:5000'],
+            'value_from' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'value_to' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
         ];
 
         foreach (array_keys(Metadata::FIELD_LABELS) as $field) {

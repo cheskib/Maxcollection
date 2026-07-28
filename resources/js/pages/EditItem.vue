@@ -7,7 +7,8 @@ const props = defineProps<{
         id: number;
         title: string;
         category: string;
-        values: Record<string, string | null>;
+        values: Record<string, string | number | null>;
+        aiValue: { from: number | null; to: number | null };
         images: { id: number; original_filename: string; version: string }[];
     };
     categoryFields: Record<string, string[]>;
@@ -258,6 +259,31 @@ function rotateImage(imageId: number): void {
                 />
                 <p v-if="(form.errors as Record<string, string>)[field]" class="mt-1 text-sm text-red-600">
                     {{ (form.errors as Record<string, string>)[field] }}
+                </p>
+            </div>
+
+            <div>
+                <p class="block text-sm font-medium text-gray-700">Our Value ($)</p>
+                <div class="mt-1 grid grid-cols-2 gap-3">
+                    <input
+                        v-model="(form as Record<string, any>).value_from"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="From"
+                        class="block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                    <input
+                        v-model="(form as Record<string, any>).value_to"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="To"
+                        class="block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                </div>
+                <p v-if="item.aiValue.from !== null" class="mt-1 text-xs text-gray-400">
+                    AI Ballpark: ${{ item.aiValue.from }} – ${{ item.aiValue.to }}
                 </p>
             </div>
 
