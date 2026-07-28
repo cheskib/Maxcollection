@@ -37,13 +37,13 @@ class StorageLabelsTest extends TestCase
     public function test_divider_labels_carry_names_and_neutral_codes(): void
     {
         $this->actingAs($this->user)->post('/storage/labels', [
-            'type' => 'category',
+            'type' => 'divider',
             'names' => "Baseball 80s\n\nFootball Stars\n",
         ]);
 
         $barcodes = Barcode::orderBy('id')->get();
         $this->assertCount(2, $barcodes);
-        $this->assertSame('CAT-000001', $barcodes[0]->code);
+        $this->assertSame('DIV-000001', $barcodes[0]->code);
         $this->assertSame('Baseball 80s', $barcodes[0]->label);
         $this->assertSame('Football Stars', $barcodes[1]->label);
     }

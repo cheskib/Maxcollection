@@ -118,7 +118,7 @@ Station App components:
 |---|---|
 | **Operator UI** | One full-screen window. Shows current batch, live scan count, thumbnails of the last scans, upload progress, and big touchable buttons (New Batch, Rescan Last, Delete Last). Storage mode shows the open box and its sections. |
 | **Scan Controller** | Owns the TWAIN session with the fi-8170. Configures duplex/resolution/color, starts scans, receives front+back image pairs in memory, hands them to the spool. Driver UI suppressed. |
-| **Barcode Listener** | Captures scanner keystrokes (HID scanners terminate with Enter), parses the prefix to determine type (BAG/BOX/CAT), routes the event to whichever workflow is active. Rejects wrong-type scans with a loud error tone. |
+| **Barcode Listener** | Captures scanner keystrokes (HID scanners terminate with Enter), parses the prefix to determine type (BAG/BOX/DIV), routes the event to whichever workflow is active. Rejects wrong-type scans with a loud error tone. |
 | **Local Spool** | Crash-safe staging: every scanned image is written to disk and journaled in a local SQLite file before the UI confirms the scan. Survives app restarts and network outages. |
 | **Upload Worker** | Drains the spool to the Capture API in the background with exponential-backoff retries. Scanning never waits for the network. |
 
@@ -214,7 +214,7 @@ retrying an upload) so retries are always safe.
 | `POST /api/station/batches/{batch}/finalize` | Body: `{ barcode: "BAG-000123" }`. Validates barcode type + uniqueness, stamps the batch with its permanent ID, closes it, queues the Dropbox archive job. |
 | `POST /api/station/storage/boxes` | Body: `{ barcode: "BOX-0042" }`. Opens a box (or errors if that barcode is closed). |
 | `POST /api/station/storage/boxes/{box}/bags` | Body: `{ barcode: "BAG-000123" }`. Adds the bag to the box's current (open) section. Errors: unknown bag, bag already boxed. |
-| `POST /api/station/storage/boxes/{box}/dividers` | Body: `{ barcode: "CAT-BASEBALL" }`. Closes the current section under that category and opens the next. |
+| `POST /api/station/storage/boxes/{box}/dividers` | Body: `{ barcode: "DIV-000087" }`. Closes the current section under that divider card and opens the next. |
 | `POST /api/station/storage/boxes/{box}/complete` | Records close date + counts, seals the box. |
 
 Web-app additions (browser, human-facing, not station):
@@ -273,7 +273,7 @@ stateDiagram-v2
     [*] --> BoxOpen : BOX barcode scanned
     BoxOpen --> Filling : first BAG barcode scanned
     Filling --> Filling : BAG barcode scanned\n(added to current section)
-    Filling --> SectionClosed : CAT barcode scanned\n(section labeled, next section opens)
+    Filling --> SectionClosed : DIV barcode scanned\n(section labeled, next section opens)
     SectionClosed --> Filling : next BAG scanned
     SectionClosed --> Complete : Box Complete pressed
     Filling --> Complete : Box Complete pressed\n(warn: unlabeled section)
@@ -283,7 +283,7 @@ stateDiagram-v2
 Barcode-type routing: because the barcode prefix declares the object type,
 the station never asks "what did you scan?" — a BOX scan while a box is open
 is an error ("close this box first"), a BAG scan with no box open is an
-error ("scan a box barcode first"), a CAT scan with an empty section is a
+error ("scan a box barcode first"), a DIV scan with an empty section is a
 warning. Every error is a screen flash + tone, never a dialog to dismiss
 with a mouse.
 
@@ -319,7 +319,7 @@ All changes are additive; nothing existing is altered in meaning.
 | Column | Type |
 |---|---|
 | `storage_box_id` | FK, cascade |
-| `category_barcode` | string(32), nullable until its divider is scanned |
+| `divider_barcode` | string(32), nullable until its divider is scanned |
 | `position` | integer (order inside the box) |
 
 **`station_tokens`** — via Laravel Sanctum's standard table (no custom
@@ -387,14 +387,14 @@ sequenceDiagram
     St->>API: POST /storage/boxes {BOX-0042}
     API-->>St: box open, section 1 started
 
-    loop each category
-        loop each bag of that category
+    loop each divider group
+        loop each bag of that group
             Op->>St: scan BAG-000123
             St->>API: POST /boxes/42/bags {BAG-000123}
             API-->>St: added to section 1 (running count)
         end
-        Op->>St: scan divider CAT-BASEBALL
-        St->>API: POST /boxes/42/dividers {CAT-BASEBALL}
+        Op->>St: scan divider DIV-000087
+        St->>API: POST /boxes/42/dividers {DIV-000087}
         API-->>St: section 1 = Baseball (4 bags), section 2 started
         Op->>Op: place divider behind last bag
     end
@@ -427,7 +427,7 @@ Dropbox upload retries via the queue and surfaces on the batch page as
 | 7 | **File renaming at finalize.** Physically renaming every stored file breaks the "originals are never touched" instinct and risks partial-rename states. | **Recommended deviation from the spec's letter:** keep internal storage paths immutable; the *permanent* naming (BAG-000123/card-007-front.jpg) is applied to the Dropbox archive copies and shown everywhere in the UI. The database mapping is the rename. Satisfies the intent (everything is addressable by permanent Batch ID) with zero rename risk. Needs owner sign-off. |
 | 8 | **One station assumed.** Two stations scanning simultaneously would share the API fine (batches are independent) but the spec's "current batch" is per-station state — already handled since each station tracks its own current batch locally. Multi-station needs nothing extra now. | No action; noted so it isn't accidentally designed against. |
 | 9 | **Dropbox API limits / token expiry.** | Queue retries with backoff; `archived_at` visibly null until success; Settings shows archive backlog count. |
-| 10 | **Divider semantics drift** — physical categories (dividers) vs AI metadata categories could be conflated by future code. | Dividers are stored as opaque `category_barcode` strings in storage tables only, never joined to metadata. The spec's rule is enforced structurally. |
+| 10 | **Divider semantics drift** — physical categories (dividers) vs AI metadata categories could be conflated by future code. | Dividers are stored as opaque `divider_barcode` strings in storage tables only, never joined to metadata. The spec's rule is enforced structurally. |
 
 ---
 
@@ -443,7 +443,7 @@ Dropbox upload retries via the queue and surfaces on the batch page as
    and printed-but-never-used labels are traceable.
 4. **AI runs automatically on station uploads** — and always on the server
    (Railway), never on the scanning desk PC.
-5. **Divider categories are free-form** — neutral CAT-xxxxxx codes with a
+5. **Divider categories are free-form** — neutral DIV-xxxxxx codes with a
    printed display name, unrelated to AI metadata.
 6. **Dropbox confirmed** — owner has 2 TB; full 300k-card archive projected
    at roughly 200–450 GB.
@@ -474,8 +474,8 @@ snapshot counts that stay recalculable from relations.
    renames.
 4. **AI runs automatically on station uploads** (no Process button at the
    desk). The web bulk flow keeps its explicit Process button.
-5. **Divider categories are free-form barcodes** (CAT-BASEBALL,
-   CAT-MIXED-90S, …) chosen when labels are printed — not tied to the AI's
+5. **Divider categories are free-form barcodes** (DIV-000087,
+   DIV-000091, …) chosen when labels are printed — not tied to the AI's
    category/sport lists. Confirm.
 6. **Dropbox account**: an app token (like the PriceCharting token) will be
    added to Railway when ready; archiving simply queues until it exists.

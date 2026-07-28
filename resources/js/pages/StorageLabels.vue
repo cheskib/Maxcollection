@@ -2,7 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps<{
-    counts: { bag: number; box: number; category: number };
+    counts: { bag: number; box: number; divider: number };
 }>();
 
 const form = useForm<{ type: string; count: number; names: string }>({
@@ -26,7 +26,7 @@ function submit(): void {
         <p class="mt-2 text-sm text-gray-500">
             Every generated barcode is registered before it is printed, so the system always knows every label that
             exists — a scan of an unknown code is instantly a misread. Registered so far:
-            {{ counts.bag }} bags, {{ counts.box }} boxes, {{ counts.category }} dividers.
+            {{ counts.bag }} bags, {{ counts.box }} boxes, {{ counts.divider }} dividers.
         </p>
 
         <form class="mt-6 flex flex-col gap-4" @submit.prevent="submit">
@@ -35,11 +35,11 @@ function submit(): void {
                 <select id="type" v-model="form.type" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5">
                     <option value="bag">Bag labels (BAG-…)</option>
                     <option value="box">Box labels (BOX-…)</option>
-                    <option value="category">Category divider labels (CAT-…)</option>
+                    <option value="divider">Divider card labels (DIV-…)</option>
                 </select>
             </div>
 
-            <div v-if="form.type !== 'category'">
+            <div v-if="form.type !== 'divider'">
                 <label for="count" class="block text-sm font-medium text-gray-700">How many</label>
                 <input
                     id="count"

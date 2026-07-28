@@ -60,14 +60,14 @@ class StorageWorkflowTest extends TestCase
     public function test_full_packing_flow_box_bags_divider_complete(): void
     {
         $this->barcode('box', 'BOX-000001');
-        $this->barcode('category', 'CAT-000001', 'Baseball 80s');
+        $this->barcode('divider', 'DIV-000001', 'Baseball 80s');
         $this->finalizedBatch('BAG-000001');
         $this->finalizedBatch('BAG-000002');
 
         $this->assertScan($this->scan('BOX-000001'), true, 'opened');
         $this->assertScan($this->scan('BAG-000001'), true, '1 bag(s)');
         $this->assertScan($this->scan('BAG-000002'), true, '2 bag(s)');
-        $this->assertScan($this->scan('CAT-000001'), true, 'Baseball 80s');
+        $this->assertScan($this->scan('DIV-000001'), true, 'Baseball 80s');
 
         $response = $this->actingAs($this->user)->post('/storage/complete', ['confirmed' => false]);
         $this->assertScan($response, true, 'completed');
@@ -100,7 +100,7 @@ class StorageWorkflowTest extends TestCase
     {
         $this->barcode('box', 'BOX-000001');
         $this->barcode('box', 'BOX-000002');
-        $this->barcode('category', 'CAT-000001');
+        $this->barcode('divider', 'DIV-000001');
         $this->finalizedBatch('BAG-000001');
 
         // Bag before any box is open.
@@ -112,26 +112,26 @@ class StorageWorkflowTest extends TestCase
         $this->assertScan($this->scan('BOX-000002'), false, 'Complete box BOX-000001');
 
         // Divider before any bags in the section.
-        $this->assertScan($this->scan('CAT-000001'), false, 'No bags scanned yet');
+        $this->assertScan($this->scan('DIV-000001'), false, 'No bags scanned yet');
     }
 
     public function test_bag_cannot_be_boxed_twice_and_divider_used_once(): void
     {
         $this->barcode('box', 'BOX-000001');
         $this->barcode('box', 'BOX-000002');
-        $this->barcode('category', 'CAT-000001');
+        $this->barcode('divider', 'DIV-000001');
         $this->finalizedBatch('BAG-000001');
         $this->finalizedBatch('BAG-000002');
 
         $this->scan('BOX-000001');
         $this->scan('BAG-000001');
-        $this->scan('CAT-000001');
+        $this->scan('DIV-000001');
         $this->actingAs($this->user)->post('/storage/complete', ['confirmed' => false]);
 
         $this->scan('BOX-000002');
         $this->scan('BAG-000002');
         $this->assertScan($this->scan('BAG-000001'), false, 'already in box BOX-000001');
-        $this->assertScan($this->scan('CAT-000001'), false, 'already used in box BOX-000001');
+        $this->assertScan($this->scan('DIV-000001'), false, 'already used in box BOX-000001');
     }
 
     public function test_unassigned_bag_and_closed_box_are_rejected(): void
@@ -144,8 +144,8 @@ class StorageWorkflowTest extends TestCase
         $this->assertScan($this->scan('BAG-000009'), false, 'has not been assigned to a batch');
 
         $this->scan('BAG-000001');
-        $this->barcode('category', 'CAT-000001');
-        $this->scan('CAT-000001');
+        $this->barcode('divider', 'DIV-000001');
+        $this->scan('DIV-000001');
         $this->actingAs($this->user)->post('/storage/complete', ['confirmed' => false]);
 
         // Re-scanning a sealed box is an error.
@@ -181,7 +181,7 @@ class StorageWorkflowTest extends TestCase
     public function test_undo_removes_last_bag_divider_or_empty_box(): void
     {
         $this->barcode('box', 'BOX-000001');
-        $this->barcode('category', 'CAT-000001');
+        $this->barcode('divider', 'DIV-000001');
         $batch = $this->finalizedBatch('BAG-000001');
 
         $this->scan('BOX-000001');
@@ -194,12 +194,12 @@ class StorageWorkflowTest extends TestCase
 
         // Re-add, close the section, then undo the divider.
         $this->scan('BAG-000001');
-        $this->scan('CAT-000001');
+        $this->scan('DIV-000001');
         $response = $this->actingAs($this->user)->post('/storage/undo');
-        $this->assertScan($response, true, 'divider CAT-000001 removed');
+        $this->assertScan($response, true, 'divider DIV-000001 removed');
         $box = StorageBox::first();
         $this->assertSame(1, $box->sections()->count());
-        $this->assertNull($box->sections()->first()->category_barcode_id);
+        $this->assertNull($box->sections()->first()->divider_barcode_id);
 
         // Empty the box, then undo the box open itself.
         $this->actingAs($this->user)->post('/storage/undo'); // removes the bag again
@@ -226,7 +226,7 @@ class StorageWorkflowTest extends TestCase
         $this->assertSame('closed', $box->status);
         // The unlabeled section is preserved, not discarded.
         $this->assertSame(1, $box->section_count);
-        $this->assertNull($box->sections()->first()->category_barcode_id);
+        $this->assertNull($box->sections()->first()->divider_barcode_id);
     }
 
     public function test_empty_box_cannot_be_completed(): void
@@ -267,12 +267,12 @@ class StorageWorkflowTest extends TestCase
     public function test_box_detail_shows_sections_and_bags(): void
     {
         $this->barcode('box', 'BOX-000001');
-        $this->barcode('category', 'CAT-000001', 'Baseball 80s');
+        $this->barcode('divider', 'DIV-000001', 'Baseball 80s');
         $this->finalizedBatch('BAG-000001');
 
         $this->scan('BOX-000001');
         $this->scan('BAG-000001');
-        $this->scan('CAT-000001');
+        $this->scan('DIV-000001');
         $this->actingAs($this->user)->post('/storage/complete', ['confirmed' => false]);
 
         $this->actingAs($this->user)
@@ -281,7 +281,7 @@ class StorageWorkflowTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('StorageBox')
                 ->where('box.code', 'BOX-000001')
-                ->where('box.sections.0.category', 'Baseball 80s')
+                ->where('box.sections.0.divider', 'Baseball 80s')
                 ->where('box.sections.0.bags.0.code', 'BAG-000001')
             );
     }

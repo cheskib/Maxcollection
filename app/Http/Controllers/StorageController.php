@@ -82,7 +82,7 @@ class StorageController extends Controller
 
     public function showBox(StorageBox $box): Response
     {
-        $box->load(['barcode', 'sections.categoryBarcode', 'sections.batches.barcode']);
+        $box->load(['barcode', 'sections.dividerBarcode', 'sections.batches.barcode']);
 
         return Inertia::render('StorageBox', [
             'box' => [
@@ -94,8 +94,8 @@ class StorageController extends Controller
                 'cardCount' => $box->card_count,
                 'sections' => $box->sections->map(fn ($section) => [
                     'position' => $section->position,
-                    'category' => $section->categoryBarcode?->displayLabel(),
-                    'categoryCode' => $section->categoryBarcode?->code,
+                    'divider' => $section->dividerBarcode?->displayLabel(),
+                    'dividerCode' => $section->dividerBarcode?->code,
                     'bags' => $section->batches->map(fn (Batch $batch) => [
                         'batchId' => $batch->id,
                         'code' => $batch->barcode->code,
@@ -111,7 +111,7 @@ class StorageController extends Controller
      */
     private function boxState(StorageBox $box): array
     {
-        $box->load(['barcode', 'sections.categoryBarcode']);
+        $box->load(['barcode', 'sections.dividerBarcode']);
         $pending = $box->pendingSection();
 
         return [
@@ -120,11 +120,11 @@ class StorageController extends Controller
             'pendingBagCount' => $pending?->batches()->count() ?? 0,
             'pendingPosition' => $pending?->position,
             'sections' => $box->sections
-                ->filter(fn ($section) => $section->category_barcode_id !== null)
+                ->filter(fn ($section) => $section->divider_barcode_id !== null)
                 ->values()
                 ->map(fn ($section) => [
                     'position' => $section->position,
-                    'category' => $section->categoryBarcode->displayLabel(),
+                    'divider' => $section->dividerBarcode->displayLabel(),
                     'bagCount' => $section->batches()->count(),
                 ])->all(),
         ];

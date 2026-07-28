@@ -19,7 +19,7 @@ class LabelController extends Controller
             'counts' => [
                 'bag' => Barcode::where('type', Barcode::TYPE_BAG)->count(),
                 'box' => Barcode::where('type', Barcode::TYPE_BOX)->count(),
-                'category' => Barcode::where('type', Barcode::TYPE_CATEGORY)->count(),
+                'divider' => Barcode::where('type', Barcode::TYPE_DIVIDER)->count(),
             ],
         ]);
     }
@@ -27,9 +27,9 @@ class LabelController extends Controller
     public function generate(Request $request, StorageService $storage): RedirectResponse
     {
         $validated = $request->validate([
-            'type' => ['required', Rule::in([Barcode::TYPE_BAG, Barcode::TYPE_BOX, Barcode::TYPE_CATEGORY])],
-            'count' => ['required_unless:type,category', 'nullable', 'integer', 'min:1', 'max:200'],
-            'names' => ['required_if:type,category', 'nullable', 'string', 'max:5000'],
+            'type' => ['required', Rule::in([Barcode::TYPE_BAG, Barcode::TYPE_BOX, Barcode::TYPE_DIVIDER])],
+            'count' => ['required_unless:type,divider', 'nullable', 'integer', 'min:1', 'max:200'],
+            'names' => ['required_if:type,divider', 'nullable', 'string', 'max:5000'],
         ]);
 
         // Divider labels are named (one per line); bags and boxes are counted.
@@ -38,7 +38,7 @@ class LabelController extends Controller
             ->filter()
             ->values();
 
-        $count = $validated['type'] === Barcode::TYPE_CATEGORY ? $names->count() : (int) $validated['count'];
+        $count = $validated['type'] === Barcode::TYPE_DIVIDER ? $names->count() : (int) $validated['count'];
 
         if ($count === 0) {
             return back()->withErrors(['names' => 'Enter at least one divider name.']);
