@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/items/{item}/market-value', [\App\Http\Controllers\MarketValueController::class, 'store'])->name('items.market');
     Route::post('/items/bulk-edit', [\App\Http\Controllers\BulkEditController::class, 'update'])->name('items.bulk');
     Route::get('/export', [\App\Http\Controllers\ExportController::class, 'csv'])->name('export');
+    Route::get('/stats', [\App\Http\Controllers\StatsController::class, 'index'])->name('stats');
     Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/key-names', [\App\Http\Controllers\SettingsController::class, 'addKeyName'])->name('settings.keynames.add');
