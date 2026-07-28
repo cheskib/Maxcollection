@@ -36,6 +36,13 @@ function runBatchReprocess(source: 'original' | 'cleaned'): void {
     router.post(`/batches/${props.batch.id}/reprocess`, { source }, { preserveScroll: true });
 }
 
+function deleteBatch(): void {
+    if (!confirm(`Delete "${props.batch.label}" and its ${props.items.length} card(s)? This cannot be undone.`)) return;
+    router.delete(`/batches/${props.batch.id}`, {
+        onSuccess: () => router.visit('/batches'),
+    });
+}
+
 // While any item is still processing, refresh so statuses and thumbnails
 // come in without a manual reload.
 let poll: number | null = null;
@@ -83,6 +90,12 @@ onUnmounted(stopPolling);
                 @click="choosingSource = !choosingSource"
             >
                 Reprocess Batch
+            </button>
+            <button
+                class="rounded-lg bg-red-50 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                @click="deleteBatch"
+            >
+                Delete Batch
             </button>
             <div v-if="choosingSource" class="rounded-xl border border-blue-200 bg-blue-50 p-4">
                 <p class="text-sm font-semibold text-gray-900">Which photos should the AI read?</p>

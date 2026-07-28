@@ -18,6 +18,17 @@ use Inertia\Response;
 class BatchController extends Controller
 {
     /**
+     * Delete a batch with all of its items and files — used to clear
+     * stuck or mistaken uploads.
+     */
+    public function destroy(Batch $batch, \App\Services\CaptureService $capture): RedirectResponse
+    {
+        $capture->deleteBatch($batch);
+
+        return back(fallback: route('batches.index'))->with('status', 'Batch deleted.');
+    }
+
+    /**
      * Re-run the AI over every item in the batch.
      */
     public function reprocess(Request $request, Batch $batch, ProcessingService $service): RedirectResponse

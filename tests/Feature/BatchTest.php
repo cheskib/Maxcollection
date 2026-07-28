@@ -111,6 +111,26 @@ class BatchTest extends TestCase
             );
     }
 
+    public function test_a_batch_can_be_deleted_with_its_items(): void
+    {
+        $batch = \App\Models\Batch::create(['user_id' => $this->user->id, 'source' => 'pdf', 'label' => 'stuck.pdf']);
+        $item = \App\Models\Item::create(['user_id' => $this->user->id, 'batch_id' => $batch->id]);
+        $item->images()->create([
+            'path' => "original/{$item->id}/page.jpg",
+            'original_filename' => 'page.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 10,
+        ]);
+        \Illuminate\Support\Facades\Storage::disk('local')->put("original/{$item->id}/page.jpg", 'x');
+
+        $this->actingAs($this->user)->delete("/batches/{$batch->id}")->assertRedirect();
+
+        $this->assertDatabaseCount('batches', 0);
+        $this->assertDatabaseCount('items', 0);
+        $this->assertDatabaseCount('images', 0);
+        \Illuminate\Support\Facades\Storage::disk('local')->assertMissing("original/{$item->id}/page.jpg");
+    }
+
     public function test_batches_require_authentication(): void
     {
         $this->get('/batches')->assertRedirect('/login');
