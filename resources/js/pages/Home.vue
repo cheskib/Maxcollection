@@ -9,8 +9,16 @@ defineProps<{
         needsReview: number;
         picturesUploaded: number;
         unprocessed: number;
+        value: { from: number | null; to: number | null; valuedCount: number };
     };
 }>();
+
+function money(from: number | null, to: number | null): string | null {
+    if (from === null && to === null) return null;
+    const fmt = (v: number) => `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    if (from !== null && to !== null) return from === to ? fmt(from) : `${fmt(from)} – ${fmt(to)}`;
+    return fmt((from ?? to) as number);
+}
 
 const page = usePage<{ flash: { status: string | null } }>();
 
@@ -154,6 +162,10 @@ function logout(): void {
             <Link href="/collections" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
                 <span class="text-2xl">🗄️</span>
                 <p class="mt-1 font-semibold text-gray-900">Collections</p>
+                <template v-if="money(stats.value.from, stats.value.to)">
+                    <p class="mt-1 text-sm font-semibold text-green-700">{{ money(stats.value.from, stats.value.to) }}</p>
+                    <p class="text-xs text-gray-400">{{ stats.value.valuedCount }} item(s) valued</p>
+                </template>
             </Link>
             <Link href="/sets" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
                 <span class="text-2xl">📚</span>
