@@ -99,6 +99,34 @@ class Metadata extends Model
     }
 
     /**
+     * Normalize AI-written card types so variants land in one bucket:
+     * "{Team} Leaders" is the Team Leaders type (the team itself belongs
+     * in the team field), league-level leader cards are League Leaders,
+     * and "All Star" spellings collapse to "All-Star".
+     */
+    public static function normalizeCardType(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return $value;
+        }
+
+        $trimmed = trim($value);
+        $lower = strtolower($trimmed);
+
+        if (preg_match('/leaders?$/', $lower)) {
+            $isLeague = (bool) preg_match('/^(league|nl|al|n\.l\.|a\.l\.|national league|american league)\s+leaders?$/', $lower);
+
+            return $isLeague ? 'League Leaders' : 'Team Leaders';
+        }
+
+        if (in_array($lower, ['all star', 'all-star', 'allstar'], true)) {
+            return 'All-Star';
+        }
+
+        return $trimmed;
+    }
+
+    /**
      * Human-readable category name for display.
      */
     public function categoryLabel(): string

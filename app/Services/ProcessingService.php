@@ -109,6 +109,10 @@ class ProcessingService
             $fields['sport'] = Str::title($fields['sport']);
         }
 
+        if (array_key_exists('card_type', $fields)) {
+            $fields['card_type'] = \App\Models\Metadata::normalizeCardType($fields['card_type']);
+        }
+
         $item->metadata()->updateOrCreate([], [
             'category' => $result->category,
             'confidence' => $result->confidence,
