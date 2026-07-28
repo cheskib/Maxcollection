@@ -493,6 +493,35 @@ class ProcessingTest extends TestCase
         $this->assertNull($item->review_reason);
     }
 
+    public function test_card_type_variants_are_normalized(): void
+    {
+        $cases = [
+            'Phillies Leaders' => 'Team Leaders',
+            'Yankees Leaders' => 'Team Leaders',
+            'NL Leaders' => 'League Leaders',
+            'League Leader' => 'League Leaders',
+            'All Star' => 'All-Star',
+            'Record Breaker' => 'Record Breaker',
+        ];
+
+        foreach ($cases as $raw => $expected) {
+            $this->assertSame($expected, \App\Models\Metadata::normalizeCardType($raw), "for '{$raw}'");
+        }
+
+        Http::fake([
+            'api.openai.com/*' => Http::response($this->openAiResponse([
+                'category' => 'sports_card',
+                'confidence' => 93,
+                'fields' => ['player_name' => 'Von Hayes', 'card_type' => 'Phillies Leaders'],
+            ])),
+        ]);
+
+        $item = $this->captureItem();
+        $this->actingAs($this->user)->post('/process');
+
+        $this->assertSame('Team Leaders', $item->fresh()->metadata->card_type);
+    }
+
     public function test_sport_is_capitalized_when_saved(): void
     {
         Http::fake([
