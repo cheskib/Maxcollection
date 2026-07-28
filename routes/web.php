@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/duplicates', [\App\Http\Controllers\DuplicatesController::class, 'index'])->name('duplicates');
     Route::post('/items/{item}/market-value', [\App\Http\Controllers\MarketValueController::class, 'store'])->name('items.market');
+    Route::get('/export', [\App\Http\Controllers\ExportController::class, 'csv'])->name('export');
     Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/key-names', [\App\Http\Controllers\SettingsController::class, 'addKeyName'])->name('settings.keynames.add');
