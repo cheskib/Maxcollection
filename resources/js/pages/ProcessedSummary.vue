@@ -6,6 +6,9 @@ const props = defineProps<{
     category: string | null;
     categoryLabel: string | null;
     sport: string | null;
+    collection: string | null;
+    collectionName: string | null;
+    value: { from: number | null; to: number | null };
     total: number;
     categories: { value: string; label: string; count: number }[];
     groupField: string | null;
@@ -27,11 +30,28 @@ function goSearch(): void {
 // The pre-filtered Processed Items list for the current drill-down level.
 function listUrl(extra: Record<string, string> = {}): string {
     const params = new URLSearchParams();
+    if (props.collection) params.set('collection', props.collection);
     if (props.category) params.set('category', props.category);
     if (props.sport) params.set('sport', props.sport);
     for (const [key, value] of Object.entries(extra)) params.set(key, value);
     const query = params.toString();
     return query ? `/items?${query}` : '/items';
+}
+
+// A summary URL one level up or down, keeping the collection scope.
+function summaryUrl(extra: Record<string, string> = {}): string {
+    const params = new URLSearchParams();
+    if (props.collection) params.set('collection', props.collection);
+    for (const [key, value] of Object.entries(extra)) params.set(key, value);
+    const query = params.toString();
+    return query ? `/items/summary?${query}` : '/items/summary';
+}
+
+function money(from: number | null, to: number | null): string | null {
+    if (from === null && to === null) return null;
+    const fmt = (v: number) => `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    if (from !== null && to !== null) return from === to ? fmt(from) : `${fmt(from)} – ${fmt(to)}`;
+    return fmt((from ?? to) as number);
 }
 </script>
 
@@ -40,22 +60,24 @@ function listUrl(extra: Record<string, string> = {}): string {
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
         <div class="flex items-center justify-between">
             <h1 class="min-w-0 truncate text-2xl font-bold text-gray-900">
-                {{ sport ?? categoryLabel ?? 'Processed Items' }}
+                {{ sport ?? categoryLabel ?? collectionName ?? 'Processed Items' }}
             </h1>
             <div class="ml-3 flex shrink-0 gap-4">
                 <Link
                     v-if="sport && category"
-                    :href="`/items/summary?category=${encodeURIComponent(category)}`"
+                    :href="summaryUrl({ category })"
                     class="text-sm font-semibold text-blue-600"
                 >
                     ‹ {{ categoryLabel }}
                 </Link>
-                <Link v-else-if="category" href="/items/summary" class="text-sm font-semibold text-blue-600">‹ Categories</Link>
+                <Link v-else-if="category" :href="summaryUrl()" class="text-sm font-semibold text-blue-600">‹ Categories</Link>
+                <Link v-else-if="collection" href="/collections" class="text-sm font-semibold text-blue-600">‹ Collections</Link>
                 <Link href="/" class="text-sm font-semibold text-blue-600">Home</Link>
             </div>
         </div>
         <p class="mt-1 text-sm text-gray-500">
             {{ total }} item(s)<template v-if="!category"> identified — pick a category</template>.
+            <span v-if="money(value.from, value.to)" class="font-semibold text-green-700">{{ money(value.from, value.to) }}</span>
         </p>
 
         <form v-if="!category" class="mt-4 flex gap-2" @submit.prevent="goSearch">
@@ -77,7 +99,7 @@ function listUrl(extra: Record<string, string> = {}): string {
                 <Link
                     v-for="row in categories"
                     :key="row.value"
-                    :href="`/items/summary?category=${encodeURIComponent(row.value)}`"
+                    :href="summaryUrl({ category: row.value })"
                     class="flex items-center justify-between p-4 hover:bg-gray-50"
                 >
                     <p class="text-sm text-gray-700">{{ row.label }}</p>
@@ -85,26 +107,28 @@ function listUrl(extra: Record<string, string> = {}): string {
                 </Link>
             </div>
 
-            <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">By collection</p>
-            <div class="mt-2 divide-y divide-gray-100 rounded-xl bg-white shadow-sm">
-                <Link
-                    v-for="row in collections.named"
-                    :key="row.id"
-                    :href="`/items?collection=${row.id}`"
-                    class="flex items-center justify-between p-4 hover:bg-gray-50"
-                >
-                    <p class="text-sm text-gray-700">{{ row.name }}</p>
-                    <span class="font-bold text-gray-900">{{ row.count }} ›</span>
-                </Link>
-                <Link
-                    v-if="collections.unassigned > 0"
-                    href="/items?collection=unassigned"
-                    class="flex items-center justify-between p-4 hover:bg-gray-50"
-                >
-                    <p class="text-sm text-gray-500">Unassigned</p>
-                    <span class="font-bold text-gray-900">{{ collections.unassigned }} ›</span>
-                </Link>
-            </div>
+            <template v-if="collections.named.length || collections.unassigned > 0">
+                <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">By collection</p>
+                <div class="mt-2 divide-y divide-gray-100 rounded-xl bg-white shadow-sm">
+                    <Link
+                        v-for="row in collections.named"
+                        :key="row.id"
+                        :href="`/items/summary?collection=${row.id}`"
+                        class="flex items-center justify-between p-4 hover:bg-gray-50"
+                    >
+                        <p class="text-sm text-gray-700">{{ row.name }}</p>
+                        <span class="font-bold text-gray-900">{{ row.count }} ›</span>
+                    </Link>
+                    <Link
+                        v-if="collections.unassigned > 0"
+                        href="/items/summary?collection=unassigned"
+                        class="flex items-center justify-between p-4 hover:bg-gray-50"
+                    >
+                        <p class="text-sm text-gray-500">Unassigned</p>
+                        <span class="font-bold text-gray-900">{{ collections.unassigned }} ›</span>
+                    </Link>
+                </div>
+            </template>
 
             <template v-if="sets.length">
                 <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">By set</p>
@@ -134,7 +158,7 @@ function listUrl(extra: Record<string, string> = {}): string {
                         :key="row.value"
                         :href="
                             groupField === 'sport'
-                                ? `/items/summary?category=${encodeURIComponent(category)}&sport=${encodeURIComponent(row.value)}`
+                                ? summaryUrl({ category, sport: row.value })
                                 : listUrl({ [groupField]: row.value })
                         "
                         class="flex items-center justify-between p-4 hover:bg-gray-50"

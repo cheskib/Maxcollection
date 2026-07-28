@@ -33,10 +33,19 @@ class ProcessedSummaryController extends Controller
     {
         $category = trim($request->string('category')->toString());
         $sport = trim($request->string('sport')->toString());
+        // Optional collection scope: the same drill-down, inside one
+        // collection ('unassigned' for cards without one).
+        $collection = trim($request->string('collection')->toString());
+        $collectionModel = $collection !== '' && $collection !== 'unassigned'
+            ? Collection::findOrFail((int) $collection)
+            : null;
 
         $processedMetadata = fn () => Metadata::whereHas(
             'item',
-            fn ($query) => $query->where('status', Item::STATUS_PROCESSED),
+            fn ($query) => $query
+                ->where('status', Item::STATUS_PROCESSED)
+                ->when($collectionModel, fn ($items) => $items->where('collection_id', $collectionModel->id))
+                ->when($collection === 'unassigned', fn ($items) => $items->whereNull('collection_id')),
         )
             ->when($category !== '', fn ($query) => $query->where('category', $category))
             ->when($sport !== '', fn ($query) => $query->where('sport', $sport));
@@ -52,10 +61,21 @@ class ProcessedSummaryController extends Controller
                 ->all();
         };
 
+        $valueTotal = $processedMetadata()
+            ->selectRaw('sum(coalesce(value_from, ai_value_from)) as value_from')
+            ->selectRaw('sum(coalesce(value_to, ai_value_to)) as value_to')
+            ->first();
+
         $shared = [
             'category' => $category !== '' ? $category : null,
             'categoryLabel' => $category !== '' ? (new Metadata(['category' => $category]))->categoryLabel() : null,
             'sport' => $sport !== '' ? $sport : null,
+            'collection' => $collection !== '' ? $collection : null,
+            'collectionName' => $collection === 'unassigned' ? 'Unassigned' : $collectionModel?->name,
+            'value' => [
+                'from' => $valueTotal?->value_from !== null ? round((float) $valueTotal->value_from, 2) : null,
+                'to' => $valueTotal?->value_to !== null ? round((float) $valueTotal->value_to, 2) : null,
+            ],
             'total' => $processedMetadata()->count(),
             'categories' => [],
             'groupField' => null,
@@ -92,6 +112,15 @@ class ProcessedSummaryController extends Controller
                 ...$row,
                 'label' => (new Metadata(['category' => $row['value']]))->categoryLabel(),
             ])->all();
+
+        // Inside a collection the cross-collection sections (collections,
+        // sets) stay hidden; only the category drill-down applies.
+        if ($collection !== '') {
+            return Inertia::render('ProcessedSummary', [
+                ...$shared,
+                'categories' => $categories,
+            ]);
+        }
 
         $collections = Collection::withCount([
             'items as processed_count' => fn ($query) => $query->where('status', Item::STATUS_PROCESSED),

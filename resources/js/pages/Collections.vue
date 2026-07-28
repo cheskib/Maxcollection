@@ -27,7 +27,7 @@ function money(from: number | null, to: number | null): string | null {
             <Link
                 v-for="collection in collections"
                 :key="collection.id"
-                :href="`/collections/${collection.id}`"
+                :href="`/items/summary?collection=${collection.id}`"
                 class="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm hover:bg-gray-50"
             >
                 <div class="min-w-0">
@@ -41,7 +41,7 @@ function money(from: number | null, to: number | null): string | null {
 
             <Link
                 v-if="unassignedCount"
-                href="/collections/unassigned"
+                href="/items/summary?collection=unassigned"
                 class="flex items-center justify-between rounded-xl bg-gray-100 p-4 hover:bg-gray-200"
             >
                 <div class="min-w-0">
