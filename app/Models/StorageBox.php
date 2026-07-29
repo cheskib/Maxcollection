@@ -47,4 +47,22 @@ class StorageBox extends Model
     {
         return $this->sections()->whereNull('divider_barcode_id')->reorder()->orderByDesc('position')->first();
     }
+
+    /**
+     * Live contents — boxes are not sealed; what matters is what is in
+     * them NOW. The *_count columns keep the as-completed snapshot for
+     * history only.
+     */
+    public function currentBagCount(): int
+    {
+        return Batch::whereIn('storage_section_id', $this->sections()->pluck('id'))->count();
+    }
+
+    public function currentCardCount(): int
+    {
+        return Item::whereIn(
+            'batch_id',
+            Batch::whereIn('storage_section_id', $this->sections()->pluck('id'))->pluck('id'),
+        )->present()->count();
+    }
 }

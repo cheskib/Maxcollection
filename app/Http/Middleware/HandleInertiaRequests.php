@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user()?->only('id', 'name', 'email'),
+                'isAdmin' => (bool) $request->user()?->isAdmin(),
             ],
             'flash' => [
                 'status' => $request->session()->get('status'),

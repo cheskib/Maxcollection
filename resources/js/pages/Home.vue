@@ -20,7 +20,7 @@ function money(from: number | null, to: number | null): string | null {
     return fmt((from ?? to) as number);
 }
 
-const page = usePage<{ flash: { status: string | null } }>();
+const page = usePage<{ flash: { status: string | null }; auth: { isAdmin: boolean } }>();
 
 // Live progress after pressing Process: completions counted against a
 // baseline taken at the click, so the number can never move backwards.
@@ -202,6 +202,10 @@ function logout(): void {
                 <span class="text-2xl">🏷️</span>
                 <p class="mt-1 font-semibold text-gray-900">Storage</p>
             </Link>
+            <Link v-if="page.props.auth.isAdmin" href="/reports" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
+                <span class="text-2xl">📈</span>
+                <p class="mt-1 font-semibold text-gray-900">Reports</p>
+            </Link>
             <Link href="/collections" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
                 <span class="text-2xl">🗄️</span>
                 <p class="mt-1 font-semibold text-gray-900">Collections</p>
@@ -212,6 +216,7 @@ function logout(): void {
             </Link>
         </div>
 
+        <template v-if="page.props.auth.isAdmin">
         <p class="mt-8 text-xs font-semibold uppercase tracking-wide text-gray-400">Maintenance</p>
         <button
             class="mt-2 w-full rounded-xl bg-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-300"
@@ -251,9 +256,10 @@ function logout(): void {
         >
             💲 Update AI Values
         </button>
+        </template>
 
         <div class="mt-8 flex items-center justify-center gap-6 text-sm">
-            <Link href="/settings" class="font-medium text-gray-500 hover:text-gray-700">Settings</Link>
+            <Link v-if="page.props.auth.isAdmin" href="/settings" class="font-medium text-gray-500 hover:text-gray-700">Settings</Link>
             <button class="font-medium text-gray-500 hover:text-gray-700" @click="logout">Logout</button>
         </div>
     </div>

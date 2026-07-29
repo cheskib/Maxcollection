@@ -90,7 +90,7 @@ class BatchFinalizeTest extends TestCase
         $this->assertScan($this->assignBag($empty, 'BAG-000003'), false, 'no items');
     }
 
-    public function test_bag_can_be_changed_until_sealed_in_a_closed_box(): void
+    public function test_bag_can_be_changed_until_it_is_boxed(): void
     {
         Barcode::create(['type' => 'bag', 'code' => 'BAG-000001']);
         Barcode::create(['type' => 'bag', 'code' => 'BAG-000002']);
@@ -102,12 +102,17 @@ class BatchFinalizeTest extends TestCase
         // Reassignment is fine while the bag is loose.
         $this->assertScan($this->assignBag($batch, 'BAG-000002'), true, 'finalized as BAG-000002');
 
-        // Seal it inside a closed box; now the bag identity is locked.
+        // Once boxed, the bag must be removed from the box first.
         $box = StorageBox::create(['user_id' => $this->user->id, 'barcode_id' => $boxBarcode->id, 'status' => 'closed', 'closed_at' => now()]);
         $section = $box->sections()->create(['position' => 1]);
         $batch->update(['storage_section_id' => $section->id]);
 
-        $this->assertScan($this->assignBag($batch, 'BAG-000001'), false, 'sealed in box BOX-000001');
+        $this->assertScan($this->assignBag($batch, 'BAG-000001'), false, 'remove it from the box');
+
+        // The documented admin action frees it, and reassignment works again.
+        $this->actingAs($this->user)->post("/batches/{$batch->id}/remove-from-box", ['notes' => 'repacking']);
+        $this->assertNull($batch->fresh()->storage_section_id);
+        $this->assertScan($this->assignBag($batch, 'BAG-000001'), true, 'finalized as BAG-000001');
     }
 
     public function test_batch_page_shows_bag_and_location(): void
@@ -130,7 +135,6 @@ class BatchFinalizeTest extends TestCase
                 ->where('batch.bagCode', 'BAG-000001')
                 ->where('batch.location.box', 'BOX-000001')
                 ->where('batch.location.section', 'Baseball 80s')
-                ->where('batch.location.sealed', true)
             );
     }
 }

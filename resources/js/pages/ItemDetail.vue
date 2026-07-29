@@ -36,12 +36,35 @@ const props = defineProps<{
             market: { value: number | null; match: string | null; checkedAt: string | null };
         };
         keyCard: boolean;
+        disposition: string | null;
+        withdrawal: {
+            reason: string;
+            reasonLabel: string;
+            notes: string | null;
+            salePrice: number | null;
+            saleDate: string | null;
+            buyer: string | null;
+            platform: string | null;
+            destination: string | null;
+            by: string;
+            at: string;
+        } | null;
+        withdrawalHistory: {
+            id: number;
+            reasonLabel: string;
+            destination: string | null;
+            notes: string | null;
+            by: string;
+            at: string;
+            reinstatedAt: string | null;
+            reinstateNotes: string | null;
+        }[];
         copies: { count: number; others: number[] };
         processing: { status: string; model: string | null; error: string | null; finishedAt: string | null; logs: LogLine[] } | null;
     };
 }>();
 
-const page = usePage<{ flash: { status: string | null } }>();
+const page = usePage<{ flash: { status: string | null }; auth: { isAdmin: boolean } }>();
 
 // Reprocessing always asks which photos the AI should read.
 const pendingTier = ref<'standard' | 'premium' | null>(null);
@@ -135,6 +158,41 @@ function deleteItem(): void {
     router.delete(`/items/${props.item.id}`);
 }
 
+// Documented removal from the collection — admin only. The record stays
+// forever; only the disposition changes.
+const REMOVAL_REASONS = [
+    { value: 'sold', label: 'Sold' },
+    { value: 'moved', label: 'Moved to safer storage' },
+    { value: 'grading', label: 'Sent for grading' },
+    { value: 'damaged', label: 'Damaged' },
+    { value: 'lost', label: 'Lost' },
+    { value: 'gift', label: 'Gift' },
+    { value: 'other', label: 'Other' },
+];
+
+const removing = ref(false);
+const removal = ref({ reason: 'sold', notes: '', sale_price: '', sale_date: '', buyer: '', platform: '', destination: '' });
+const showRemovalHistory = ref(false);
+
+function submitRemoval(): void {
+    router.post(`/items/${props.item.id}/withdraw`, removal.value, {
+        preserveScroll: true,
+        onSuccess: () => (removing.value = false),
+    });
+}
+
+function reinstate(): void {
+    const notes = prompt('Reinstate this card — where is it going, and any notes? (e.g. "back in original bag" or "returned from grading, PSA 9")');
+    if (notes === null) return;
+    router.post(`/items/${props.item.id}/reinstate`, { notes }, { preserveScroll: true });
+}
+
+function updateLocation(): void {
+    const destination = prompt('New location for this card:');
+    if (!destination) return;
+    router.post(`/items/${props.item.id}/location`, { destination }, { preserveScroll: true });
+}
+
 function money(from: number | null, to: number | null): string {
     const fmt = (v: number) => `$${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
     if (from !== null && to !== null) return from === to ? fmt(from) : `${fmt(from)} – ${fmt(to)}`;
@@ -171,6 +229,32 @@ function back(): void {
         <p v-if="item.keyCard" class="mt-3 rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm font-semibold text-yellow-800">
             ⭐ Possible key card — this player is on your key names watchlist. Worth a closer look.
         </p>
+
+<!-- Disposition: what this card IS right now -->
+        <div
+            v-if="item.withdrawal"
+            class="mt-3 rounded-lg border p-3 text-sm"
+            :class="item.disposition === 'gone' ? 'border-red-200 bg-red-50 text-red-800' : 'border-amber-300 bg-amber-50 text-amber-800'"
+        >
+            <p class="font-bold">
+                {{ item.disposition === 'gone' ? '🔴' : '🟡' }} {{ item.withdrawal.reasonLabel }}
+                <template v-if="item.withdrawal.salePrice !== null"> — ${{ item.withdrawal.salePrice.toLocaleString() }}</template>
+                <template v-if="item.withdrawal.saleDate"> · {{ item.withdrawal.saleDate }}</template>
+            </p>
+            <p class="mt-0.5">
+                <template v-if="item.withdrawal.buyer">Buyer: {{ item.withdrawal.buyer }}<template v-if="item.withdrawal.platform"> ({{ item.withdrawal.platform }})</template> · </template>
+                <template v-else-if="item.withdrawal.platform">{{ item.withdrawal.platform }} · </template>
+                <template v-if="item.withdrawal.destination">Now at: {{ item.withdrawal.destination }} · </template>
+                By {{ item.withdrawal.by }}, {{ item.withdrawal.at }}
+            </p>
+            <p v-if="item.withdrawal.notes" class="mt-0.5">{{ item.withdrawal.notes }}</p>
+            <div v-if="page.props.auth.isAdmin" class="mt-2 flex gap-3">
+                <button class="text-xs font-semibold underline" @click="reinstate">⎌ Reinstate</button>
+                <button v-if="item.disposition === 'relocated'" class="text-xs font-semibold underline" @click="updateLocation">
+                    📍 Update location
+                </button>
+            </div>
+        </div>
         <p v-if="item.copies.count > 1" class="mt-3 rounded-lg bg-indigo-50 p-3 text-sm text-indigo-800">
             📇 You own <strong>×{{ item.copies.count }}</strong> of this card —
             <template v-for="(copyId, index) in item.copies.others" :key="copyId">
@@ -401,7 +485,73 @@ function back(): void {
                     </button>
                 </div>
             </div>
+            <template v-if="page.props.auth.isAdmin && !item.disposition">
+                <button
+                    v-if="!removing"
+                    class="w-full rounded-lg bg-amber-100 py-3 font-semibold text-amber-800 hover:bg-amber-200"
+                    @click="removing = true"
+                >
+                    📤 Remove from Collection…
+                </button>
+                <div v-else class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p class="text-sm font-semibold text-gray-900">Remove this card — documented</p>
+                    <select v-model="removal.reason" class="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2.5">
+                        <option v-for="reason in REMOVAL_REASONS" :key="reason.value" :value="reason.value">{{ reason.label }}</option>
+                    </select>
+                    <template v-if="removal.reason === 'sold'">
+                        <div class="mt-2 grid grid-cols-2 gap-2">
+                            <input v-model="removal.sale_price" type="number" step="0.01" min="0" placeholder="Sale price $" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5" />
+                            <input v-model="removal.sale_date" type="date" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5" />
+                        </div>
+                        <div class="mt-2 grid grid-cols-2 gap-2">
+                            <input v-model="removal.buyer" type="text" placeholder="Buyer" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5" />
+                            <input v-model="removal.platform" type="text" placeholder="Platform (eBay…)" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5" />
+                        </div>
+                    </template>
+                    <input
+                        v-else-if="removal.reason === 'moved' || removal.reason === 'grading'"
+                        v-model="removal.destination"
+                        type="text"
+                        placeholder="Destination (home safe, PSA…)"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    />
+                    <textarea
+                        v-model="removal.notes"
+                        rows="2"
+                        :placeholder="removal.reason === 'other' ? 'Notes (required)' : 'Notes (optional)'"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    ></textarea>
+                    <div class="mt-2 grid grid-cols-2 gap-2">
+                        <button class="rounded-lg bg-amber-600 py-2.5 font-semibold text-white hover:bg-amber-700" @click="submitRemoval">
+                            Record Removal
+                        </button>
+                        <button class="rounded-lg bg-white py-2.5 font-semibold text-gray-600 hover:bg-gray-100" @click="removing = false">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <template v-if="item.withdrawalHistory.length">
+                <button class="text-left text-xs font-semibold text-gray-400 hover:text-gray-600" @click="showRemovalHistory = !showRemovalHistory">
+                    {{ showRemovalHistory ? '▾' : '▸' }} Removal history ({{ item.withdrawalHistory.length }})
+                </button>
+                <div v-if="showRemovalHistory" class="divide-y divide-gray-100 rounded-xl bg-white p-3 text-xs text-gray-600 shadow-sm">
+                    <div v-for="entry in item.withdrawalHistory" :key="entry.id" class="py-2">
+                        <p class="font-semibold text-gray-800">
+                            {{ entry.reasonLabel }}<template v-if="entry.destination"> → {{ entry.destination }}</template>
+                            · {{ entry.at }} by {{ entry.by }}
+                        </p>
+                        <p v-if="entry.notes">{{ entry.notes }}</p>
+                        <p v-if="entry.reinstatedAt" class="text-green-700">
+                            ⎌ Reinstated {{ entry.reinstatedAt }}<template v-if="entry.reinstateNotes"> — {{ entry.reinstateNotes }}</template>
+                        </p>
+                    </div>
+                </div>
+            </template>
+
             <button
+                v-if="page.props.auth.isAdmin"
                 class="w-full rounded-lg bg-red-600 py-3 font-semibold text-white hover:bg-red-700"
                 @click="deleteItem"
             >

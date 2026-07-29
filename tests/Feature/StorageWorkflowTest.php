@@ -148,8 +148,8 @@ class StorageWorkflowTest extends TestCase
         $this->scan('DIV-000001');
         $this->actingAs($this->user)->post('/storage/complete', ['confirmed' => false]);
 
-        // Re-scanning a sealed box is an error.
-        $this->assertScan($this->scan('BOX-000001'), false, 'sealed');
+        // Re-scanning a completed box is an error.
+        $this->assertScan($this->scan('BOX-000001'), false, 'was completed on');
     }
 
     public function test_duplicate_read_within_seconds_is_ignored(): void

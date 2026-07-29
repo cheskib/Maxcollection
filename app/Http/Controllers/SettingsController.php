@@ -27,6 +27,7 @@ class SettingsController extends Controller
                 'archivedCount' => \App\Models\Batch::whereNotNull('archived_at')->count(),
                 'pendingCount' => \App\Models\Batch::whereNotNull('barcode_id')->whereNull('archived_at')->count(),
             ],
+            'users' => \App\Models\User::orderBy('name')->get(['id', 'name', 'email', 'role'])->all(),
             'keyNames' => KeyName::orderBy('sport')->orderBy('name')
                 ->get(['id', 'sport', 'name'])
                 ->groupBy('sport')
@@ -76,6 +77,40 @@ class SettingsController extends Controller
         }
 
         return back()->with('status', 'Name removed from the watchlist.');
+    }
+
+    /**
+     * Create a login: admins manage the collection; scanners digitize
+     * and pack only.
+     */
+    public function addUser(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:128'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'max:255'],
+            'role' => ['required', \Illuminate\Validation\Rule::in([\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_SCANNER])],
+        ]);
+
+        \App\Models\User::create($validated);
+
+        return back()->with('status', 'Account created.');
+    }
+
+    public function updateUserRole(Request $request, \App\Models\User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'role' => ['required', \Illuminate\Validation\Rule::in([\App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_SCANNER])],
+        ]);
+
+        // Never demote yourself into a lockout: someone must stay admin.
+        if ($user->id === $request->user()->id && $validated['role'] !== \App\Models\User::ROLE_ADMIN) {
+            return back()->with('status', 'You cannot remove your own admin access.');
+        }
+
+        $user->update(['role' => $validated['role']]);
+
+        return back()->with('status', "{$user->name} is now a {$validated['role']}.");
     }
 
     public function update(Request $request): RedirectResponse

@@ -23,7 +23,8 @@ class ExportController extends Controller
             fwrite($out, "\xEF\xBB\xBF");
 
             fputcsv($out, [
-                'Item ID', 'Status', 'Collection', 'Batch', 'Category', 'Card Type', 'Player Name', 'Team',
+                'Item ID', 'Status', 'Disposition', 'Removal Reason', 'Sale Price', 'Sale Date',
+                'Collection', 'Batch', 'Category', 'Card Type', 'Player Name', 'Team',
                 'Sport', 'Year', 'Manufacturer', 'Card Number', 'Rookie Card', 'Autograph', 'Parallel',
                 'Serial Number', 'Original Card Year', 'Condition Notes', 'Confidence', 'Key Card',
                 'Our Value From', 'Our Value To', 'Purchase Price', 'Insurance Value',
@@ -37,9 +38,15 @@ class ExportController extends Controller
                     foreach ($items as $item) {
                         $metadata = $item->metadata;
 
+                        $withdrawal = $item->disposition !== null ? $item->activeWithdrawal() : null;
+
                         fputcsv($out, [
                             $item->id,
                             $item->status,
+                            $item->disposition ?? 'in collection',
+                            $withdrawal?->reasonLabel(),
+                            $withdrawal?->sale_price,
+                            $withdrawal?->sale_date?->format('Y-m-d'),
                             $item->collection?->name,
                             $item->batch?->displayLabel(),
                             $metadata?->categoryLabel(),
