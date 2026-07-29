@@ -110,6 +110,17 @@ processed → bagged → boxed) plus a 14-day daily ledger of all inbound
 and outbound activity, computed live so the numbers always reflect the
 current state.
 
+## 2026-07-29 — Two capture production systems (owner-directed)
+
+Exactly two production systems, both for raw items only (never bagged,
+never graded): comics go through the panel picture station (six bare
+comics per ~$7 panel, front cover only, fixed overhead camera; every
+frame contains the comics, the bag barcode, and the panel number, so
+the photograph is its own manifest — software crops and pre-binds the
+batch to the bag); cards go through the fi-8170 scanner (front + back,
+duplex). Panels are not used for cards. Full spec in
+CAPTURE-STATION.md "The Comic Imaging Line".
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
