@@ -492,6 +492,46 @@ Station App UI (Milestones 3–4):
    rate, jam rate per 1,000, backlog by stage, time-in-stage, progress
    vs 300k with pace projection, bagged/boxed per week, value & sales.
 
+## Production Kiosks (owner spec, 2026-07-29)
+
+The operator-facing screen at each line is a **kiosk**: a thin
+touchscreen terminal that only shows prompts and big buttons. All
+intelligence lives on the **Windows controller PC** behind it.
+
+```
+Touchscreen kiosk  ←WebSocket/API→  Windows controller PC
+                                        │ camera / fi-8170 control
+                                        │ local spool & queues
+                                        │ file naming, uploads
+                                        ▼
+                              Max Collection backend (Laravel)
+                              — AI runs HERE (OpenAI), as built —
+```
+
+- The kiosk never talks to hardware. The controller owns the scanner,
+  camera, spool, and upload queue; it orchestrates AI by uploading to
+  the backend, which runs recognition server-side as today.
+- **Hardware per line (final ruling): the fi-8170 document scanner is
+  for CARDS ONLY; comics are CAMERA ONLY (the panel line).** No
+  flatbed in either line.
+- Kiosk UI: prompt-driven ("Place next bin", "Feed ticket first",
+  "Waiting…", "Complete"), large buttons, very large text, minimal
+  touches, no Windows desktop, no file management, no configuration
+  screens for operators. Plain-language errors only ("Scanner
+  offline", "Please place item correctly", one big Retry) — never
+  technical messages.
+- Operators are assumed to have no technical, photography, or
+  computer knowledge; the interface makes mistakes nearly impossible.
+- **The kiosk controls the imaging stage only.** The full production
+  chain — Receiving → Sorting → Imaging → AI Recognition → Needs
+  Review → Bagging → Storage → Listing — is handled by other parts of
+  the system.
+- The same kiosk architecture later extends to coins, stamps,
+  documents, games, and antiques: only the capture workflow changes.
+- Design priorities, in order: speed, simplicity, reliability, easy
+  training, clear instructions, minimal touches, industrial feel,
+  expandability.
+
 ## Card Line Prep & the Separator Sticker (owner spec, 2026-07-29)
 
 The card line runs as an assembly line with circulating open-front
