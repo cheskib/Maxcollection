@@ -132,6 +132,17 @@ into batches with zero screen interaction. Bag binding therefore
 happens at the START of a card batch; bagging is purely physical
 (peel sticker onto bag, cards in). Full spec in CAPTURE-STATION.md.
 
+## 2026-07-29 — Production kiosks; hardware-per-line final ruling
+
+Each capture line gets a thin touchscreen kiosk (prompts + big
+buttons only) talking over WebSocket/API to a Windows controller PC
+that owns all hardware, spooling, and uploads; AI stays server-side.
+Final hardware ruling: the fi-8170 document scanner is for cards
+only; comics are camera only (the panel line) — no flatbed. The
+kiosk controls the imaging stage only, and the same architecture
+later extends to coins, stamps, documents, games, and antiques. Full
+spec in CAPTURE-STATION.md "Production Kiosks".
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
