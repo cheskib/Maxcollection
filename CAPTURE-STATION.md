@@ -461,6 +461,37 @@ browser UX with an explicit "Start Packing Session" gesture; unlabeled final
 sections preserved as "No Divider Assigned" after explicit confirmation;
 snapshot counts that stay recalculable from relations.
 
+## Station Operating Flow (owner walkthrough, 2026-07-29)
+
+The owner walked the scanner's day end to end; these decisions bind the
+Station App UI (Milestones 3–4):
+
+1. **Touch-first.** The station runs on a touch screen; mouse and
+   keyboard exist as backup only. No flow may require typing. Seconds
+   matter: the per-handful loop is one tap.
+2. **Session start:** log in (scanner account) → **collection first**
+   (the standing rule) → capture mode (**Single cards**: one sheet =
+   one card = front + back). Asked once per session.
+3. **Temp batch** opens automatically on the first scan — no name, no
+   typing — and is replaced by the printed bag barcode at finalize.
+4. **The rhythm screen** offers two big buttons — **Load…** and
+   **Scan** — plus a smaller **End Scanning** placed away from them.
+5. **End Scanning is a pause, not a finish**: it requires two presses
+   (End → Confirm, physically separated), then offers logout. The batch
+   stays open server-side. On next login the station leads with
+   **"Continue Batch — N cards so far"**; any scanner can continue any
+   open station batch. This is the lunch-break flow.
+6. **The true finish is Bag This Batch**: scan the bag barcode with the
+   gun, cards into that bag, screen resets to a new batch. Review never
+   blocks bagging.
+7. **Time is captured on the whole process**: per handful (scan run),
+   per session (login → end), per batch (opened → bagged), per
+   operator. Feeds the Reports KPIs.
+8. **KPIs** (Reports page; throughput/jam rows activate with station
+   data): cards/hour per scanner, seconds per card, clean rate, rescan
+   rate, jam rate per 1,000, backlog by stage, time-in-stage, progress
+   vs 300k with pace projection, bagged/boxed per week, value & sales.
+
 ## Assumptions Requiring Approval (per CLAUDE.md §4)
 
 1. **Windows PC at the scan desk.** The station app is a Windows desktop
