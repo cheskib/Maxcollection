@@ -492,6 +492,62 @@ Station App UI (Milestones 3–4):
    rate, jam rate per 1,000, backlog by stage, time-in-stage, progress
    vs 300k with pace projection, bagged/boxed per week, value & sales.
 
+## The Comic Imaging Line (owner spec, 2026-07-29)
+
+Two production systems exist, one per medium, both for RAW items only —
+never bagged, never graded:
+
+1. **Comics → the picture station** (panel line, below): front cover
+   only, bare on the panel.
+2. **Cards → the fi-8170 scanner**: front + back, duplex. Panels are
+   not used for cards.
+
+### The panel line
+
+Assembly-line stations, each operator doing one task, panels
+circulating: **Prep → Incoming queue → Camera → Outgoing queue →
+Bagging → back to Prep.**
+
+- **Panels**: ~24"×24", ~$7 each (board + furring strips + locating
+  corners). Six comic positions, one bag-sticker position, and a
+  permanent panel number. Scale: 2 prototype → 20 production → 30 if
+  needed. Panel surface is matte and non-white (glare + empty-slot
+  detection).
+- **Prep** (45–90s/panel): six bare comics into the locating corners,
+  bag sticker into its slot, stack in Incoming. Never touches the
+  camera. Bag stickers print in pairs — one rides the panel and is
+  photographed; its twin is applied to the physical bag at Bagging.
+- **Camera** (10–15s/panel): fixed overhead camera, fixed lighting,
+  manual focus/exposure, tethered to the station PC. Place panel,
+  capture, move to Outgoing. **Instant validation**: the software
+  checks barcode + panel ID readability the moment the frame lands and
+  shows green ✓ / red ✗ while the panel is still in position.
+- **Bagging** (35–60s/panel): comics into the bag in order, twin
+  sticker onto the bag, bag into the collection box. Empty panel back
+  to Prep.
+- **Panel number** is printed human-readable AND as a barcode — QC,
+  traceability, per-panel crop calibration, diagnostics.
+
+### The self-documenting photograph
+
+Every frame contains the six comics, the bag barcode, and the panel
+ID. Software reads the barcode and panel number, crops the six comics
+at fixed calibrated positions (no AI needed for cropping), creates a
+batch **pre-bound to that bag** with six items, and queues normal AI
+processing. Review never blocks bagging (standing rule).
+
+**The full panel image is the sacred original** (rule §16); the six
+crops are derived and regenerable. Dropbox archives the panel image
+under the bag code.
+
+Feasibility: a 24MP camera over 24" gives ~250 DPI — comic crops
+~1650×2550px (more than the AI reads today) and the bag barcode is
+trivially machine-readable in-frame.
+
+Staffing estimate: prep is the bottleneck (camera idles ~75%); expect
+to drift toward 2 preppers : 1 camera : 1–2 baggers. Line rate ≈
+240–480 comics/hour with three people.
+
 ## Assumptions Requiring Approval (per CLAUDE.md §4)
 
 1. **Windows PC at the scan desk.** The station app is a Windows desktop
