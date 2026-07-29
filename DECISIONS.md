@@ -92,6 +92,24 @@ cover date). Comic batches then flow through the identical bag → box →
 divider storage workflow as cards; the storage system is agnostic to what
 a bag contains. No code change — the 1-photo bulk mode already exists.
 
+## 2026-07-29 — Removals, roles, and daily reports (owner-directed)
+
+Cards leave bags for documented reasons only, and only administrators can
+do it. Principles set by the owner: the digital record is never deleted
+(removal is a disposition change with a full audit trail); boxes are NOT
+sealed — contents adjust as cards sell, and every screen shows what a
+container holds NOW (history available on request); reinstatement reuses
+the original record — the card can go into any box without rescanning.
+Dispositions: null (in its bag), `relocated` (still owned — moved to
+safer storage / grading / damaged; still counts in collection value),
+`gone` (sold / gift / lost; out of totals, sale details recorded).
+Accounts have roles: `admin` (everything) and `scanner` (digitize and
+pack only — no removals, reports, settings, exports, or deletions).
+Built-in admin Reports page: live pipeline (capturing → review →
+processed → bagged → boxed) plus a 14-day daily ledger of all inbound
+and outbound activity, computed live so the numbers always reflect the
+current state.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

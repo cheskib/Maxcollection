@@ -198,7 +198,7 @@ function completeBox(confirmed = false): void {
                 >
                     <div>
                         <p class="font-semibold text-gray-900">{{ box.code }}</p>
-                        <p class="text-xs text-gray-500">Sealed {{ box.closedAt }}</p>
+                        <p class="text-xs text-gray-500">Completed {{ box.closedAt }}</p>
                     </div>
                     <p class="text-sm text-gray-500">{{ box.bagCount }} bags · {{ box.sectionCount }} sections · {{ box.cardCount }} cards</p>
                 </Link>

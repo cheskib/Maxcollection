@@ -14,13 +14,14 @@ const props = defineProps<{
         finalizedAt: string | null;
         archivedAt: string | null;
         archiveReady: boolean;
-        location: { box: string; boxId: number; section: string; sealed: boolean } | null;
+        location: { box: string; boxId: number; section: string } | null;
     };
     items: {
         id: number;
         thumbnailImageId: number | null;
         thumbnailVersion: string;
         title: string;
+        disposition: string | null;
         status: string;
         reason: string | null;
         confidence: number | null;
@@ -30,7 +31,14 @@ const props = defineProps<{
 }>();
 
 type Scan = { ok: boolean; tone: string; message: string };
-const page = usePage<{ flash: { status: string | null; scan: Scan | null } }>();
+const page = usePage<{ flash: { status: string | null; scan: Scan | null }; auth: { isAdmin: boolean } }>();
+
+// Taking a bag out of its box is a documented admin action.
+function removeFromBox(): void {
+    const notes = prompt('Remove this bag from its box — reason / notes:');
+    if (notes === null) return;
+    router.post(`/batches/${props.batch.id}/remove-from-box`, { notes }, { preserveScroll: true });
+}
 
 // Finalize: scanning (or typing) the bag barcode gives the batch its
 // permanent identity. Re-scanning is allowed until the bag is sealed
@@ -127,7 +135,13 @@ onUnmounted(stopPolling);
                             📦 Box
                             <Link :href="`/storage/boxes/${batch.location.boxId}`" class="font-semibold text-blue-600">{{ batch.location.box }}</Link>
                             · {{ batch.location.section }}
-                            <span v-if="batch.location.sealed" class="text-gray-400">(sealed)</span>
+                            <button
+                                v-if="page.props.auth.isAdmin"
+                                class="ml-1 text-xs font-semibold text-red-500 hover:text-red-700"
+                                @click="removeFromBox"
+                            >
+                                Remove from box
+                            </button>
                         </p>
                         <p v-else class="mt-1 text-sm text-gray-400">Not boxed yet.</p>
                         <p v-if="batch.archivedAt" class="mt-1 text-xs text-green-700">☁️ Archived to Dropbox {{ batch.archivedAt }}</p>
@@ -140,7 +154,7 @@ onUnmounted(stopPolling);
                         </button>
                     </div>
                     <button
-                        v-if="!batch.location || !batch.location.sealed"
+                        v-if="!batch.location"
                         class="text-sm font-semibold text-blue-600"
                         @click="changingBag = true"
                     >
@@ -244,7 +258,16 @@ onUnmounted(stopPolling);
                 />
                 <div v-else class="h-20 w-16 rounded-lg bg-gray-200"></div>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate font-semibold text-gray-900"><span v-if="item.keyCard">⭐ </span>{{ item.title }}</p>
+                    <p class="truncate font-semibold text-gray-900">
+                        <span v-if="item.keyCard">⭐ </span>{{ item.title }}
+                        <span
+                            v-if="item.disposition"
+                            class="ml-1 rounded px-1.5 py-0.5 text-xs font-bold"
+                            :class="item.disposition === 'gone' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'"
+                        >
+                            {{ item.disposition === 'gone' ? 'REMOVED' : 'RELOCATED' }}
+                        </span>
+                    </p>
                     <p
                         class="text-sm"
                         :class="{

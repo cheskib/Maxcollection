@@ -53,6 +53,36 @@ class BatchController extends Controller
     }
 
     /**
+     * Take the bag out of its box — documented, admin-only. The bag is
+     * loose afterward and can be scanned into another box normally.
+     */
+    public function removeFromBox(Request $request, Batch $batch): RedirectResponse
+    {
+        $validated = $request->validate(['notes' => ['nullable', 'string', 'max:2000']]);
+
+        $section = $batch->storageSection;
+        if ($section === null) {
+            return back()->with('status', 'This bag is not in a box.');
+        }
+
+        $boxCode = $section->box->barcode->code;
+        $batch->update(['storage_section_id' => null]);
+
+        \App\Models\StorageEvent::create([
+            'user_id' => $request->user()->id,
+            'action' => \App\Models\StorageEvent::BAG_REMOVED,
+            'barcode_id' => $batch->barcode_id,
+            'storage_box_id' => $section->storage_box_id,
+            'storage_section_id' => $section->id,
+            'batch_id' => $batch->id,
+        ]);
+
+        $note = filled($validated['notes'] ?? null) ? ' — '.$validated['notes'] : '';
+
+        return back()->with('status', "Bag removed from box {$boxCode}{$note}. It can be packed into another box.");
+    }
+
+    /**
      * (Re)queue this batch's Dropbox archive — the per-batch recovery
      * path after a failed upload run.
      */
@@ -140,6 +170,7 @@ class BatchController extends Controller
                 'thumbnailImageId' => $item->images->first()?->id,
                 'thumbnailVersion' => $item->images->first()?->versionTag() ?? '0',
                 'title' => $item->metadata?->primaryTitle() ?? "Item #{$item->id}",
+                'disposition' => $item->disposition,
                 'status' => match ($item->status) {
                     Item::STATUS_PROCESSED => 'Processed',
                     Item::STATUS_NEEDS_REVIEW => 'Needs Review',
@@ -170,7 +201,6 @@ class BatchController extends Controller
                     'box' => $section->box->barcode->code,
                     'boxId' => $section->box->id,
                     'section' => $section->dividerBarcode?->displayLabel() ?? 'No Divider Assigned',
-                    'sealed' => $section->box->status === \App\Models\StorageBox::STATUS_CLOSED,
                 ],
             ],
             'items' => $items->all(),

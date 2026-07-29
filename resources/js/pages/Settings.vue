@@ -14,8 +14,29 @@ const props = defineProps<{
         archivedCount: number;
         pendingCount: number;
     };
+    users: { id: number; name: string; email: string; role: string }[];
     keyNames: Record<string, { id: number; name: string }[]>;
 }>();
+
+// Accounts: admins manage the collection; scanners digitize and pack.
+const addingUser = ref(false);
+const newUser = ref({ name: '', email: '', password: '', role: 'scanner' });
+
+function addUser(): void {
+    router.post('/settings/users', newUser.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            addingUser.value = false;
+            newUser.value = { name: '', email: '', password: '', role: 'scanner' };
+        },
+    });
+}
+
+function toggleRole(user: { id: number; name: string; role: string }): void {
+    const role = user.role === 'admin' ? 'scanner' : 'admin';
+    if (!confirm(`Make ${user.name} a ${role}?`)) return;
+    router.post(`/settings/users/${user.id}/role`, { role }, { preserveScroll: true });
+}
 
 function disconnectDropbox(): void {
     if (!confirm('Disconnect Dropbox? Archiving stops; copies already in Dropbox stay there.')) return;
@@ -143,6 +164,53 @@ function save(): void {
             >
                 ⬇ Download CSV Export
             </a>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">👥 Accounts</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Admins manage the collection — removals, reports, settings, deletions. Scanners digitize and pack only.
+            </p>
+            <div class="mt-2 divide-y divide-gray-100">
+                <div v-for="user in users" :key="user.id" class="flex items-center justify-between py-2 text-sm">
+                    <div class="min-w-0">
+                        <p class="truncate font-semibold text-gray-900">{{ user.name }}</p>
+                        <p class="truncate text-xs text-gray-400">{{ user.email }}</p>
+                    </div>
+                    <button
+                        class="ml-2 shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
+                        :class="user.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                        title="Tap to switch role"
+                        @click="toggleRole(user)"
+                    >
+                        {{ user.role }}
+                    </button>
+                </div>
+            </div>
+            <button
+                v-if="!addingUser"
+                class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                @click="addingUser = true"
+            >
+                ＋ Add account
+            </button>
+            <div v-else class="mt-2 flex flex-col gap-2">
+                <input v-model="newUser.name" type="text" placeholder="Name" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5" />
+                <input v-model="newUser.email" type="email" placeholder="Email" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5" />
+                <input v-model="newUser.password" type="password" placeholder="Password (8+ characters)" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5" />
+                <select v-model="newUser.role" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5">
+                    <option value="scanner">Scanner — digitize and pack only</option>
+                    <option value="admin">Admin — full control</option>
+                </select>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700" @click="addUser">
+                        Create Account
+                    </button>
+                    <button class="rounded-lg bg-gray-100 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200" @click="addingUser = false">
+                        Cancel
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">

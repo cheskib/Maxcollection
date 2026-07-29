@@ -21,7 +21,7 @@ class StatsController extends Controller
         $finished = $processed + $needsReview;
 
         $countBy = function (string $field, int $limit = 15): array {
-            return Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED))
+            return Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED)->owned())
                 ->whereNotNull($field)
                 ->selectRaw("{$field} as value, count(*) as total")
                 ->groupBy($field)
@@ -50,7 +50,7 @@ class StatsController extends Controller
             ])
             ->all();
 
-        $avgConfidence = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED))
+        $avgConfidence = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED)->owned())
             ->whereNotNull('confidence')
             ->avg('confidence');
 

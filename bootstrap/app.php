@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/');
+
+        $middleware->alias(['admin' => \App\Http\Middleware\EnsureAdmin::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

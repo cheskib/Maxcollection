@@ -44,6 +44,7 @@ class ProcessedSummaryController extends Controller
             'item',
             fn ($query) => $query
                 ->where('status', Item::STATUS_PROCESSED)
+                ->owned()
                 ->when($collectionModel, fn ($items) => $items->where('collection_id', $collectionModel->id))
                 ->when($collection === 'unassigned', fn ($items) => $items->whereNull('collection_id')),
         )
@@ -125,12 +126,12 @@ class ProcessedSummaryController extends Controller
         }
 
         $collections = Collection::withCount([
-            'items as processed_count' => fn ($query) => $query->where('status', Item::STATUS_PROCESSED),
+            'items as processed_count' => fn ($query) => $query->where('status', Item::STATUS_PROCESSED)->owned(),
         ])->orderBy('name')->get();
 
-        $unassigned = Item::where('status', Item::STATUS_PROCESSED)->whereNull('collection_id')->count();
+        $unassigned = Item::where('status', Item::STATUS_PROCESSED)->owned()->whereNull('collection_id')->count();
 
-        $duplicates = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED))
+        $duplicates = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED)->owned())
             ->where('category', 'sports_card')
             ->whereNotNull('manufacturer')
             ->whereNotNull('year')
@@ -140,7 +141,7 @@ class ProcessedSummaryController extends Controller
             ->get()
             ->count();
 
-        $keyCards = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED))
+        $keyCards = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED)->owned())
             ->where('key_card', true)
             ->count();
 

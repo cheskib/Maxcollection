@@ -23,6 +23,8 @@ class CollectionController extends Controller
     {
         return DB::table('items')
             ->join('metadata', 'metadata.item_id', '=', 'items.id')
+            // Sold/gifted/lost cards no longer contribute value.
+            ->where(fn ($query) => $query->whereNull('items.disposition')->orWhere('items.disposition', '!=', Item::DISPOSITION_GONE))
             ->selectRaw("coalesce(items.collection_id, 0) as cid")
             ->selectRaw('sum(coalesce(metadata.value_from, metadata.ai_value_from)) as value_from')
             ->selectRaw('sum(coalesce(metadata.value_to, metadata.ai_value_to)) as value_to')
@@ -34,7 +36,7 @@ class CollectionController extends Controller
 
     public function index(): Response
     {
-        $collections = Collection::withCount('items')->orderBy('name')->get();
+        $collections = Collection::withCount(['items' => fn ($query) => $query->owned()])->orderBy('name')->get();
         $totals = $this->valueTotals();
 
         $range = fn (int $key) => [
@@ -49,7 +51,7 @@ class CollectionController extends Controller
                 'itemCount' => $collection->items_count,
                 'value' => $range($collection->id),
             ])->all(),
-            'unassignedCount' => Item::whereNull('collection_id')->count(),
+            'unassignedCount' => Item::query()->owned()->whereNull('collection_id')->count(),
             'unassignedValue' => $range(0),
         ]);
     }

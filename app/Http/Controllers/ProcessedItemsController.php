@@ -41,6 +41,7 @@ class ProcessedItemsController extends Controller
         $confidenceBelow = $confidenceBelow > 0 && $confidenceBelow <= 100 ? $confidenceBelow : null;
 
         $items = Item::where('status', Item::STATUS_PROCESSED)
+            ->owned()
             ->when($keyOnly, fn ($query) => $query->whereHas('metadata', fn ($metadata) => $metadata->where('key_card', true)))
             ->when($confidenceBelow !== null, fn ($query) => $query->whereHas('metadata', fn ($metadata) => $metadata->where('confidence', '<', $confidenceBelow)))
             ->when($collection === 'unassigned', fn ($query) => $query->whereNull('collection_id'))
@@ -104,7 +105,7 @@ class ProcessedItemsController extends Controller
         // Each dropdown offers only values that exist among processed items.
         $options = [];
         foreach (self::FILTER_FIELDS as $field) {
-            $values = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED))
+            $values = Metadata::whereHas('item', fn ($query) => $query->where('status', Item::STATUS_PROCESSED)->owned())
                 ->whereNotNull($field)
                 ->distinct()
                 ->orderBy($field)

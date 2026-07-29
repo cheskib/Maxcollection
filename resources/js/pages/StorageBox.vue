@@ -13,7 +13,7 @@ defineProps<{
             position: number;
             divider: string | null;
             dividerCode: string | null;
-            bags: { batchId: number; code: string; itemCount: number }[];
+            bags: { batchId: number; code: string; itemCount: number; removedCount: number }[];
         }[];
     };
 }>();
@@ -28,7 +28,7 @@ defineProps<{
         </div>
         <p class="mt-1 text-sm" :class="box.status === 'closed' ? 'text-gray-500' : 'text-green-700'">
             <template v-if="box.status === 'closed'">
-                Sealed {{ box.closedAt }} · {{ box.bagCount }} bags · {{ box.sectionCount }} sections · {{ box.cardCount }} cards
+                Completed {{ box.closedAt }} · now holds {{ box.bagCount }} bags · {{ box.sectionCount }} sections · {{ box.cardCount }} cards
             </template>
             <template v-else>Open — being packed</template>
         </p>
@@ -48,7 +48,9 @@ defineProps<{
                     class="flex items-center justify-between py-2 text-sm hover:bg-gray-50"
                 >
                     <span class="font-mono font-semibold text-gray-900">{{ bag.code }}</span>
-                    <span class="text-gray-500">{{ bag.itemCount }} card(s) ›</span>
+                    <span class="text-gray-500">
+                        {{ bag.itemCount }} card(s)<span v-if="bag.removedCount" class="text-amber-600"> · {{ bag.removedCount }} removed</span> ›
+                    </span>
                 </Link>
                 <p v-if="!section.bags.length" class="py-2 text-sm text-gray-400">No bags.</p>
             </div>

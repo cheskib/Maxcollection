@@ -124,7 +124,7 @@ class StorageService
 
         if ($existing !== null) {
             if ($existing->status === StorageBox::STATUS_CLOSED) {
-                return $this->error("Box {$barcode->code} was completed on {$existing->closed_at->format('M j, Y')} and is sealed.");
+                return $this->error("Box {$barcode->code} was completed on {$existing->closed_at->format('M j, Y')}.");
             }
 
             return $existing->user_id === $user->id
@@ -313,7 +313,7 @@ class StorageService
         ]);
         $this->record($user, StorageEvent::BOX_COMPLETED, $box->barcode, box: $box);
 
-        return $this->success("Box {$box->barcode->code} completed: {$box->bag_count} bag(s), {$box->section_count} section(s), {$box->card_count} card(s). Seal it.");
+        return $this->success("Box {$box->barcode->code} completed: {$box->bag_count} bag(s), {$box->section_count} section(s), {$box->card_count} card(s). Close it up.");
     }
 
     // ---------------------------------------------------------------
@@ -345,11 +345,10 @@ class StorageService
             return $this->error("Bag {$code} is already assigned to {$taken->displayLabel()}.");
         }
 
-        // Re-assignment is allowed only while the bag is not sealed inside
-        // a completed box.
-        if ($batch->storage_section_id !== null
-            && $batch->storageSection->box->status === StorageBox::STATUS_CLOSED) {
-            return $this->error("This batch is sealed in box {$batch->storageSection->box->barcode->code} — reassigning its bag is not allowed.");
+        // A boxed bag keeps its identity; take it out of the box first
+        // (a documented admin action), then reassign.
+        if ($batch->storage_section_id !== null) {
+            return $this->error("This bag is in box {$batch->storageSection->box->barcode->code} — remove it from the box before changing its bag.");
         }
 
         if ($batch->items()->count() === 0) {

@@ -18,7 +18,10 @@ class HomeController extends Controller
 
         // Collection-wide value: each card's Our Value, falling back to
         // its AI Ballpark, plus how many cards carry a value at all.
+        // Cards that left the collection (sold/gifted/lost) don't count.
         $value = DB::table('metadata')
+            ->join('items', 'items.id', '=', 'metadata.item_id')
+            ->where(fn ($query) => $query->whereNull('items.disposition')->orWhere('items.disposition', '!=', Item::DISPOSITION_GONE))
             ->selectRaw('sum(coalesce(value_from, ai_value_from)) as value_from')
             ->selectRaw('sum(coalesce(value_to, ai_value_to)) as value_to')
             ->selectRaw('sum(case when coalesce(value_from, ai_value_from) is not null or coalesce(value_to, ai_value_to) is not null then 1 else 0 end) as valued_count')
@@ -26,8 +29,8 @@ class HomeController extends Controller
 
         return Inertia::render('Home', [
             'stats' => [
-                'itemsCaptured' => Item::count(),
-                'itemsProcessed' => Item::where('status', Item::STATUS_PROCESSED)->count(),
+                'itemsCaptured' => Item::query()->owned()->count(),
+                'itemsProcessed' => Item::where('status', Item::STATUS_PROCESSED)->owned()->count(),
                 'needsReview' => Item::where('status', Item::STATUS_NEEDS_REVIEW)->count(),
                 'picturesUploaded' => Image::count(),
                 'unprocessed' => Item::where('status', Item::STATUS_CAPTURED)->count(),

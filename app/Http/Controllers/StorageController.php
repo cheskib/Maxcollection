@@ -31,6 +31,7 @@ class StorageController extends Controller
                     StorageEvent::BAG_ASSIGNED => 'Bag assigned to batch',
                     StorageEvent::BOX_OPENED => 'Box opened',
                     StorageEvent::BAG_ADDED => 'Bag added to box',
+                    StorageEvent::BAG_REMOVED => 'Bag removed from box',
                     StorageEvent::DIVIDER_SCANNED => 'Divider scanned',
                     StorageEvent::SCAN_UNDONE => 'Scan undone',
                     StorageEvent::BOX_COMPLETED => 'Box completed',
@@ -50,9 +51,11 @@ class StorageController extends Controller
                 'id' => $box->id,
                 'code' => $box->barcode->code,
                 'closedAt' => $box->closed_at->format('M j, Y'),
-                'bagCount' => $box->bag_count,
-                'sectionCount' => $box->section_count,
-                'cardCount' => $box->card_count,
+                // Live contents — cards sell and bags move; the box shows
+                // what it holds now.
+                'bagCount' => $box->currentBagCount(),
+                'sectionCount' => $box->sections()->count(),
+                'cardCount' => $box->currentCardCount(),
             ])
             ->all();
 
@@ -89,9 +92,9 @@ class StorageController extends Controller
                 'code' => $box->barcode->code,
                 'status' => $box->status,
                 'closedAt' => $box->closed_at?->format('M j, Y g:i A'),
-                'bagCount' => $box->bag_count,
-                'sectionCount' => $box->section_count,
-                'cardCount' => $box->card_count,
+                'bagCount' => $box->currentBagCount(),
+                'sectionCount' => $box->sections()->count(),
+                'cardCount' => $box->currentCardCount(),
                 'sections' => $box->sections->map(fn ($section) => [
                     'position' => $section->position,
                     'divider' => $section->dividerBarcode?->displayLabel(),
@@ -99,7 +102,8 @@ class StorageController extends Controller
                     'bags' => $section->batches->map(fn (Batch $batch) => [
                         'batchId' => $batch->id,
                         'code' => $batch->barcode->code,
-                        'itemCount' => $batch->items()->count(),
+                        'itemCount' => $batch->items()->present()->count(),
+                        'removedCount' => $batch->items()->whereNotNull('disposition')->count(),
                     ])->all(),
                 ])->all(),
             ],

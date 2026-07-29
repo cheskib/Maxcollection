@@ -17,6 +17,8 @@ class StorageEvent extends Model
 
     public const BAG_ADDED = 'bag_added';
 
+    public const BAG_REMOVED = 'bag_removed';
+
     public const DIVIDER_SCANNED = 'divider_scanned';
 
     public const SCAN_UNDONE = 'scan_undone';
