@@ -492,6 +492,34 @@ Station App UI (Milestones 3–4):
    rate, jam rate per 1,000, backlog by stage, time-in-stage, progress
    vs 300k with pace projection, bagged/boxed per week, value & sales.
 
+## Card Line Prep & the Separator Sticker (owner spec, 2026-07-29)
+
+The card line runs as an assembly line with circulating open-front
+bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
+~6.5×4×3" utility):
+
+1. **Prepper**: 50–70 raw cards into a bin, one **unpeeled bag
+   sticker on a stiff card-stock carrier ("batch ticket")** on top,
+   bin onto the incoming table. Never touches the scanner.
+2. **Scanner operator**: feeds the **ticket first**, then the whole
+   stack behind it. The system barcode-checks every scanned image;
+   a sheet reading `BAG-…` is a **batch header** — no item is created
+   from it; the previous batch closes and a new batch opens
+   **pre-bound to that bag number**. Stickers slice a continuous feed
+   into batches: ticket, cards, ticket, cards — no screen touches and
+   no barcode gun at the scan desk.
+3. **Validation at the header**: unknown code or already-used bag →
+   red banner + tone, line stops before any cards file wrong. Duplex
+   capture means ticket orientation can never be wrong. A batch that
+   closes far below the 50–70 norm is flagged (likely double-feed).
+4. **Bagging**: peel the sticker from the carrier onto the 4×6 bag,
+   cards in, seal. The batch was already bound at scan time — bagging
+   is purely physical. Empty bin returns to prep.
+
+This supersedes the earlier "Bag This Batch + gun zap" step for the
+card station; the gun remains the tool of the storage (boxing)
+workflow.
+
 ## The Comic Imaging Line (owner spec, 2026-07-29)
 
 Two production systems exist, one per medium, both for RAW items only —

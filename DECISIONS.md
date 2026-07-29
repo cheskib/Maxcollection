@@ -121,6 +121,17 @@ batch to the bag); cards go through the fi-8170 scanner (front + back,
 duplex). Panels are not used for cards. Full spec in
 CAPTURE-STATION.md "The Comic Imaging Line".
 
+## 2026-07-29 — Card line separator stickers (owner-directed)
+
+Card batches are prepped in circulating open-front bins (50–70 raw
+cards + one unpeeled bag sticker on a stiff carrier ticket). The
+ticket feeds through the fi-8170 FIRST: the system recognizes the
+BAG barcode in the scanned image, creates no item from it, and opens
+a batch pre-bound to that bag — so stickers slice a continuous feed
+into batches with zero screen interaction. Bag binding therefore
+happens at the START of a card batch; bagging is purely physical
+(peel sticker onto bag, cards in). Full spec in CAPTURE-STATION.md.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
