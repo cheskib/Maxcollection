@@ -538,6 +538,21 @@ Touchscreen kiosk  ←WebSocket/API→  Windows controller PC
   training, clear instructions, minimal touches, industrial feel,
   expandability.
 
+## Open Kiosk Scenarios (parked by owner — walk through later)
+
+Questions to resolve before kiosk implementation; none block current
+web milestones:
+
+1. What the **prep kiosk** shows — full prompts, or just a count and
+   a "bin done" tap?
+2. The capture kiosk's **"Waiting…" state** — what the operator sees
+   while the scanner runs or processing churns.
+3. **Operator switching** mid-shift on a shared floor — badge scan,
+   tap-a-name, or PIN.
+4. **Supervisor/admin powers at a kiosk** vs. operator powers.
+5. **Failure behavior** when the controller or network dies mid-batch
+   — what the kiosk shows, what resumes automatically.
+
 ## Card Line Prep & the Separator Sticker (owner spec, 2026-07-29)
 
 The card line runs as an assembly line with circulating open-front
