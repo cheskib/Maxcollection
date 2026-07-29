@@ -522,10 +522,16 @@ Touchscreen kiosk  ←WebSocket/API→  Windows controller PC
   technical messages.
 - Operators are assumed to have no technical, photography, or
   computer knowledge; the interface makes mistakes nearly impossible.
-- **The kiosk controls the imaging stage only.** The full production
-  chain — Receiving → Sorting → Imaging → AI Recognition → Needs
-  Review → Bagging → Storage → Listing — is handled by other parts of
-  the system.
+- **There is a kiosk at EVERY station** (owner amendment): prep,
+  scan/camera, and bagging each get their own thin touchscreen running
+  the same kiosk architecture, showing only that station's prompts —
+  the prep kiosk guides bin/panel loading, the capture kiosk runs the
+  scan/shutter flow, the bagging kiosk confirms peel-fill-seal. Each
+  kiosk carries a station identity, so every event and timing is
+  attributed to its station — which is exactly what feeds the
+  per-station KPIs. The wider production chain — Receiving → Sorting →
+  Imaging → AI Recognition → Needs Review → Bagging → Storage →
+  Listing — gains kiosks stage by stage as those stages come online.
 - The same kiosk architecture later extends to coins, stamps,
   documents, games, and antiques: only the capture workflow changes.
 - Design priorities, in order: speed, simplicity, reliability, easy
