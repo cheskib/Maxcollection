@@ -647,9 +647,24 @@ bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
    must be audibly distinct, every station needs verified audio, and
    session start includes a sound check (a "Test sounds" control on
    the packing screen and later on every kiosk).
-4. **Bagging**: peel the sticker from the carrier onto the 4×6 bag,
-   cards in, seal. The batch was already bound at scan time — bagging
-   is purely physical. Empty bin returns to prep.
+4. **Bagging — scan-in / scan-out, enforced** (owner spec): the
+   bagger scans the ticket FIRST; the system renders its verdict
+   before any cards move.
+   - **Good** → prompt: peel the sticker onto the 4×6 bag, cards in,
+     seal → **scan the bag again = done**. The two scans bracket the
+     work: bag-and-sticker time is captured per bag and per bagger.
+   - **Flagged** → error tone; the bagger confirms **set aside ✓**
+     (also timed) and only then may scan the next bin. Cards never
+     enter a bag that is headed back to the scanner.
+   - **The flow is enforced**: the station accepts no new bin until
+     the current one is closed out (done-scan or set-aside) — no
+     third path.
+   - **Three flagged bags in a row → alarm** on the KPI dashboard and
+     an admin notification: consecutive errors mean something
+     systemic, not bad luck.
+   This makes bagging the PRIMARY flag catch (the first scan
+   touchpoint after flags arise); the boxing intercept remains as the
+   backstop. Empty bin returns to prep.
 
 This supersedes the earlier "Bag This Batch + gun zap" step for the
 card station; the gun remains the tool of the storage (boxing)
