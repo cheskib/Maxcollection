@@ -22,7 +22,12 @@ const props = defineProps<{
 }>();
 
 const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
-const photosPerItem = ref<1 | 2>(2);
+// The first question: cards or comics. Everything follows from it —
+// cards are front & back (and may arrive as scanner PDFs); comics are
+// front cover only, camera only (owner rulings).
+const captureType = ref<'cards' | 'comics' | null>(null);
+const photosPerItem = computed(() => (captureType.value === 'comics' ? 1 : 2));
+const gridSides = computed(() => (captureType.value === 'comics' ? 1 : 2));
 // Seeded with any batches still converting or awaiting processing, so
 // leaving the page and coming back never loses them.
 const batches = ref<BatchStatus[]>([...props.pendingBatches]);
@@ -33,11 +38,16 @@ const notice = ref<string | null>(null);
 const pdfInput = ref<HTMLInputElement | null>(null);
 // Grid photos: several items laid out in equal boxes, shot from above.
 const gridCells = ref<1 | 2 | 4 | 6>(6);
-const gridSides = ref<1 | 2>(1);
 const gridFrontInput = ref<HTMLInputElement | null>(null);
 const gridBackInput = ref<HTMLInputElement | null>(null);
 const gridFront = ref<File | null>(null);
 const gridBack = ref<File | null>(null);
+// Switching cards ↔ comics discards staged grid photos: a fronts photo
+// picked under one ruleset must not upload under the other.
+watch(captureType, () => {
+    gridFront.value = null;
+    gridBack.value = null;
+});
 let poller: ReturnType<typeof setInterval> | null = null;
 
 // No last-used default: the collection is chosen consciously each
@@ -320,45 +330,50 @@ async function processAll(): Promise<void> {
             <h1 class="text-2xl font-bold text-gray-900">Bulk Capture</h1>
             <Link href="/" class="text-sm font-semibold text-blue-600">Home</Link>
         </div>
-        <p class="mt-1 text-sm text-gray-500">Upload scanner PDFs or grid photos — each becomes its own batch below.</p>
+        <p class="mt-1 text-sm text-gray-500">Each upload becomes its own batch below.</p>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
-            <p class="text-sm font-medium text-gray-700">First — which collection do these go in?</p>
-            <div class="mt-2">
-                <CollectionPicker v-model="collectionChoice" :collections="collections" />
-            </div>
-            <p class="mt-3 text-sm font-medium text-gray-700">Pages per card</p>
+            <p class="text-sm font-medium text-gray-700">First — what are we capturing?</p>
             <div class="mt-2 flex gap-2">
                 <button
-                    :class="photosPerItem === 2 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold"
-                    @click="photosPerItem = 2"
+                    :class="captureType === 'cards' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+                    class="flex-1 rounded-lg py-3 text-sm font-semibold"
+                    @click="captureType = 'cards'"
                 >
-                    2 — front &amp; back
+                    🃏 Cards
                 </button>
                 <button
-                    :class="photosPerItem === 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold"
-                    @click="photosPerItem = 1"
+                    :class="captureType === 'comics' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+                    class="flex-1 rounded-lg py-3 text-sm font-semibold"
+                    @click="captureType = 'comics'"
                 >
-                    1 — front only
+                    📚 Comics
                 </button>
+            </div>
+            <p v-if="captureType" class="mt-2 text-xs text-gray-500">
+                {{ captureType === 'cards' ? 'Cards capture front & back.' : 'Comics capture the front cover only.' }}
+            </p>
+
+            <p class="mt-3 text-sm font-medium text-gray-700">Which collection do these go in?</p>
+            <div class="mt-2">
+                <CollectionPicker v-model="collectionChoice" :collections="collections" />
             </div>
         </div>
 
         <input ref="pdfInput" type="file" accept="application/pdf" multiple class="hidden" @change="onPdf" />
-        <p v-if="collectionChosen && collectionName" class="mt-4 text-center text-sm text-gray-600">
+        <p v-if="captureType && collectionChosen && collectionName" class="mt-4 text-center text-sm text-gray-600">
             Everything below goes into <span class="font-bold text-gray-900">{{ collectionName }}</span>
         </p>
         <button
+            v-if="captureType === 'cards'"
             :disabled="uploading || !collectionChosen"
             class="mt-2 w-full rounded-xl bg-blue-600 py-4 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:bg-gray-300"
             @click="pdfInput?.click()"
         >
-            {{ uploading ? 'Uploading…' : collectionChosen ? '⬆ Add Batch PDF(s)' : 'Select a collection first' }}
+            {{ uploading ? 'Uploading…' : collectionChosen ? '⬆ Add Scanner PDF(s)' : 'Select a collection first' }}
         </button>
 
-        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+        <div v-if="captureType" class="mt-4 rounded-xl bg-white p-4 shadow-sm">
             <p class="text-sm font-medium text-gray-700">📐 Grid photo — several items in one shot</p>
             <p class="mt-1 text-xs text-gray-500">
                 Lay items in equal boxes, shoot straight down. Each box becomes its own item.
@@ -374,24 +389,6 @@ async function processAll(): Promise<void> {
                     @click="gridCells = count"
                 >
                     {{ count }}
-                </button>
-            </div>
-
-            <p class="mt-3 text-sm font-medium text-gray-700">Sides</p>
-            <div class="mt-2 flex gap-2">
-                <button
-                    :class="gridSides === 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold"
-                    @click="gridSides = 1"
-                >
-                    1 — front only (comics)
-                </button>
-                <button
-                    :class="gridSides === 2 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
-                    class="flex-1 rounded-lg py-2 text-sm font-semibold"
-                    @click="gridSides = 2"
-                >
-                    2 — front &amp; back (cards)
                 </button>
             </div>
 
@@ -496,6 +493,6 @@ async function processAll(): Promise<void> {
             </button>
         </div>
 
-        <p v-else class="mt-8 text-center text-sm text-gray-400">No batches yet this session — add a PDF or grid photo to begin.</p>
+        <p v-else class="mt-8 text-center text-sm text-gray-400">No batches yet this session — pick cards or comics above to begin.</p>
     </div>
 </template>
