@@ -74,6 +74,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/batches/{batch}', [BatchController::class, 'show'])->name('batches.show');
     Route::post('/batches/{batch}/bag', [BatchController::class, 'assignBag'])->name('batches.bag');
 
+    Route::get('/bagging', [\App\Http\Controllers\BaggingController::class, 'index'])->name('bagging');
+    Route::post('/bagging/scan', [\App\Http\Controllers\BaggingController::class, 'scan'])->name('bagging.scan');
+    Route::get('/bagging/set-aside-card', [\App\Http\Controllers\BaggingController::class, 'setAsideCard'])->name('bagging.setaside');
+
     Route::get('/storage', [\App\Http\Controllers\StorageController::class, 'index'])->name('storage');
     Route::post('/storage/scan', [\App\Http\Controllers\StorageController::class, 'scan'])->name('storage.scan');
     Route::post('/storage/undo', [\App\Http\Controllers\StorageController::class, 'undo'])->name('storage.undo');

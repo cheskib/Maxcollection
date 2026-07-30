@@ -312,6 +312,24 @@ folder name), `bag_unregistered`, `bag_conflict` (bag already
 used), `missing_side` (odd side count), `no_bag`. Verified with a
 real Code 128 ticket image read by the production zbar path.
 
+## 2026-07-30 — Bagging station built: enforced scan-in / scan-out
+
+Implements the owner's bagging spec as a web screen (PC + gun +
+speakers, no touchscreen). Session opens with a sound check (good
+tone, then problem tone). Scan the bin's ticket → verdict before any
+cards move: good → peel, fill, seal → scan the bag again to finish
+(timed); flagged → problem tone, line locked until the laminated
+SET-ASIDE card is scanned (timed); a not-yet-processed bag says
+"still checking — rescan in a few seconds"; an unknown bag is set
+aside for an admin. No new bin until the current one closes. Three
+flagged bags in a row play a triple alarm tone, show an unmissable
+banner, and record an alarm event for the KPI dashboard. The
+SET-ASIDE card is printable from the bagging screen (Code 128
+"SET-ASIDE", laminate and keep at the station). Today's counts (bags
+done, set aside, average seconds) show live; every event is recorded
+per bagger for KPIs. The Diagnose UI and rescan permission remain
+the next milestone — set-aside bags wait for an admin until then.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
