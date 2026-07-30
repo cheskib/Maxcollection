@@ -55,6 +55,14 @@ watch(
     },
 );
 
+// Sounds are load-bearing — the packer works by ear. Play good then
+// bad so speakers are verified before any scanning starts.
+function testSounds(): void {
+    beep('success');
+    setTimeout(() => beep('error'), 700);
+    nextTick(() => scanInput.value?.focus());
+}
+
 function refocus(): void {
     code.value = '';
     nextTick(() => scanInput.value?.focus());
@@ -103,6 +111,10 @@ function completeBox(confirmed = false): void {
         </button>
 
         <template v-else>
+            <button class="mt-3 w-full rounded-lg bg-gray-100 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-200" @click="testSounds">
+                🔊 Test sounds — good beep, then problem tone
+            </button>
+
 <!-- What to scan next — the operator's only instruction -->
             <p class="mt-4 rounded-lg bg-gray-900 p-3 text-center text-sm font-semibold text-white">
                 <template v-if="!openBox">Scan a BOX barcode to begin</template>
