@@ -23,11 +23,10 @@ const props = defineProps<{
 
 const collectionChoice = ref<CollectionChoice>({ collectionId: null, newName: '' });
 // The first question: cards or comics. Everything follows from it —
-// cards are front & back (and may arrive as scanner PDFs); comics are
-// front cover only, camera only (owner rulings).
+// cards are front & back via the scanner (PDFs); comics are front
+// cover only, camera only — grid photos (owner rulings).
 const captureType = ref<'cards' | 'comics' | null>(null);
 const photosPerItem = computed(() => (captureType.value === 'comics' ? 1 : 2));
-const gridSides = computed(() => (captureType.value === 'comics' ? 1 : 2));
 // Seeded with any batches still converting or awaiting processing, so
 // leaving the page and coming back never loses them.
 const batches = ref<BatchStatus[]>([...props.pendingBatches]);
@@ -39,15 +38,6 @@ const pdfInput = ref<HTMLInputElement | null>(null);
 // Grid photos: several items laid out in equal boxes, shot from above.
 const gridCells = ref<1 | 2 | 4 | 6>(6);
 const gridFrontInput = ref<HTMLInputElement | null>(null);
-const gridBackInput = ref<HTMLInputElement | null>(null);
-const gridFront = ref<File | null>(null);
-const gridBack = ref<File | null>(null);
-// Switching cards ↔ comics discards staged grid photos: a fronts photo
-// picked under one ruleset must not upload under the other.
-watch(captureType, () => {
-    gridFront.value = null;
-    gridBack.value = null;
-});
 let poller: ReturnType<typeof setInterval> | null = null;
 
 // No last-used default: the collection is chosen consciously each
@@ -145,10 +135,9 @@ async function onPdf(event: Event): Promise<void> {
     }
 }
 
-async function uploadGrid(front: File, back: File | null): Promise<void> {
+async function uploadGrid(front: File): Promise<void> {
     const body = new FormData();
     body.append('photo', front);
-    if (back) body.append('back_photo', back);
     body.append('cells', String(gridCells.value));
     Object.entries(collectionPayload(collectionChoice.value)).forEach(([key, value]) => body.append(key, value));
 
@@ -178,48 +167,17 @@ async function uploadGrid(front: File, back: File | null): Promise<void> {
     });
 }
 
-// Front-only mode uploads immediately (multi-select welcome); front & back
-// mode stages the front until its matching back is picked.
 async function onGridFronts(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     input.value = '';
     if (!files.length) return;
 
-    if (gridSides.value === 2) {
-        gridFront.value = files[0];
-        return;
-    }
-
     error.value = null;
     notice.value = null;
     uploading.value = true;
     try {
-        for (const file of files) await uploadGrid(file, null);
-        void refreshStatus();
-    } catch (e) {
-        error.value = e instanceof Error ? e.message : 'Upload failed.';
-    } finally {
-        uploading.value = false;
-    }
-}
-
-function onGridBack(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    gridBack.value = Array.from(input.files ?? [])[0] ?? null;
-    input.value = '';
-}
-
-async function uploadGridPair(): Promise<void> {
-    if (!gridFront.value) return;
-
-    error.value = null;
-    notice.value = null;
-    uploading.value = true;
-    try {
-        await uploadGrid(gridFront.value, gridBack.value);
-        gridFront.value = null;
-        gridBack.value = null;
+        for (const file of files) await uploadGrid(file);
         void refreshStatus();
     } catch (e) {
         error.value = e instanceof Error ? e.message : 'Upload failed.';
@@ -373,13 +331,13 @@ async function processAll(): Promise<void> {
             {{ uploading ? 'Uploading…' : collectionChosen ? '⬆ Add Scanner PDF(s)' : 'Select a collection first' }}
         </button>
 
-        <div v-if="captureType" class="mt-4 rounded-xl bg-white p-4 shadow-sm">
-            <p class="text-sm font-medium text-gray-700">📐 Grid photo — several items in one shot</p>
+        <div v-if="captureType === 'comics'" class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <p class="text-sm font-medium text-gray-700">📐 Grid photo — several comics in one shot</p>
             <p class="mt-1 text-xs text-gray-500">
-                Lay items in equal boxes, shoot straight down. Each box becomes its own item.
+                Lay comics in equal boxes, shoot straight down. Each box becomes its own comic.
             </p>
 
-            <p class="mt-3 text-sm font-medium text-gray-700">Items per photo</p>
+            <p class="mt-3 text-sm font-medium text-gray-700">Comics per photo</p>
             <div class="mt-2 flex gap-2">
                 <button
                     v-for="count in ([1, 2, 4, 6] as const)"
@@ -392,49 +350,15 @@ async function processAll(): Promise<void> {
                 </button>
             </div>
 
-            <input ref="gridFrontInput" type="file" accept="image/*" :multiple="gridSides === 1" class="hidden" @change="onGridFronts" />
-            <input ref="gridBackInput" type="file" accept="image/*" class="hidden" @change="onGridBack" />
+            <input ref="gridFrontInput" type="file" accept="image/*" multiple class="hidden" @change="onGridFronts" />
 
-            <template v-if="gridSides === 1">
-                <button
-                    :disabled="uploading || !collectionChosen"
-                    class="mt-4 w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:bg-gray-300"
-                    @click="gridFrontInput?.click()"
-                >
-                    {{ uploading ? 'Uploading…' : collectionChosen ? '⬆ Add Grid Photo(s)' : 'Select a collection first' }}
-                </button>
-            </template>
-
-            <template v-else>
-                <p class="mt-3 text-xs text-gray-500">
-                    Shoot the fronts, flip every card in its own box, shoot again — boxes pair up by position.
-                </p>
-                <div class="mt-2 flex gap-2">
-                    <button
-                        :disabled="uploading || !collectionChosen"
-                        :class="gridFront ? 'border-green-500 text-green-700' : 'border-gray-300 text-gray-700'"
-                        class="flex-1 rounded-lg border-2 py-3 text-sm font-semibold disabled:opacity-50"
-                        @click="gridFrontInput?.click()"
-                    >
-                        {{ gridFront ? '✓ Fronts photo' : '1. Fronts photo' }}
-                    </button>
-                    <button
-                        :disabled="uploading || !collectionChosen"
-                        :class="gridBack ? 'border-green-500 text-green-700' : 'border-gray-300 text-gray-700'"
-                        class="flex-1 rounded-lg border-2 py-3 text-sm font-semibold disabled:opacity-50"
-                        @click="gridBackInput?.click()"
-                    >
-                        {{ gridBack ? '✓ Backs photo' : '2. Backs photo' }}
-                    </button>
-                </div>
-                <button
-                    :disabled="uploading || !collectionChosen || !gridFront"
-                    class="mt-2 w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:bg-gray-300"
-                    @click="uploadGridPair"
-                >
-                    {{ uploading ? 'Uploading…' : '⬆ Upload Grid' }}
-                </button>
-            </template>
+            <button
+                :disabled="uploading || !collectionChosen"
+                class="mt-4 w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:bg-gray-300"
+                @click="gridFrontInput?.click()"
+            >
+                {{ uploading ? 'Uploading…' : collectionChosen ? '⬆ Add Grid Photo(s)' : 'Select a collection first' }}
+            </button>
         </div>
 
         <p v-if="error" class="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>

@@ -251,6 +251,13 @@ content hash). The manufactured panels and their in-frame bag
 barcode / panel number remain a later milestone; grid batches bind
 to bags the ordinary way (scan the bag on the batch page).
 
+Follow-up rulings the same day: Bulk Capture opens by asking WHAT is
+being captured — Cards or Comics — and everything follows from the
+floor rulings instead of toggles. Cards are scanner-only (front &
+back PDFs); the grid photo is comics-only, so the fronts/backs
+two-photo grid flow was removed from the UI. The split job's
+back-pairing support remains for the future panel line.
+
 ## 2026-07-30 — Production domain: maxcollection.vsstechnology.com
 
 The application now lives at https://maxcollection.vsstechnology.com —
