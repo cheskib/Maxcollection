@@ -74,7 +74,9 @@ class ProcessIngestFolderJob implements ShouldQueue
 
         $barcode = null;
         if ($bagCode !== null) {
-            $barcode = Barcode::where('code', $bagCode)->where('type', Barcode::TYPE_BAG)->first();
+            // A voided sticker (replaced after diagnosis) never returns.
+            $barcode = Barcode::where('code', $bagCode)->where('type', Barcode::TYPE_BAG)
+                ->whereNull('voided_at')->first();
 
             if ($barcode === null) {
                 $flag = 'bag_unregistered';
@@ -117,6 +119,14 @@ class ProcessIngestFolderJob implements ShouldQueue
                 $this->attachImage($item, $file, $side === 0 ? 'front' : 'back');
             }
         }
+
+        // A rescan after diagnosis: earlier deleted attempts for this bag
+        // link forward so both captures live on one page, never deleted.
+        Batch::where('label', $this->folder)
+            ->where('id', '!=', $batch->id)
+            ->whereNotNull('resolution')
+            ->whereNull('superseded_by_batch_id')
+            ->update(['superseded_by_batch_id' => $batch->id]);
 
         $files->each(fn (IngestFile $file) => $file->update(['processed_at' => now()]));
 

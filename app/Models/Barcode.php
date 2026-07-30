@@ -19,12 +19,13 @@ class Barcode extends Model
         self::TYPE_DIVIDER => 'DIV',
     ];
 
-    protected $fillable = ['type', 'code', 'label', 'print_run', 'printed_at'];
+    protected $fillable = ['type', 'code', 'label', 'print_run', 'printed_at', 'voided_at', 'void_reason'];
 
     protected function casts(): array
     {
         return [
             'printed_at' => 'datetime',
+            'voided_at' => 'datetime',
         ];
     }
 
