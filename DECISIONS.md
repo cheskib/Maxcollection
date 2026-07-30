@@ -162,6 +162,17 @@ kept on one page (the superseded one marked, never deleted). Sounds
 are load-bearing: distinct good/problem tones, verified speakers at
 every station, sound check at session start.
 
+## 2026-07-29 — Bagging is scan-in / scan-out, enforced
+
+Owner spec: the bagger scans the ticket first and the system renders
+its verdict before any cards move. Good → peel, fill, seal → scan
+again to finish (both scans timed: bag-and-sticker duration per bag
+and bagger). Flagged → error tone, confirm set-aside (timed), then
+the next bin. The flow is enforced — no new bin until the current one
+is closed out. Three flagged bags in a row raise an alarm on the KPI
+dashboard and notify the admin. Bagging becomes the primary flag
+catch; the boxing intercept remains as backstop.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
