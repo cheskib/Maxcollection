@@ -146,7 +146,11 @@ class BatchController extends Controller
                 return [
                     'id' => $batch->id,
                     'label' => $batch->displayLabel(),
-                    'source' => $batch->source === 'pdf' ? 'Scanner PDF' : 'Bulk photos',
+                    'source' => match ($batch->source) {
+                        'pdf' => 'Scanner PDF',
+                        'grid' => 'Grid photo',
+                        default => 'Bulk photos',
+                    },
                     'uploadedAt' => $batch->created_at->format('M j, Y g:i A'),
                     'itemCount' => $batch->items_count,
                     'processedCount' => $batch->processed_count,

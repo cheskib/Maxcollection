@@ -232,6 +232,25 @@ reachable through "View all". The comics **key-issues watchlist**
 counterpart of the card key-names list) is approved in principle and
 parked on the wishlist for a future milestone.
 
+## 2026-07-30 — Grid photo capture: the panel flow without panels
+(owner-directed)
+
+Testing ramp toward the panel line, for comics AND cards: the owner
+draws equal boxes (1, 2, 4, or 6), lays items in them, and shoots one
+overhead photo. Bulk Capture's new Grid mode slices the photo into
+equal cells — one item per cell, reading order — and each cover runs
+through the AI like any capture. No computer vision: fixed equal
+cells, matching the drawn grid and the future panels' fixed geometry.
+The row × column split is chosen so cells come closest to the portrait
+shape of a comic/card (landscape six = 2×3, portrait six = 3×2), and
+phone EXIF orientation is applied before slicing. Cards use two
+photos: shoot fronts, flip every card in its own box, shoot backs —
+cells pair by position. Same background-job pattern as the PDF
+import (batch shows "Converting…", duplicate photos refused by
+content hash). The manufactured panels and their in-frame bag
+barcode / panel number remain a later milestone; grid batches bind
+to bags the ordinary way (scan the bag on the batch page).
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

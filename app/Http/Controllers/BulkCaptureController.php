@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBulkItemRequest;
 use App\Jobs\ImportPdfJob;
+use App\Jobs\SplitGridJob;
 use App\Models\Batch;
 use App\Models\Collection;
 use App\Models\Item;
@@ -29,7 +30,7 @@ class BulkCaptureController extends Controller
             'items as needs_review_count' => fn ($query) => $query->where('status', Item::STATUS_NEEDS_REVIEW),
         ])
             ->where(fn ($query) => $query
-                ->where(fn ($converting) => $converting->where('source', 'pdf')->whereNull('converted_at'))
+                ->where(fn ($converting) => $converting->whereIn('source', ['pdf', 'grid'])->whereNull('converted_at'))
                 ->orWhereHas('items', fn ($items) => $items->where('status', Item::STATUS_CAPTURED)))
             ->orderBy('id')
             ->get();
@@ -39,7 +40,7 @@ class BulkCaptureController extends Controller
             'pendingBatches' => $pending->map(fn (Batch $batch) => [
                 'id' => $batch->id,
                 'label' => $batch->displayLabel(),
-                'converting' => $batch->source === 'pdf' && $batch->converted_at === null,
+                'converting' => in_array($batch->source, ['pdf', 'grid'], true) && $batch->converted_at === null,
                 'itemCount' => $batch->items_count,
                 'captured' => $batch->captured_count,
                 'inProgress' => $batch->in_progress_count,
@@ -143,6 +144,56 @@ class BulkCaptureController extends Controller
     }
 
     /**
+     * Accept an overhead photo of a laid-out grid (1, 2, 4, or 6 boxes) and
+     * split it into one item per cell in the background. A second photo of
+     * the same grid, cards flipped in place, supplies the backs.
+     */
+    public function storeGrid(Request $request, CollectionService $collections): JsonResponse
+    {
+        $validated = $request->validate([
+            'photo' => ['required', 'image', 'max:25600'],
+            'back_photo' => ['nullable', 'image', 'max:25600'],
+            'cells' => ['required', 'integer', 'in:1,2,4,6'],
+            ...CollectionService::rules(),
+        ]);
+
+        // Guardrail: the same grid photo must not be uploaded twice —
+        // re-running the AI is done with Reprocess Batch on the existing batch.
+        $hash = hash_file('sha256', $request->file('photo')->getRealPath());
+        $existing = Batch::where('content_hash', $hash)->first();
+
+        if ($existing !== null) {
+            return response()->json([
+                'message' => sprintf(
+                    'This photo was already uploaded as "%s" on %s. Open that batch and use Reprocess Batch instead.',
+                    $existing->displayLabel(),
+                    $existing->created_at->format('M j, Y'),
+                ),
+            ], 409);
+        }
+
+        $frontPath = $request->file('photo')->store('imports', 'local');
+        $backPath = $request->file('back_photo')?->store('imports', 'local');
+
+        $batch = Batch::create([
+            'user_id' => $request->user()->id,
+            'source' => 'grid',
+            'content_hash' => $hash,
+        ]);
+
+        $collectionId = $collections->resolveFromRequest($request, $request->user());
+
+        SplitGridJob::dispatch($frontPath, $backPath, (int) $validated['cells'], $request->user()->id, $batch->id, $collectionId);
+
+        return response()->json([
+            'batchId' => $batch->id,
+            'label' => $batch->displayLabel(),
+            'collectionId' => $collectionId,
+            'message' => 'Photo received — splitting the grid into items.',
+        ], 202);
+    }
+
+    /**
      * Live per-batch numbers for the bulk workspace.
      */
     public function status(Request $request, ProcessingService $processing): JsonResponse
@@ -172,7 +223,7 @@ class BulkCaptureController extends Controller
             'batches' => $batches->map(fn (Batch $batch) => [
                 'id' => $batch->id,
                 'label' => $batch->displayLabel(),
-                'converting' => $batch->source === 'pdf' && $batch->converted_at === null,
+                'converting' => in_array($batch->source, ['pdf', 'grid'], true) && $batch->converted_at === null,
                 'itemCount' => $batch->items_count,
                 'captured' => $batch->captured_count,
                 'inProgress' => $batch->in_progress_count,
