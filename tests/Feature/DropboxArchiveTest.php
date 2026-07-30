@@ -103,14 +103,15 @@ class DropboxArchiveTest extends TestCase
 
         $this->assertNotNull($batch->fresh()->archived_at);
 
-        // Every upload lands in the bag's folder.
+        // Every file is renamed to the bag number, inside the bag folder:
+        // /BAG-000001/BAG-000001-01-front.jpg
         Http::assertSent(function ($request) {
             if (! str_contains($request->url(), 'files/upload')) {
                 return true;
             }
             $arg = json_decode($request->header('Dropbox-API-Arg')[0] ?? '{}', true);
 
-            return str_starts_with($arg['path'] ?? '', '/BAG-000001/item-');
+            return preg_match('#^/BAG-000001/BAG-000001-\d{2}-front\.jpg$#', $arg['path'] ?? '') === 1;
         });
     }
 

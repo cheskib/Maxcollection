@@ -28,6 +28,13 @@ class SettingsController extends Controller
                 'pendingCount' => \App\Models\Batch::whereNotNull('barcode_id')->whereNull('archived_at')->count(),
             ],
             'users' => \App\Models\User::orderBy('name')->get(['id', 'name', 'email', 'role'])->all(),
+            // Where every scan-line batch lands until an admin changes it.
+            'collections' => \App\Models\Collection::orderBy('name')->get(['id', 'name'])->all(),
+            'defaultCollectionId' => Setting::value('default_collection_id') !== null
+                ? (int) Setting::value('default_collection_id')
+                : null,
+            'aiHold' => Setting::value('ai_hold') === '1',
+            'queuedCount' => \App\Models\Item::whereIn('status', [\App\Models\Item::STATUS_QUEUED, \App\Models\Item::STATUS_PROCESSING])->count(),
             'keyNames' => KeyName::orderBy('sport')->orderBy('name')
                 ->get(['id', 'sport', 'name'])
                 ->groupBy('sport')
@@ -77,6 +84,55 @@ class SettingsController extends Controller
         }
 
         return back()->with('status', 'Name removed from the watchlist.');
+    }
+
+    /**
+     * Choose the collection every scan-line batch lands in from this
+     * moment forward. Forward-only: nothing already processed moves.
+     */
+    public function setDefaultCollection(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'collection_id' => ['required', 'integer', 'exists:collections,id'],
+        ]);
+
+        Setting::updateOrCreate(
+            ['key' => 'default_collection_id'],
+            ['value' => (string) $validated['collection_id']],
+        );
+
+        $name = \App\Models\Collection::find($validated['collection_id'])->name;
+
+        return back()->with('status', "New scans will go into \"{$name}\".");
+    }
+
+    /**
+     * Pause or resume all AI work. Scanning and validation continue
+     * either way — they follow the cards; AI follows the images and
+     * can wait. Releasing the hold re-dispatches everything queued.
+     */
+    public function setAiHold(Request $request): RedirectResponse
+    {
+        $hold = $request->boolean('hold');
+
+        Setting::updateOrCreate(['key' => 'ai_hold'], ['value' => $hold ? '1' : '0']);
+
+        if ($hold) {
+            return back()->with('status', 'AI processing is on hold. Scanning and validation continue; queued items wait.');
+        }
+
+        // Jobs consumed while held left their items queued; requeue them.
+        $requeued = 0;
+        \App\Models\ProcessingJob::where('status', \App\Models\ProcessingJob::STATUS_QUEUED)
+            ->pluck('id')
+            ->each(function (int $jobId) use (&$requeued) {
+                \App\Jobs\ProcessItemJob::dispatch($jobId);
+                $requeued++;
+            });
+
+        return back()->with('status', $requeued > 0
+            ? "AI processing resumed — {$requeued} item(s) picking back up."
+            : 'AI processing resumed.');
     }
 
     /**
