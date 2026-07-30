@@ -251,6 +251,17 @@ content hash). The manufactured panels and their in-frame bag
 barcode / panel number remain a later milestone; grid batches bind
 to bags the ordinary way (scan the bag on the batch page).
 
+## 2026-07-30 — Production domain: maxcollection.vsstechnology.com
+
+The application now lives at https://maxcollection.vsstechnology.com —
+a subdomain of the owner's VSS Technology domain (registered at
+GoDaddy), pointed at Railway with a CNAME plus Railway's TXT
+ownership-verification record; Railway issues and renews the HTTPS
+certificate automatically. `APP_URL` was updated and the new
+Dropbox OAuth callback added alongside the old one. The original
+maxcollection-production.up.railway.app address intentionally keeps
+working — retiring it would break nothing but gains nothing.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
