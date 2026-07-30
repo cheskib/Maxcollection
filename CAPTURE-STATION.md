@@ -591,7 +591,24 @@ bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
    **pre-bound to that bag number**. Stickers slice a continuous feed
    into batches: ticket, cards, ticket, cards — no screen touches and
    no barcode gun at the scan desk.
-3. **Post-capture validation — flag, never stop** (owner ruling):
+3. **Validation is immediate; AI is deferred** (owner ruling):
+   the instant a batch's scanning completes, the mechanical checks
+   run — bag readable, bag registered, a front and a back for every
+   card. They are milliseconds (image counts and barcode decode, no
+   AI), so the verdict exists before the bin reaches bagging — the
+   only window where a missing side is cheap to fix, because the
+   cards are still at the desk. AI recognition is NOT urgent: it
+   queues in the background at low priority, since the images already
+   contain everything and AI mistakes are fixed later by editing
+   metadata. Validation follows the cards; AI follows the images.
+   In practice bagging never waits: validation is sub-second while
+   the bin's physical walk to the bagging table takes longer. If a
+   bagger's scan-in outruns a still-uploading batch, the station
+   shows a rare third state — "Still checking… one moment" — which
+   resolves in seconds to good or flagged; a brief wait, never a
+   set-aside.
+
+   **Post-capture validation — flag, never stop** (owner ruling):
    after a batch's cards are captured the system checks that (a) the
    bag number is readable AND registered, and (b) every card has a
    front and a back. Good → AI and everything downstream. Anything
