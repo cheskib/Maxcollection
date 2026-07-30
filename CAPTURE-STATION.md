@@ -538,10 +538,20 @@ Touchscreen kiosk  ←WebSocket/API→  Windows controller PC
   station needs no touchscreen kiosk — just a plain monitor on the
   controller PC showing running status (count, current bag) and
   scanner-specific errors in plain language (jam, double-feed,
-  offline: what happened, what to do). Session boundaries (login,
-  collection, mode, end) happen on the same screen with the PC's
-  normal keyboard and mouse — twice-a-shift events, not production
-  motions.
+  offline: what happened, what to do).
+
+  **No login, no sessions at the scan station** (owner ruling,
+  supersedes the earlier session/login items of the station
+  walkthrough for the card line): the operator never logs in — all
+  they do is scan. The scanner is configured once to deposit files
+  into a **watched folder**; the Collection system monitors it and
+  manages everything from there — ticket images become batch headers,
+  batches form, pairing checks run, flags raise, AI queues. The
+  card-line controller software is therefore a folder watcher +
+  uploader (the hot-folder model is the PRIMARY design, not a
+  fallback; no TWAIN integration is required for the card line).
+  Timing KPIs come from file timestamps (per-station, not
+  per-operator — accepted trade).
 - The same kiosk architecture later extends to coins, stamps,
   documents, games, and antiques: only the capture workflow changes.
 - Design priorities, in order: speed, simplicity, reliability, easy
