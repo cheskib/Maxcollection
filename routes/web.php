@@ -116,7 +116,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/key-names', [\App\Http\Controllers\SettingsController::class, 'addKeyName'])->name('settings.keynames.add');
         Route::delete('/settings/key-names/{keyName}', [\App\Http\Controllers\SettingsController::class, 'removeKeyName'])->name('settings.keynames.remove');
         Route::post('/settings/default-collection', [\App\Http\Controllers\SettingsController::class, 'setDefaultCollection'])->name('settings.collection');
-        Route::post('/settings/ai-hold', [\App\Http\Controllers\SettingsController::class, 'toggleAiHold'])->name('settings.aihold');
+        Route::post('/settings/ai-hold', [\App\Http\Controllers\SettingsController::class, 'setAiHold'])->name('settings.aihold');
         Route::post('/settings/users', [\App\Http\Controllers\SettingsController::class, 'addUser'])->name('settings.users.add');
         Route::post('/settings/users/{user}/role', [\App\Http\Controllers\SettingsController::class, 'updateUserRole'])->name('settings.users.role');
     });

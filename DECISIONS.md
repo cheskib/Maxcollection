@@ -213,16 +213,6 @@ side, not PDF — files appear as they scan, validation stays instant,
 and the image file itself is the sacred original (the PDF import
 remains as the fallback path).
 
-## 2026-07-30 — Admin controls: scan collection, AI hold; bag-named archives
-
-Owner-directed: admins choose the scan-line collection in Settings —
-every batch processed after the selection lands there (forward-only;
-currently "Sruli's"). Admins can HOLD all AI processing: capture and
-validation keep flowing, queued items wait (not treated as stalled),
-and releasing the hold re-queues everything. Dropbox archive files
-are renamed to their bag number (BAG-000123/BAG-000123-01-front.jpg)
-so a file separated from its folder still announces its bag.
-
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
