@@ -291,6 +291,27 @@ Approved to build as the next milestone: ingest API + station tokens
 + Settings card + the agent, then the ingestion pipeline (ticket
 headers, front/back pairing, validation, silent flags).
 
+## 2026-07-30 — Ingestion pipeline: quiet folders become batches
+
+Stage 2 of the scan-station milestone. A folder is processed once it
+has received no new file for 20 seconds (every upload schedules a
+delayed check; the last file's check finds the folder quiet and
+acts). The first file is the bag ticket: the server reads its
+barcode with zbar (mechanical, no AI) and **the physical sticker is
+the truth** — a readable ticket wins over the folder name. Cards
+pair front/back in feed order; an orphaned side still becomes a
+single-image item so no scan is ever dropped. The batch binds to
+its bag at capture time (finalized immediately, archived to Dropbox
+automatically), lands in the default collection, is attributed to
+its station (per-station KPIs) and the admin who registered it, and
+every item queues for AI in the background, respecting the hold.
+Capture flags — silent by design, shown on the batch pages, caught
+physically at bagging in a later milestone: `ticket_mismatch`
+(ticket ≠ folder), `ticket_unverified` (unreadable ticket, bound by
+folder name), `bag_unregistered`, `bag_conflict` (bag already
+used), `missing_side` (odd side count), `no_bag`. Verified with a
+real Code 128 ticket image read by the production zbar path.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

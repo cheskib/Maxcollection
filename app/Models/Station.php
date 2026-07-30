@@ -12,7 +12,7 @@ class Station extends Model
 
     public const TYPE_COMICS = 'comics';
 
-    protected $fillable = ['name', 'type', 'token', 'token_hash', 'token_last4', 'last_seen_at', 'revoked_at'];
+    protected $fillable = ['name', 'type', 'token', 'token_hash', 'token_last4', 'last_seen_at', 'revoked_at', 'user_id'];
 
     protected function casts(): array
     {
@@ -32,7 +32,7 @@ class Station extends Model
      * Create a station with a fresh token. The plaintext token lives only
      * in the encrypted column; lookups go through the hash.
      */
-    public static function issue(string $name, string $type): self
+    public static function issue(string $name, string $type, ?int $userId = null): self
     {
         $token = 'mxc_'.Str::random(48);
 
@@ -42,6 +42,7 @@ class Station extends Model
             'token' => $token,
             'token_hash' => hash('sha256', $token),
             'token_last4' => substr($token, -4),
+            'user_id' => $userId,
         ]);
     }
 

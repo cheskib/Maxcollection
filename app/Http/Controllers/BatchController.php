@@ -149,8 +149,10 @@ class BatchController extends Controller
                     'source' => match ($batch->source) {
                         'pdf' => 'Scanner PDF',
                         'grid' => 'Grid photo',
+                        'scan' => 'Scan line',
                         default => 'Bulk photos',
                     },
+                    'captureFlag' => $batch->capture_flag,
                     'uploadedAt' => $batch->created_at->format('M j, Y g:i A'),
                     'itemCount' => $batch->items_count,
                     'processedCount' => $batch->processed_count,
@@ -197,6 +199,7 @@ class BatchController extends Controller
                     Item::STATUS_CAPTURED, Item::STATUS_QUEUED, Item::STATUS_PROCESSING,
                 ])->count(),
                 'bagCode' => $batch->barcode?->code,
+                'captureFlag' => $batch->capture_flag,
                 'finalizedAt' => $batch->finalized_at?->format('M j, Y g:i A'),
                 'archivedAt' => $batch->archived_at?->format('M j, Y g:i A'),
                 'archiveReady' => $batch->barcode !== null && $batch->archived_at === null

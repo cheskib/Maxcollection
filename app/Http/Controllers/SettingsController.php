@@ -155,7 +155,7 @@ class SettingsController extends Controller
             'type' => ['required', \Illuminate\Validation\Rule::in([\App\Models\Station::TYPE_CARDS, \App\Models\Station::TYPE_COMICS])],
         ]);
 
-        $station = \App\Models\Station::issue(trim($validated['name']), $validated['type']);
+        $station = \App\Models\Station::issue(trim($validated['name']), $validated['type'], $request->user()->id);
 
         return back()->with('status', "Station \"{$station->name}\" registered — download its config file below.");
     }

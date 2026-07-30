@@ -59,6 +59,11 @@ class IngestController extends Controller
             'path' => $path,
         ]);
 
+        // Debounced folder processing: every file schedules a check; the
+        // one scheduled by the folder's last file finds it quiet and acts.
+        \App\Jobs\ProcessIngestFolderJob::dispatch($station->id, $validated['folder'])
+            ->delay(now()->addSeconds(\App\Jobs\ProcessIngestFolderJob::DELAY_SECONDS));
+
         return response()->json(['status' => 'stored'], 201);
     }
 }

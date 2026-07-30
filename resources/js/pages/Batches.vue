@@ -6,6 +6,7 @@ defineProps<{
         id: number;
         label: string;
         source: string;
+        captureFlag: string | null;
         uploadedAt: string;
         itemCount: number;
         processedCount: number;
@@ -40,7 +41,12 @@ defineProps<{
                     <p class="min-w-0 truncate font-semibold text-gray-900">{{ batch.label }}</p>
                     <span class="ml-2 shrink-0 text-sm font-semibold text-blue-600">View</span>
                 </div>
-                <p class="mt-1 text-sm text-gray-500">{{ batch.source }} · {{ batch.uploadedAt }}</p>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ batch.source }} · {{ batch.uploadedAt }}
+                    <span v-if="batch.captureFlag" class="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">
+                        🚩 {{ batch.captureFlag.replace(/_/g, ' ') }}
+                    </span>
+                </p>
                 <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     <span class="text-gray-700">{{ batch.itemCount }} item(s)</span>
                     <span class="text-green-700">{{ batch.processedCount }} processed</span>

@@ -15,6 +15,7 @@ class Batch extends Model
     protected $fillable = [
         'user_id', 'source', 'label', 'content_hash', 'converted_at',
         'barcode_id', 'status', 'finalized_at', 'archived_at', 'storage_section_id',
+        'station_id', 'capture_flag',
     ];
 
     protected function casts(): array
