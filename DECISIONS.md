@@ -173,6 +173,17 @@ is closed out. Three flagged bags in a row raise an alarm on the KPI
 dashboard and notify the admin. Bagging becomes the primary flag
 catch; the boxing intercept remains as backstop.
 
+## 2026-07-29 — Validation immediate, AI deferred
+
+Owner ruling: the moment a batch's scanning completes, the mechanical
+checks run immediately (bag readable/registered, front + back for
+every card) — milliseconds, no AI — so the verdict exists before the
+bin reaches bagging, the only window where a missing side is cheap to
+fix. AI recognition is deliberately not urgent: it queues in the
+background at low priority; the images already contain everything and
+AI mistakes are fixed later by editing metadata. Validation follows
+the cards; AI follows the images.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
