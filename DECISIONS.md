@@ -269,6 +269,28 @@ Dropbox OAuth callback added alongside the old one. The original
 maxcollection-production.up.railway.app address intentionally keeps
 working — retiring it would break nothing but gains nothing.
 
+## 2026-07-30 — Scan-station file pipeline (owner-directed)
+
+Designed from the card scanner operator's perspective. PaperStream
+(configured once, never controlled by our code) outputs one JPEG per
+side into a **per-bag directory** created at scan time by barcode job
+separation — the ticket that feeds first names the folder; the server
+verifies every folder against the ticket image inside it and silently
+flags mismatches (flat-stream server-side slicing remains the
+fallback). A single-executable **uploader agent** — the only custom
+code on a station PC — watches the folders and pushes files over
+HTTPS with checksums; nothing is deleted without server
+acknowledgment, retries are idempotent, and an agent crash never
+stops the physical line. Agents authenticate with **station tokens**,
+one per station and typed by line (Cards / Comics) so files route to
+the right pipeline, revocable individually, generated and downloaded
+from a Settings "Scan Station" card. Storage roles: Railway = working
+copy, Dropbox = permanent archive (auto-filled per finalized batch);
+a future milestone prunes archived originals from the Railway volume.
+Approved to build as the next milestone: ingest API + station tokens
++ Settings card + the agent, then the ingestion pipeline (ticket
+headers, front/back pairing, validation, silent flags).
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
