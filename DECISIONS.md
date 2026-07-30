@@ -151,7 +151,11 @@ a back. Failures FLAG the batch for admin attention — the line never
 stops, the bin proceeds to bagging (the physical sticker keeps the
 physical bag correct), and the scanning operator is never notified.
 Admins resolve flags from their own queue. Supersedes the earlier
-stop-the-line header validation.
+stop-the-line header validation. Follow-up ruling: the flag is caught
+physically at the boxing station — scanning a flagged bag plays the
+problem tone, refuses the bag, and locks further scanning until the
+packer confirms the bag was set aside (logged). Only capture-health
+flags intercept; needs-review bags pass freely.
 
 ## 2026-07-24 — Documentation stored in repository
 
