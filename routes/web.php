@@ -111,6 +111,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/revalue-all', [\App\Http\Controllers\ReprocessController::class, 'values'])->name('revalue.all');
         Route::get('/export', [\App\Http\Controllers\ExportController::class, 'csv'])->name('export');
         Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports');
+        Route::get('/diagnose', [\App\Http\Controllers\DiagnoseController::class, 'index'])->name('diagnose');
+        Route::post('/diagnose/scan', [\App\Http\Controllers\DiagnoseController::class, 'scan'])->name('diagnose.scan');
+        Route::get('/diagnose/{batch}', [\App\Http\Controllers\DiagnoseController::class, 'show'])->name('diagnose.show');
+        Route::post('/diagnose/{batch}/resolve', [\App\Http\Controllers\DiagnoseController::class, 'resolve'])->name('diagnose.resolve');
 
         Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
         Route::get('/settings/dropbox/connect', [\App\Http\Controllers\DropboxController::class, 'connect'])->name('settings.dropbox.connect');

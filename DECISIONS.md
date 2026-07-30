@@ -330,6 +330,27 @@ done, set aside, average seconds) show live; every event is recorded
 per bagger for KPIs. The Diagnose UI and rescan permission remain
 the next milestone — set-aside bags wait for an admin until then.
 
+## 2026-07-30 — Diagnose UI: mandatory resolution, tombstones, and
+the rescan cycle
+
+Implements the owner's diagnosis spec. Scan-first (admin only): scan
+the set-aside bag → its review page (flag reason, station, every
+captured image so a bad card can be spotted and pulled, earlier
+attempts on the same page). Exactly three resolutions, each logged
+with who/when/optional note: **Confirmed** (flag clears, bag flows
+normally — requires a bound bag); **Deleted → rescan** (items and
+images removed, the batch row stays as the tombstone of the attempt,
+and the bag number is released — the ONE number permitted to return
+to the scan line; when it rescans, the pipeline links the tombstone
+forward so both captures live on one page, superseded marked, never
+deleted); **Deleted → replaced** (same, plus the sticker is VOIDED
+with reason — the first live state of the sticker ledger; a voided
+number is refused by the pipeline and by storage forever). The
+"deleted" attempt's items are physically removed so nothing
+double-counts; the batch tombstone preserves the record of what
+happened, satisfying both "it's deleted" and "we keep a record of
+both scans".
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

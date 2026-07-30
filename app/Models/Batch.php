@@ -16,6 +16,7 @@ class Batch extends Model
         'user_id', 'source', 'label', 'content_hash', 'converted_at',
         'barcode_id', 'status', 'finalized_at', 'archived_at', 'storage_section_id',
         'station_id', 'capture_flag',
+        'resolution', 'resolution_note', 'resolved_by', 'resolved_at', 'superseded_by_batch_id',
     ];
 
     protected function casts(): array
@@ -24,6 +25,7 @@ class Batch extends Model
             'converted_at' => 'datetime',
             'finalized_at' => 'datetime',
             'archived_at' => 'datetime',
+            'resolved_at' => 'datetime',
         ];
     }
 
@@ -40,6 +42,11 @@ class Batch extends Model
     public function barcode(): BelongsTo
     {
         return $this->belongsTo(Barcode::class);
+    }
+
+    public function station(): BelongsTo
+    {
+        return $this->belongsTo(Station::class);
     }
 
     public function storageSection(): BelongsTo

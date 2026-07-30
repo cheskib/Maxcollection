@@ -339,6 +339,9 @@ class StorageService
         if ($barcode->type !== Barcode::TYPE_BAG) {
             return $this->error("{$code} is not a bag barcode.");
         }
+        if ($barcode->voided_at !== null) {
+            return $this->error("{$code} was voided ({$barcode->void_reason}) — this sticker must not be used.");
+        }
 
         $taken = Batch::where('barcode_id', $barcode->id)->where('id', '!=', $batch->id)->first();
         if ($taken !== null) {
