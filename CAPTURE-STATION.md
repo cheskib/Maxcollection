@@ -593,6 +593,82 @@ keyboard and mouse are backup only, never production motions):
 - **Boxing/storage**: PC + monitor + barcode gun + speakers (the
   existing web packing screen).
 
+## The File Pipeline — Scan Station to Server to Archive
+(owner rulings, 2026-07-30)
+
+Designed in a walkthrough from the card scanner operator's
+perspective. The chain is: **PaperStream → per-bag folder → uploader
+agent → Railway (working copy) → Dropbox (permanent archive)**.
+
+### Per-bag directories at scan time
+
+The fi-8170's PaperStream profile uses **barcode job separation**:
+every BAG ticket that feeds through starts a new output directory
+named for the bag, and the following card images land inside it —
+`C:\MaxCollection\scans\BAG-000123\001-front.jpg …`. The local disk,
+the server, and the Dropbox archive all share the same
+folder-per-bag structure. The ticket image is always the first file
+in its folder, and the server **verifies rather than trusts**: on
+ingest it reads the ticket's barcode itself and checks it matches
+the directory name; any mismatch (misfeed, unreadable ticket) is a
+silent flag, never a stopped line. Fallback if the bundled
+PaperStream cannot separate: flat output stream, and the server does
+the slicing by recognizing ticket images (ruling #108) — verify the
+profile capability as the first test when the scanner arrives.
+
+### No scanner-control software
+
+We write nothing that talks to the fi-8170. PaperStream owns the
+hardware entirely — scan button, duplex, jams, error dialogs — and
+is configured once. Everything we build starts at "a file appeared
+in a folder". Consequence: jam messages appear in PaperStream's own
+window on the station monitor, alongside our status page; a unified
+screen would require Fujitsu SDK integration and was declined.
+
+### The uploader agent
+
+The only custom code on a station PC: a single self-contained
+Windows executable plus a config file. It watches the scans folder,
+waits for each JPEG to finish writing, and pushes it over HTTPS to
+the Collection system with its bag folder, filename, and checksum.
+On confirmed receipt the file moves to a local `sent\` folder (the
+on-site backup); on any failure it retries forever with backoff —
+**nothing is ever deleted without the server's acknowledgment**.
+Checksums make retries idempotent. The agent never touches the
+scanner, opens no inbound ports, and its crash never stops the
+physical line — files queue locally until it returns. A tray icon
+shows live status (connected / uploading n / holding n, server
+unreachable).
+
+Distribution is from the app itself: an admin on the station PC
+opens Settings → Scan Station, generates a named station token,
+downloads the pre-configured agent, drops both files in
+`C:\MaxCollection\`, runs it once, and accepts the add-to-startup
+prompt. Updates are the same download again; no silent auto-update
+on the production floor.
+
+### Station tokens
+
+One token per station, **typed by line**: Cards (scan desk) or
+Comics (photo station). The type routes arriving files into the
+right pipeline — card files enter ticket-header/pairing/validation,
+comic frames enter the panel pipeline; files on the wrong type of
+token are quarantined with a silent flag. Tokens are individually
+revocable in Settings and stamp every file with its origin station,
+providing the per-station leg of the KPI dashboard (badges provide
+the per-operator leg). The same agent binary serves every station;
+only the token differs.
+
+### Storage roles
+
+Railway holds the **working copy** (what the AI reads and screens
+display). Dropbox is the **permanent archive**, filled automatically
+per finalized batch. Long term the roles invert in emphasis: the
+Railway volume cannot hold ~600 GB of originals, so a future
+milestone prunes archived originals from Railway (keeping display
+sizes), with Dropbox as the collection's permanent home. Local
+`sent\` folders are a third, optional cushion the owner may age out.
+
 ## Sticker Accounting (owner requirement, 2026-07-29)
 
 When the system is done, there is a **full accounting of every
