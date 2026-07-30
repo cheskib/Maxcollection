@@ -608,6 +608,19 @@ bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
    not a new flag. Pulled cards go to the damaged pile or through a
    later bin as ordinary items.
 
+   **The Diagnose UI** (owner spec): scan-first — the admin scans the
+   set-aside bag and its diagnosis page opens directly: flag reason,
+   attempt images, counts, who captured it and who set it aside.
+   Resolution is MANDATORY and every outcome records who/when/what:
+   (1) **Confirmed** — fixed digitally, flag clears, bag boxes
+   normally; (2) **Deleted → rescan** — capture superseded (kept as
+   attempt 1), bag number re-enters the scan queue, physical bag back
+   to the scanner minus any pulled cards; (3) **Deleted → replaced** —
+   capture superseded and the bag identity retired, cards go through
+   under a fresh ticket, old number's record points at its
+   replacement. No silent exits: only this screen clears a flag, and
+   the packer's scan-lock keeps unresolved bags out of boxes.
+
    **Sounds are load-bearing**: the good beep and the problem tone
    must be audibly distinct, every station needs verified audio, and
    session start includes a sound check (a "Test sounds" control on
