@@ -538,6 +538,28 @@ Touchscreen kiosk  ←WebSocket/API→  Windows controller PC
   training, clear instructions, minimal touches, industrial feel,
   expandability.
 
+## Sticker Accounting (owner requirement, 2026-07-29)
+
+When the system is done, there is a **full accounting of every
+sticker ever printed**. Every code resolves to exactly one state at
+all times:
+
+- **Printed, unused** — on a sheet or a labeled empty; aging visible
+  ("printed 6 months ago, never scanned").
+- **In service** — bags: bound to a batch, with physical status
+  (loose / boxed / set-aside / relocated); boxes: open or completed;
+  dividers: placed in a section of a box.
+- **Retired** — a replaced bag number, pointing at its successor.
+- **Voided** — damaged, misprinted, or lost labels are explicitly
+  voided by an admin WITH a reason; the only way a code leaves
+  circulation without being used.
+
+Deliverable: a **Sticker Ledger** on the admin Reports page — counts
+by type and state, drill-down to any code's full life story, and an
+exceptions list (aged unused labels, codes scanned but never printed,
+voids by reason). The invariant it proves daily: printed minus
+accounted equals zero.
+
 ## Open Kiosk Scenarios (parked by owner — walk through later)
 
 Questions to resolve before kiosk implementation; none block current
