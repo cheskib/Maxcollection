@@ -136,6 +136,31 @@ class SettingsController extends Controller
     }
 
     /**
+     * Pause or resume all AI work. Capture and validation keep flowing
+     * (they follow the cards); only recognition waits. Releasing the
+     * hold re-dispatches everything still queued.
+     */
+    public function toggleAiHold(Request $request): RedirectResponse
+    {
+        $hold = $request->boolean('hold');
+
+        Setting::updateOrCreate(['key' => 'ai_hold'], ['value' => $hold ? '1' : '0']);
+
+        if (! $hold) {
+            $queued = \App\Models\ProcessingJob::where('status', \App\Models\ProcessingJob::STATUS_QUEUED)->pluck('id');
+            foreach ($queued as $jobId) {
+                \App\Jobs\ProcessItemJob::dispatch($jobId);
+            }
+
+            return back()->with('status', $queued->count() > 0
+                ? "AI processing resumed — {$queued->count()} waiting item(s) re-queued."
+                : 'AI processing resumed.');
+        }
+
+        return back()->with('status', 'AI processing is on hold. Scanning and validation continue; nothing goes to the AI until resumed.');
+    }
+
+    /**
      * Create a login: admins manage the collection; scanners digitize
      * and pack only.
      */
