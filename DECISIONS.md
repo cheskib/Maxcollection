@@ -184,6 +184,20 @@ background at low priority; the images already contain everything and
 AI mistakes are fixed later by editing metadata. Validation follows
 the cards; AI follows the images.
 
+## 2026-07-30 — Scan-only floor: set-aside cards, badge identity,
+default collection, shelf barcodes
+
+Owner rulings completing the floor design: set-aside is confirmed by
+scanning a laminated SET-ASIDE card (bagging needs gun + monitor +
+speakers, no touchscreen); employee identity is a badge scan (OP-
+cards in the registry; sign in/out by scan at every station, badge
+feeds through the fi-8170 at the scan desk; per-operator KPIs
+restored); all scanned batches land in one admin-managed default
+collection (currently "Sruli's"); shelves get one SHF- barcode each
+as soon as the physical shelves exist, completing the card → bag →
+box → divider → shelf chain. All station PCs/monitors come from
+existing stock.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.

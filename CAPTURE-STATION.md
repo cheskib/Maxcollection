@@ -558,6 +558,41 @@ Touchscreen kiosk  ←WebSocket/API→  Windows controller PC
   training, clear instructions, minimal touches, industrial feel,
   expandability.
 
+## Floor Rulings — Scan-Only Operation (owner, 2026-07-30)
+
+Four rulings that complete the floor design; everything is a scan:
+
+1. **Set-aside is confirmed by scan.** A laminated SET-ASIDE barcode
+   card lives at the side pile: red verdict → bag onto the pile →
+   scan the card → next bin. The bagging station therefore needs no
+   touchscreen: **barcode gun + plain monitor + speakers** (PC from
+   stock). The confirmation happens physically at the pile.
+2. **Identity is a badge scan.** Every employee has a registered
+   badge card (`OP-…`, tracked in the Sticker Ledger): scan to sign
+   in at a station, scan again (or the shared LOGOUT card) to sign
+   out. At the scan desk the badge feeds through the fi-8170 like a
+   ticket. Per-operator KPIs work at every station; sessions and
+   breaks fall out of the sign-in/out timestamps; no keyboards ever.
+3. **One default capture collection.** Every batch arriving from the
+   scan folder lands in the admin-managed default collection
+   (currently "Sruli's"). Changing the default or moving batches is
+   admin work in the web app — no scanner profiles, no folder
+   juggling.
+4. **Shelves are barcoded when they exist.** One `SHF-…` label per
+   shelf, jumbo/distance-readable. Putaway = scan shelf, scan each
+   box onto it; moves rescan; a shelf audit is scan-shelf-then-
+   scan-contents. Completes the chain: card → bag → box → divider →
+   shelf. Activates when the physical shelves arrive.
+
+Station hardware (all PCs/monitors/keyboards from existing stock;
+keyboard and mouse are backup only, never production motions):
+- **Card scan**: controller PC + monitor + fi-8170 + speakers.
+- **Bagging**: PC + monitor + barcode gun + speakers + SET-ASIDE and
+  LOGOUT cards.
+- **Comic camera**: controller PC + kiosk screen + camera + speakers.
+- **Boxing/storage**: PC + monitor + barcode gun + speakers (the
+  existing web packing screen).
+
 ## Sticker Accounting (owner requirement, 2026-07-29)
 
 When the system is done, there is a **full accounting of every
