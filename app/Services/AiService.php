@@ -375,6 +375,17 @@ For sports cards, be careful with years and special cards:
   "Reprint", "Highlights", "Checklist", "League Leaders". Use "Base" for a
   regular card from the main set.
 
+For comic books:
+- "year" is the cover date year (the year printed on the cover or in the
+  indicia), not the year of any story being reprinted.
+- "format" is the publication format, one of exactly: "Regular Issue",
+  "Annual", "Special", "One-Shot", "Giant-Size", "Graphic Novel",
+  "Trade Paperback", "Magazine". Use "Regular Issue" for an ordinary
+  numbered issue. Null when unclear.
+- "genre" is the dominant genre, one of exactly: "Superhero", "Horror",
+  "Sci-Fi", "Western", "Romance", "War", "Humor", "Crime". Null when no
+  single genre clearly applies.
+
 Report an overall confidence score from 0 to 100 for the identification and
 extracted metadata as a whole.
 

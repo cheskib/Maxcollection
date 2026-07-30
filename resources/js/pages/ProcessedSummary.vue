@@ -6,6 +6,7 @@ const props = defineProps<{
     category: string | null;
     categoryLabel: string | null;
     sport: string | null;
+    publisher: string | null;
     collection: string | null;
     collectionName: string | null;
     value: { from: number | null; to: number | null };
@@ -14,6 +15,7 @@ const props = defineProps<{
     groupField: string | null;
     groups: { value: string; count: number }[];
     cardTypes: { value: string; count: number }[];
+    ages: { value: string; count: number }[];
     collections: {
         named: { id: number; name: string; count: number }[];
         unassigned: number;
@@ -35,6 +37,7 @@ function listUrl(extra: Record<string, string> = {}): string {
     if (props.collection) params.set('collection', props.collection);
     if (props.category) params.set('category', props.category);
     if (props.sport) params.set('sport', props.sport);
+    if (props.publisher) params.set('publisher', props.publisher);
     for (const [key, value] of Object.entries(extra)) params.set(key, value);
     const query = params.toString();
     return query ? `/items?${query}` : '/items';
@@ -62,11 +65,11 @@ function money(from: number | null, to: number | null): string | null {
     <div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 py-8">
         <div class="flex items-center justify-between">
             <h1 class="min-w-0 truncate text-2xl font-bold text-gray-900">
-                {{ sport ?? categoryLabel ?? collectionName ?? 'Processed Items' }}
+                {{ sport ?? publisher ?? categoryLabel ?? collectionName ?? 'Processed Items' }}
             </h1>
             <div class="ml-3 flex shrink-0 gap-4">
                 <Link
-                    v-if="sport && category"
+                    v-if="(sport || publisher) && category"
                     :href="summaryUrl({ category })"
                     class="text-sm font-semibold text-blue-600"
                 >
@@ -167,9 +170,9 @@ function money(from: number | null, to: number | null): string | null {
         </template>
 
         <!-- Level 2: a category is chosen; break down by its natural group
-             (sport, publisher, or country). Sports drill one level deeper;
-             the others open their filtered list directly. -->
-        <template v-else-if="!sport">
+             (sport, publisher, or country). Sports and comics drill one
+             level deeper; the others open their filtered list directly. -->
+        <template v-else-if="!sport && !publisher">
             <template v-if="groups.length && groupField">
                 <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">By {{ groupField.replace('_', ' ') }}</p>
                 <div class="mt-2 divide-y divide-gray-100 rounded-xl bg-white shadow-sm">
@@ -179,8 +182,35 @@ function money(from: number | null, to: number | null): string | null {
                         :href="
                             groupField === 'sport'
                                 ? summaryUrl({ category, sport: row.value })
-                                : listUrl({ [groupField]: row.value })
+                                : groupField === 'publisher'
+                                  ? summaryUrl({ category, publisher: row.value })
+                                  : listUrl({ [groupField]: row.value })
                         "
+                        class="flex items-center justify-between p-4 hover:bg-gray-50"
+                    >
+                        <p class="text-sm text-gray-700">{{ row.value }}</p>
+                        <span class="font-bold text-gray-900">{{ row.count }} ›</span>
+                    </Link>
+                </div>
+            </template>
+            <Link
+                :href="listUrl()"
+                class="mt-6 block rounded-xl bg-blue-600 p-4 text-center font-semibold text-white shadow-sm hover:bg-blue-700"
+            >
+                View all {{ total }} item(s)
+            </Link>
+        </template>
+
+        <!-- Level 3 for comics: a publisher is chosen; break down by age
+             (derived from the year, oldest era first) -->
+        <template v-else-if="publisher">
+            <template v-if="ages.length">
+                <p class="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-400">By age</p>
+                <div class="mt-2 divide-y divide-gray-100 rounded-xl bg-white shadow-sm">
+                    <Link
+                        v-for="row in ages"
+                        :key="row.value"
+                        :href="listUrl({ age: row.value })"
                         class="flex items-center justify-between p-4 hover:bg-gray-50"
                     >
                         <p class="text-sm text-gray-700">{{ row.value }}</p>

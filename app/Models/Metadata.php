@@ -26,7 +26,7 @@ class Metadata extends Model
             'rookie_card', 'autograph', 'original_year',
             'parallel', 'serial_number',
         ],
-        'comic_book' => ['title', 'issue_number', 'publisher', 'year', 'variant', 'condition_notes'],
+        'comic_book' => ['title', 'issue_number', 'publisher', 'year', 'format', 'genre', 'variant', 'condition_notes'],
         'coin' => ['country', 'denomination', 'year', 'mint_mark', 'composition', 'condition_notes'],
         'stamp' => ['country', 'issue_name', 'year', 'color', 'denomination', 'condition_notes'],
     ];
@@ -53,6 +53,8 @@ class Metadata extends Model
         'title' => 'Title',
         'issue_number' => 'Issue Number',
         'publisher' => 'Publisher',
+        'format' => 'Format',
+        'genre' => 'Genre',
         'variant' => 'Variant',
         'country' => 'Country',
         'denomination' => 'Denomination',
@@ -62,6 +64,41 @@ class Metadata extends Model
         'color' => 'Color',
         'condition_notes' => 'Condition Notes',
     ];
+
+    /**
+     * Comic book ages by year range (owner-approved boundaries). Age is
+     * always derived from the year — never stored — so correcting a year
+     * automatically corrects the age. Ordered oldest first for display.
+     *
+     * @var array<string, array{string, string}>
+     */
+    public const COMIC_AGE_YEARS = [
+        'Golden Age' => ['1938', '1955'],
+        'Silver Age' => ['1956', '1969'],
+        'Bronze Age' => ['1970', '1984'],
+        'Copper Age' => ['1985', '1991'],
+        'Modern Age' => ['1992', '9999'],
+    ];
+
+    /**
+     * The comic age a year falls into, or null when the year is missing,
+     * malformed, or before the Golden Age began.
+     */
+    public static function comicAge(?string $year): ?string
+    {
+        if ($year === null || preg_match('/^\d{4}$/', trim($year)) !== 1) {
+            return null;
+        }
+
+        $number = trim($year);
+        foreach (self::COMIC_AGE_YEARS as $age => [$from, $to]) {
+            if ($number >= $from && $number <= $to) {
+                return $age;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * The owner's manual money fields — the value range, what was paid,
@@ -80,7 +117,7 @@ class Metadata extends Model
         'player_name', 'team', 'sport', 'year', 'manufacturer', 'set_name',
         'card_type', 'original_year',
         'card_number', 'rookie_card', 'parallel', 'serial_number', 'autograph',
-        'title', 'issue_number', 'publisher', 'variant',
+        'title', 'issue_number', 'publisher', 'format', 'genre', 'variant',
         'country', 'denomination', 'mint_mark', 'composition', 'issue_name', 'color',
         'condition_notes',
     ];
