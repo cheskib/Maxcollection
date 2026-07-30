@@ -11,6 +11,7 @@ const props = defineProps<{
         uploadedAt: string;
         pendingCount: number;
         bagCode: string | null;
+        captureFlag: string | null;
         finalizedAt: string | null;
         archivedAt: string | null;
         archiveReady: boolean;
@@ -112,6 +113,10 @@ onUnmounted(stopPolling);
             <Link href="/batches" class="ml-2 shrink-0 text-sm font-semibold text-blue-600">All batches</Link>
         </div>
         <p class="mt-1 text-sm text-gray-500">Uploaded {{ batch.uploadedAt }} · {{ items.length }} item(s)</p>
+
+        <p v-if="batch.captureFlag" class="mt-3 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">
+            🚩 Capture flag: {{ batch.captureFlag.replace(/_/g, ' ') }} — review before this bag is boxed.
+        </p>
 
         <p v-if="page.props.flash.status" class="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
             {{ page.props.flash.status }}
