@@ -79,6 +79,14 @@ const CARD_TYPES = [
     'Future Stars', 'Checklist', 'Traded', 'Insert',
 ];
 
+// Comic book formats and genres (owner-approved lists). Age is derived
+// from the year automatically, so it is never edited.
+const COMIC_FORMATS = [
+    'Regular Issue', 'Annual', 'Special', 'One-Shot', 'Giant-Size',
+    'Graphic Novel', 'Trade Paperback', 'Magazine',
+];
+const COMIC_GENRES = ['Superhero', 'Horror', 'Sci-Fi', 'Western', 'Romance', 'War', 'Humor', 'Crime'];
+
 // Original Card Year only makes sense on reprint-style cards, and a
 // checklist has no player or team.
 const REPRINT_TYPES = ['reprint', 'turn back the clock', 'retro'];
@@ -101,6 +109,8 @@ function optionsFor(field: string): string[] | null {
         : field === 'card_type' ? CARD_TYPES
         : field === 'rookie_card' || field === 'autograph' ? YES_NO
         : (field === 'year' || field === 'original_year') && form.category === 'sports_card' ? YEARS
+        : field === 'format' ? COMIC_FORMATS
+        : field === 'genre' ? COMIC_GENRES
         : null;
     if (!base) return null;
     const current = (form as Record<string, any>)[field];

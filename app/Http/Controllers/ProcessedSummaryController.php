@@ -33,6 +33,9 @@ class ProcessedSummaryController extends Controller
     {
         $category = trim($request->string('category')->toString());
         $sport = trim($request->string('sport')->toString());
+        // Comics drill Publisher → Age (owner ruling); a chosen publisher
+        // is the comics counterpart of a chosen sport.
+        $publisher = trim($request->string('publisher')->toString());
         // Optional collection scope: the same drill-down, inside one
         // collection ('unassigned' for cards without one).
         $collection = trim($request->string('collection')->toString());
@@ -49,7 +52,8 @@ class ProcessedSummaryController extends Controller
                 ->when($collection === 'unassigned', fn ($items) => $items->whereNull('collection_id')),
         )
             ->when($category !== '', fn ($query) => $query->where('category', $category))
-            ->when($sport !== '', fn ($query) => $query->where('sport', $sport));
+            ->when($sport !== '', fn ($query) => $query->where('sport', $sport))
+            ->when($publisher !== '', fn ($query) => $query->where('publisher', $publisher));
 
         $countBy = function (string $field) use ($processedMetadata): array {
             return $processedMetadata()
@@ -71,6 +75,7 @@ class ProcessedSummaryController extends Controller
             'category' => $category !== '' ? $category : null,
             'categoryLabel' => $category !== '' ? (new Metadata(['category' => $category]))->categoryLabel() : null,
             'sport' => $sport !== '' ? $sport : null,
+            'publisher' => $publisher !== '' ? $publisher : null,
             'collection' => $collection !== '' ? $collection : null,
             'collectionName' => $collection === 'unassigned' ? 'Unassigned' : $collectionModel?->name,
             'value' => [
@@ -82,6 +87,7 @@ class ProcessedSummaryController extends Controller
             'groupField' => null,
             'groups' => [],
             'cardTypes' => [],
+            'ages' => [],
             'collections' => ['named' => [], 'unassigned' => 0],
             'sets' => [],
             'duplicates' => 0,
@@ -93,6 +99,25 @@ class ProcessedSummaryController extends Controller
             return Inertia::render('ProcessedSummary', [
                 ...$shared,
                 'cardTypes' => $countBy('card_type'),
+            ]);
+        }
+
+        // Level 3 for comics: a publisher is chosen — break it down by
+        // age. Age derives from the year, so bucket the year counts.
+        if ($publisher !== '') {
+            $byAge = collect($countBy('year'))
+                ->groupBy(fn (array $row) => Metadata::comicAge($row['value']) ?? 'Unknown Age')
+                ->map(fn ($rows) => $rows->sum('count'));
+
+            $ages = collect(array_keys(Metadata::COMIC_AGE_YEARS))
+                ->map(fn (string $age) => ['value' => $age, 'count' => (int) ($byAge[$age] ?? 0)])
+                ->filter(fn (array $row) => $row['count'] > 0)
+                ->values()
+                ->all();
+
+            return Inertia::render('ProcessedSummary', [
+                ...$shared,
+                'ages' => $ages,
             ]);
         }
 

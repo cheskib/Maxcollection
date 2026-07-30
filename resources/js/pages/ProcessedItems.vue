@@ -21,7 +21,9 @@ function money(from: number | null, to: number | null): string | null {
     return fmt((from ?? to) as number);
 }
 
-type FilterField = 'category' | 'sport' | 'year' | 'team' | 'manufacturer' | 'card_type' | 'publisher' | 'country';
+type FilterField =
+    | 'category' | 'sport' | 'year' | 'team' | 'manufacturer' | 'card_type'
+    | 'publisher' | 'country' | 'format' | 'genre' | 'age';
 
 const props = defineProps<{
     items: ProcessedItem[];
@@ -51,6 +53,9 @@ const FILTER_LABELS: Record<FilterField, string> = {
     card_type: 'Card Type',
     publisher: 'Publisher',
     country: 'Country',
+    format: 'Format',
+    genre: 'Genre',
+    age: 'Comic Age',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -88,7 +93,10 @@ function goToPage(page: number): void {
 }
 
 function clearFilters(): void {
-    filters.value = { category: '', sport: '', year: '', team: '', manufacturer: '', card_type: '', publisher: '', country: '' };
+    filters.value = {
+        category: '', sport: '', year: '', team: '', manufacturer: '', card_type: '',
+        publisher: '', country: '', format: '', genre: '', age: '',
+    };
     confidenceBelow.value = '';
     apply();
 }

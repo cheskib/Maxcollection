@@ -22,7 +22,7 @@ class ProcessedItemsController extends Controller
     /**
      * Metadata fields that can be filtered by exact value.
      */
-    private const FILTER_FIELDS = ['category', 'sport', 'year', 'team', 'manufacturer', 'card_type', 'publisher', 'country'];
+    private const FILTER_FIELDS = ['category', 'sport', 'year', 'team', 'manufacturer', 'card_type', 'publisher', 'country', 'format', 'genre'];
 
     public function index(Request $request): Response
     {
@@ -34,6 +34,11 @@ class ProcessedItemsController extends Controller
         foreach (self::FILTER_FIELDS as $field) {
             $filters[$field] = $request->string($field)->toString();
         }
+
+        // Comic age is derived, not stored: the filter translates to the
+        // age's year range (Metadata::COMIC_AGE_YEARS).
+        $age = $request->string('age')->toString();
+        $ageYears = Metadata::COMIC_AGE_YEARS[$age] ?? null;
 
         $keyOnly = $request->boolean('key');
         // Review triage: only cards the AI was less sure about.
@@ -51,6 +56,10 @@ class ProcessedItemsController extends Controller
                     $query->whereHas('metadata', fn ($metadata) => $metadata->where($field, $value));
                 }
             })
+            ->when($ageYears !== null, fn ($query) => $query->whereHas(
+                'metadata',
+                fn ($metadata) => $metadata->whereBetween('year', $ageYears),
+            ))
             ->when($search !== '', function ($query) use ($search) {
                 $query->whereHas('metadata', function ($metadata) use ($search) {
                     $metadata->where(function ($where) use ($search) {
@@ -126,8 +135,8 @@ class ProcessedItemsController extends Controller
             'search' => $search,
             'collection' => $collection,
             'collections' => Collection::orderBy('name')->get(['id', 'name'])->all(),
-            'filters' => $filters,
-            'filterOptions' => $options,
+            'filters' => [...$filters, 'age' => $ageYears !== null ? $age : ''],
+            'filterOptions' => [...$options, 'age' => array_keys(Metadata::COMIC_AGE_YEARS)],
         ]);
     }
 }

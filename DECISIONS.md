@@ -213,6 +213,25 @@ side, not PDF — files appear as they scan, validation stays instant,
 and the image file itself is the sacred original (the PDF import
 remains as the fallback path).
 
+## 2026-07-30 — Comic book categories: Age, Format, Genre;
+Publisher → Age drill-down
+
+Owner-approved comics organization. Three new axes: **Age**, derived
+automatically from the cover-date year (Golden 1938–1955, Silver
+1956–1969, Bronze 1970–1984, Copper 1985–1991, Modern 1992+) — never
+stored, so correcting a year corrects the age; **Format** (Regular
+Issue, Annual, Special, One-Shot, Giant-Size, Graphic Novel, Trade
+Paperback, Magazine); and **Genre** (Superhero, Horror, Sci-Fi,
+Western, Romance, War, Humor, Crime) — both AI-extracted from the
+cover, editable as dropdowns, filterable on the items list. The comics
+browse drill is **Publisher → Age** (owner's chosen order): pick the
+publisher, then the era, then the filtered list. Comics with a year
+before 1938 or no year fall outside the age buckets and remain
+reachable through "View all". The comics **key-issues watchlist**
+(flag known key books like Amazing Fantasy 15 on sight — the comics
+counterpart of the card key-names list) is approved in principle and
+parked on the wishlist for a future milestone.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
