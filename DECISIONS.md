@@ -155,7 +155,12 @@ stop-the-line header validation. Follow-up ruling: the flag is caught
 physically at the boxing station — scanning a flagged bag plays the
 problem tone, refuses the bag, and locks further scanning until the
 packer confirms the bag was set aside (logged). Only capture-health
-flags intercept; needs-review bags pass freely.
+flags intercept; needs-review bags pass freely. Rescan cycle: the
+set-aside bag's number returns to the scan queue and is the one bag
+number permitted to scan again as a batch header; both captures are
+kept on one page (the superseded one marked, never deleted). Sounds
+are load-bearing: distinct good/problem tones, verified speakers at
+every station, sound check at session start.
 
 ## 2026-07-24 — Documentation stored in repository
 

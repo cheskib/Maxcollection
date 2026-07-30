@@ -589,6 +589,20 @@ bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
    to the admin pile and boxes normally once its flag is resolved.
    Only capture-health flags intercept — bags whose cards merely need
    AI review pass through freely (review never blocks anything).
+
+   **The rescan cycle** (owner ruling): a set-aside bag's number goes
+   back into the scan queue and the physical bag returns to the
+   scanner as a normal bin. The used-bag guard flips with state: a
+   bag number in set-aside state is the ONE bag allowed to scan again
+   as a batch header; all other reuse stays rejected. Both captures
+   are kept and shown on one page — attempt 1 (flagged, with reason
+   and images) and attempt 2 (clean) — the superseded capture is
+   marked, never deleted.
+
+   **Sounds are load-bearing**: the good beep and the problem tone
+   must be audibly distinct, every station needs verified audio, and
+   session start includes a sound check (a "Test sounds" control on
+   the packing screen and later on every kiosk).
 4. **Bagging**: peel the sticker from the carrier onto the 4×6 bag,
    cards in, seal. The batch was already bound at scan time — bagging
    is purely physical. Empty bin returns to prep.
