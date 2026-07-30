@@ -27,6 +27,12 @@ class ProcessItemJob implements ShouldQueue
 
     public function handle(ProcessingService $service): void
     {
+        // Admin hold: the item stays queued and its job row stays open;
+        // releasing the hold re-dispatches everything still queued.
+        if (\App\Models\Setting::value('ai_hold') === '1') {
+            return;
+        }
+
         $job = ProcessingJob::find($this->processingJobId);
 
         if ($job === null || $job->item === null) {

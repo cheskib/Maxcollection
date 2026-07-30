@@ -25,6 +25,11 @@ class RevalueItemJob implements ShouldQueue
 
     public function handle(AiService $ai): void
     {
+        // Admin hold pauses all AI work.
+        if (\App\Models\Setting::value('ai_hold') === '1') {
+            return;
+        }
+
         $item = Item::find($this->itemId);
         $metadata = $item?->metadata;
 

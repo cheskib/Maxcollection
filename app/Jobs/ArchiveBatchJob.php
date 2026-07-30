@@ -54,6 +54,12 @@ class ArchiveBatchJob implements ShouldQueue
             ->take(self::CHUNK)
             ->get();
 
+        // Files are renamed to the bag number: BAG-000123-01-front.jpg —
+        // the ordinal is the card's position within the bag.
+        $ordinals = $batch->items()->orderBy('id')->pluck('id')
+            ->flip()
+            ->map(fn ($index) => $index + 1);
+
         foreach ($images as $image) {
             if (! Storage::disk('local')->exists($image->path)) {
                 Log::warning("Archive: missing file for image {$image->id} ({$image->path}); skipped.");
@@ -62,7 +68,7 @@ class ArchiveBatchJob implements ShouldQueue
             }
 
             $dropbox->upload(
-                $this->dropboxPath($batch, $image),
+                $this->dropboxPath($batch, $image, (int) $ordinals->get($image->item_id, 0)),
                 Storage::disk('local')->get($image->path),
             );
         }
@@ -77,14 +83,17 @@ class ArchiveBatchJob implements ShouldQueue
     }
 
     /**
-     * /BAG-000123/item-42-front-107.jpg — readable, unique, and stable
-     * across retries.
+     * /BAG-000123/BAG-000123-01-front.jpg — every file carries its bag
+     * number even when separated from its folder. Unique and stable
+     * across retries (the image id breaks any label tie).
      */
-    private function dropboxPath(Batch $batch, Image $image): string
+    private function dropboxPath(Batch $batch, Image $image, int $ordinal): string
     {
         $extension = strtolower(pathinfo($image->original_filename, PATHINFO_EXTENSION) ?: 'jpg');
+        $bag = $batch->barcode->code;
+        $label = $image->role ?? 'photo-'.$image->id;
 
-        return sprintf('/%s/item-%d-%s-%d.%s', $batch->barcode->code, $image->item_id, $image->role ?? 'photo', $image->id, $extension);
+        return sprintf('/%s/%s-%02d-%s.%s', $bag, $bag, $ordinal, $label, $extension);
     }
 
     public function failed(?\Throwable $exception): void

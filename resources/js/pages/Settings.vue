@@ -15,8 +15,28 @@ const props = defineProps<{
         pendingCount: number;
     };
     users: { id: number; name: string; email: string; role: string }[];
+    collections: { id: number; name: string }[];
+    defaultCollectionId: number | null;
+    aiHold: boolean;
+    queuedCount: number;
     keyNames: Record<string, { id: number; name: string }[]>;
 }>();
+
+// Where every scan-line batch lands from now on (forward-only).
+const chosenCollection = ref<number | null>(props.defaultCollectionId);
+
+function saveDefaultCollection(): void {
+    if (chosenCollection.value === null) return;
+    router.post('/settings/default-collection', { collection_id: chosenCollection.value }, { preserveScroll: true });
+}
+
+function toggleAiHold(): void {
+    const message = props.aiHold
+        ? 'Resume AI processing? Everything queued picks back up.'
+        : 'Hold ALL AI processing? Scanning and validation continue; queued items wait until you resume.';
+    if (!confirm(message)) return;
+    router.post('/settings/ai-hold', { hold: !props.aiHold }, { preserveScroll: true });
+}
 
 // Accounts: admins manage the collection; scanners digitize and pack.
 const addingUser = ref(false);
@@ -164,6 +184,49 @@ function save(): void {
             >
                 ⬇ Download CSV Export
             </a>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">📥 Scan-line collection</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Every batch arriving from the scanners lands in this collection — from the moment you save, forward
+                only. Nothing already processed moves.
+            </p>
+            <div class="mt-2 flex gap-2">
+                <select v-model="chosenCollection" class="block w-full rounded-lg border border-gray-300 px-3 py-2.5">
+                    <option :value="null" disabled>— choose a collection —</option>
+                    <option v-for="collection in collections" :key="collection.id" :value="collection.id">
+                        {{ collection.name }}
+                    </option>
+                </select>
+                <button
+                    class="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    @click="saveDefaultCollection"
+                >
+                    Save
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">🤖 AI Processing</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Scanning and validation always continue — they follow the cards. AI recognition follows the images and
+                can be held here whenever you want; queued items simply wait.
+            </p>
+            <p
+                class="mt-2 rounded-lg p-3 text-sm font-semibold"
+                :class="aiHold ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-700'"
+            >
+                {{ aiHold ? `⏸ On hold — ${queuedCount} item(s) waiting.` : '▶ Running normally.' }}
+            </p>
+            <button
+                class="mt-2 w-full rounded-lg py-2.5 text-sm font-semibold"
+                :class="aiHold ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'"
+                @click="toggleAiHold"
+            >
+                {{ aiHold ? '▶ Resume AI Processing' : '⏸ Hold AI Processing' }}
+            </button>
         </div>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">

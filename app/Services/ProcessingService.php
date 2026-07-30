@@ -226,6 +226,12 @@ class ProcessingService
      */
     public function rescueStalledItems(): int
     {
+        // While the admin holds AI processing, queued items are waiting on
+        // purpose — they are not stalled.
+        if (\App\Models\Setting::value('ai_hold') === '1') {
+            return 0;
+        }
+
         $stalled = Item::whereIn('status', [Item::STATUS_QUEUED, Item::STATUS_PROCESSING])
             ->where('updated_at', '<', now()->subMinutes(10))
             ->get();
