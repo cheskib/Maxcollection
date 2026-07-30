@@ -532,6 +532,16 @@ Touchscreen kiosk  ←WebSocket/API→  Windows controller PC
   per-station KPIs. The wider production chain — Receiving → Sorting →
   Imaging → AI Recognition → Needs Review → Bagging → Storage →
   Listing — gains kiosks stage by stage as those stages come online.
+
+  **Exception — the card scan station** (owner ruling): the separator
+  tickets removed every mid-rhythm screen interaction, so the scan
+  station needs no touchscreen kiosk — just a plain monitor on the
+  controller PC showing running status (count, current bag) and
+  scanner-specific errors in plain language (jam, double-feed,
+  offline: what happened, what to do). Session boundaries (login,
+  collection, mode, end) happen on the same screen with the PC's
+  normal keyboard and mouse — twice-a-shift events, not production
+  motions.
 - The same kiosk architecture later extends to coins, stamps,
   documents, games, and antiques: only the capture workflow changes.
 - Design priorities, in order: speed, simplicity, reliability, easy
