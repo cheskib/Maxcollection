@@ -143,6 +143,16 @@ kiosk controls the imaging stage only, and the same architecture
 later extends to coins, stamps, documents, games, and antiques. Full
 spec in CAPTURE-STATION.md "Production Kiosks".
 
+## 2026-07-29 — Card capture validation: flag, never stop
+
+Owner ruling: after cards are captured, the system verifies the bag
+number is readable and registered and that every card has a front and
+a back. Failures FLAG the batch for admin attention — the line never
+stops, the bin proceeds to bagging (the physical sticker keeps the
+physical bag correct), and the scanning operator is never notified.
+Admins resolve flags from their own queue. Supersedes the earlier
+stop-the-line header validation.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
