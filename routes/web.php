@@ -118,6 +118,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/settings/key-names/{keyName}', [\App\Http\Controllers\SettingsController::class, 'removeKeyName'])->name('settings.keynames.remove');
         Route::post('/settings/default-collection', [\App\Http\Controllers\SettingsController::class, 'setDefaultCollection'])->name('settings.collection');
         Route::post('/settings/ai-hold', [\App\Http\Controllers\SettingsController::class, 'setAiHold'])->name('settings.aihold');
+        Route::post('/settings/stations', [\App\Http\Controllers\SettingsController::class, 'addStation'])->name('settings.stations.add');
+        Route::post('/settings/stations/{station}/revoke', [\App\Http\Controllers\SettingsController::class, 'revokeStation'])->name('settings.stations.revoke');
+        Route::get('/settings/stations/{station}/config', [\App\Http\Controllers\SettingsController::class, 'stationConfig'])->name('settings.stations.config');
         Route::post('/settings/users', [\App\Http\Controllers\SettingsController::class, 'addUser'])->name('settings.users.add');
         Route::post('/settings/users/{user}/role', [\App\Http\Controllers\SettingsController::class, 'updateUserRole'])->name('settings.users.role');
     });

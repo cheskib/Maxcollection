@@ -35,6 +35,15 @@ class SettingsController extends Controller
                 : null,
             'aiHold' => Setting::value('ai_hold') === '1',
             'queuedCount' => \App\Models\Item::whereIn('status', [\App\Models\Item::STATUS_QUEUED, \App\Models\Item::STATUS_PROCESSING])->count(),
+            'stations' => \App\Models\Station::orderBy('name')->get()->map(fn (\App\Models\Station $station) => [
+                'id' => $station->id,
+                'name' => $station->name,
+                'type' => $station->type,
+                'tokenLast4' => $station->token_last4,
+                'lastSeen' => $station->last_seen_at?->diffForHumans(),
+                'revoked' => $station->revoked_at !== null,
+                'fileCount' => $station->ingestFiles()->count(),
+            ])->all(),
             'keyNames' => KeyName::orderBy('sport')->orderBy('name')
                 ->get(['id', 'sport', 'name'])
                 ->groupBy('sport')
@@ -133,6 +142,56 @@ class SettingsController extends Controller
         return back()->with('status', $requeued > 0
             ? "AI processing resumed — {$requeued} item(s) picking back up."
             : 'AI processing resumed.');
+    }
+
+    /**
+     * Register a scan station and issue its token. The token type routes
+     * arriving files into the right pipeline (cards vs comics).
+     */
+    public function addStation(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:64'],
+            'type' => ['required', \Illuminate\Validation\Rule::in([\App\Models\Station::TYPE_CARDS, \App\Models\Station::TYPE_COMICS])],
+        ]);
+
+        $station = \App\Models\Station::issue(trim($validated['name']), $validated['type']);
+
+        return back()->with('status', "Station \"{$station->name}\" registered — download its config file below.");
+    }
+
+    /**
+     * Kill switch for one station: its token stops working immediately;
+     * nothing else is touched.
+     */
+    public function revokeStation(\App\Models\Station $station): RedirectResponse
+    {
+        $station->update(['revoked_at' => now()]);
+
+        return back()->with('status', "Station \"{$station->name}\" revoked.");
+    }
+
+    /**
+     * The uploader agent's config file, pre-filled with this station's
+     * token and the server address. Placed next to the agent executable.
+     */
+    public function stationConfig(\App\Models\Station $station): \Symfony\Component\HttpFoundation\Response
+    {
+        if ($station->revoked_at !== null) {
+            abort(410, 'This station has been revoked.');
+        }
+
+        $config = [
+            'server' => rtrim(config('app.url'), '/'),
+            'token' => $station->token,
+            'watch_dir' => 'C:\\MaxCollection\\scans',
+            'sent_dir' => 'C:\\MaxCollection\\sent',
+        ];
+
+        return response(json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), 200, [
+            'Content-Type' => 'application/json',
+            'Content-Disposition' => 'attachment; filename="uploader.json"',
+        ]);
     }
 
     /**

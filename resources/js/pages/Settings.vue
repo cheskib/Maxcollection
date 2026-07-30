@@ -19,6 +19,15 @@ const props = defineProps<{
     defaultCollectionId: number | null;
     aiHold: boolean;
     queuedCount: number;
+    stations: {
+        id: number;
+        name: string;
+        type: string;
+        tokenLast4: string;
+        lastSeen: string | null;
+        revoked: boolean;
+        fileCount: number;
+    }[];
     keyNames: Record<string, { id: number; name: string }[]>;
 }>();
 
@@ -36,6 +45,26 @@ function toggleAiHold(): void {
         : 'Hold ALL AI processing? Scanning and validation continue; queued items wait until you resume.';
     if (!confirm(message)) return;
     router.post('/settings/ai-hold', { hold: !props.aiHold }, { preserveScroll: true });
+}
+
+// Scan stations: each station PC runs the uploader agent with its own
+// typed token (cards or comics).
+const addingStation = ref(false);
+const newStation = ref({ name: '', type: 'cards' });
+
+function addStation(): void {
+    router.post('/settings/stations', newStation.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            addingStation.value = false;
+            newStation.value = { name: '', type: 'cards' };
+        },
+    });
+}
+
+function revokeStation(station: { id: number; name: string }): void {
+    if (!confirm(`Revoke "${station.name}"? Its uploader stops working immediately. Files already received are unaffected.`)) return;
+    router.post(`/settings/stations/${station.id}/revoke`, {}, { preserveScroll: true });
 }
 
 // Accounts: admins manage the collection; scanners digitize and pack.
@@ -227,6 +256,79 @@ function save(): void {
             >
                 {{ aiHold ? '▶ Resume AI Processing' : '⏸ Hold AI Processing' }}
             </button>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
+            <h2 class="font-semibold text-gray-900">🖥️ Scan Stations</h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Each station PC runs the uploader agent. Register the station here, then on that PC: download the
+                agent and its config into <span class="font-mono text-xs">C:\MaxCollection\</span> and run it once.
+            </p>
+
+            <div v-if="stations.length" class="mt-2 divide-y divide-gray-100">
+                <div v-for="station in stations" :key="station.id" class="flex items-center justify-between py-2.5">
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold" :class="station.revoked ? 'text-gray-400 line-through' : 'text-gray-900'">
+                            {{ station.name }}
+                            <span class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+                                {{ station.type === 'cards' ? '🃏 Cards' : '📚 Comics' }}
+                            </span>
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            Token …{{ station.tokenLast4 }}
+                            · {{ station.lastSeen ? `last seen ${station.lastSeen}` : 'never connected' }}
+                            · {{ station.fileCount }} file(s)
+                        </p>
+                    </div>
+                    <div v-if="!station.revoked" class="ml-3 flex shrink-0 gap-3">
+                        <a :href="`/settings/stations/${station.id}/config`" class="text-sm font-semibold text-blue-600">Config</a>
+                        <button class="text-sm font-semibold text-red-500 hover:text-red-700" @click="revokeStation(station)">
+                            Revoke
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <template v-if="addingStation">
+                <div class="mt-3 flex flex-col gap-2">
+                    <input
+                        v-model="newStation.name"
+                        type="text"
+                        placeholder="Station name (e.g. Card scan desk 1)"
+                        class="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    />
+                    <select v-model="newStation.type" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                        <option value="cards">🃏 Cards — scan desk</option>
+                        <option value="comics">📚 Comics — photo station</option>
+                    </select>
+                    <div class="flex gap-2">
+                        <button
+                            class="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300"
+                            :disabled="!newStation.name.trim()"
+                            @click="addStation"
+                        >
+                            Register Station
+                        </button>
+                        <button class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700" @click="addingStation = false">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </template>
+            <button
+                v-else
+                class="mt-3 w-full rounded-lg bg-gray-100 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+                @click="addingStation = true"
+            >
+                + Register Station
+            </button>
+
+            <a
+                href="/downloads/maxcollection-uploader.exe"
+                class="mt-2 block w-full rounded-lg bg-gray-100 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-200"
+            >
+                ⬇ Download Uploader Agent (Windows)
+            </a>
         </div>
 
         <div class="mt-4 rounded-xl bg-white p-4 shadow-sm">
