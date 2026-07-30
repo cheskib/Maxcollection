@@ -569,10 +569,17 @@ bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
    **pre-bound to that bag number**. Stickers slice a continuous feed
    into batches: ticket, cards, ticket, cards — no screen touches and
    no barcode gun at the scan desk.
-3. **Validation at the header**: unknown code or already-used bag →
-   red banner + tone, line stops before any cards file wrong. Duplex
-   capture means ticket orientation can never be wrong. A batch that
-   closes far below the 50–70 norm is flagged (likely double-feed).
+3. **Post-capture validation — flag, never stop** (owner ruling):
+   after a batch's cards are captured the system checks that (a) the
+   bag number is readable AND registered, and (b) every card has a
+   front and a back. Good → AI and everything downstream. Anything
+   wrong → the batch is **flagged for admin attention** — the line
+   keeps flowing, the bin goes to bagging as normal (the physical
+   sticker still rides the ticket, so the physical bag stays right),
+   and the scanning operator is never told and never needs to know.
+   Admins resolve flags later: assign the correct bag, fix a pairing,
+   or order a rescan of that one bag. Short batches (far under the
+   50–70 norm) flag the same way — likely double-feed.
 4. **Bagging**: peel the sticker from the carrier onto the 4×6 bag,
    cards in, seal. The batch was already bound at scan time — bagging
    is purely physical. Empty bin returns to prep.
