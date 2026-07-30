@@ -599,6 +599,15 @@ bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
    and images) and attempt 2 (clean) — the superseded capture is
    marked, never deleted.
 
+   **Resolution is diagnostic** (owner ruling): the reviewer sees the
+   rejected capture and why — attempt 1's images make the cause
+   visible. If the cause is a bad card (warped, torn, double-feeding),
+   rescanning won't help: the reviewer pulls the 1–2 problem cards
+   from the set-aside bag BEFORE it rescans, and the resolution notes
+   what was pulled and why — so attempt 2 arriving short is expected,
+   not a new flag. Pulled cards go to the damaged pile or through a
+   later bin as ordinary items.
+
    **Sounds are load-bearing**: the good beep and the problem tone
    must be audibly distinct, every station needs verified audio, and
    session start includes a sound check (a "Test sounds" control on
