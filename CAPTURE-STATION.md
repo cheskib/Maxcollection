@@ -580,6 +580,15 @@ bins (yellow ~4.5×3.6×2" for batches of 50–70 raw cards; black
    Admins resolve flags later: assign the correct bag, fix a pairing,
    or order a rescan of that one bag. Short batches (far under the
    50–70 norm) flag the same way — likely double-feed.
+
+   **The flag is caught physically at the boxing station** (owner
+   ruling): when the packer scans a flagged bag, the system plays the
+   problem tone, does NOT add the bag to the box, and locks scanning
+   until the packer confirms "bag set aside" with one tap. The
+   confirmation is logged (who/when/bag/box); the set-aside bag goes
+   to the admin pile and boxes normally once its flag is resolved.
+   Only capture-health flags intercept — bags whose cards merely need
+   AI review pass through freely (review never blocks anything).
 4. **Bagging**: peel the sticker from the carrier onto the 4×6 bag,
    cards in, seal. The batch was already bound at scan time — bagging
    is purely physical. Empty bin returns to prep.
