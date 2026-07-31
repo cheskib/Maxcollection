@@ -143,7 +143,8 @@ function submitAdd(): void {
                             </p>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
-                            <p v-if="item.price" class="text-sm font-bold text-gray-900">{{ item.price }}</p>
+                            <!-- Once it's in stock, the price is history (owner rule). -->
+                            <p v-if="item.price && item.status !== 'have'" class="text-sm font-bold text-gray-900">{{ item.price }}</p>
                             <select
                                 :value="item.status"
                                 class="rounded-lg border-0 py-1 pl-2 pr-7 text-xs font-bold"
