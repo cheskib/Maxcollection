@@ -49,9 +49,9 @@ const STATIONS: { key: string; emoji: string; name: string; photo: string; blurb
     {
         key: 'everywhere',
         emoji: '🖥️',
-        name: 'Everywhere',
+        name: 'Non-Specific-Station Needs',
         photo: '/images/floor/comic-line.jpg',
-        blurb: 'Shared infrastructure across the floor.',
+        blurb: 'Gear that serves the whole floor rather than any one station.',
     },
 ];
 
