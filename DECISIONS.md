@@ -351,6 +351,22 @@ double-counts; the batch tombstone preserves the record of what
 happened, satisfying both "it's deleted" and "we keep a record of
 both scans".
 
+## 2026-07-30 — KPI dashboard and Sticker Ledger; two deferrals
+
+Owner sequencing: **badge sign-in is deferred** (per-operator
+identity stays the logged-in account for now) and **label printing
+waits for the physical printer** (designs already approved). Built
+instead: the admin **KPI dashboard** (📟 on Home) — recent 3-in-a-row
+alarms with who/where/when, a flagged-bags-waiting banner linking to
+Diagnose, per-bagger numbers (today's bags and average seconds, week
+totals, set-asides, alarms), per-station health (last seen, files and
+batches today, flags this week), and a 7-day flag breakdown. Below
+it, the **Sticker Ledger**: every printed code in exactly one state —
+in service (bag on a batch, box in use, divider placed), unused, or
+voided — with the standing invariant printed = in service + unused +
+voided, plus a "where is this sticker?" lookup that answers any
+scanned code with its state and holder.
+
 ## 2026-07-24 — Documentation stored in repository
 
 The five specification documents are committed to the repository root as README.md, PROJECT.md, ARCHITECTURE.md, CLAUDE.md, and PHASE_1.md, alongside this decisions log.
