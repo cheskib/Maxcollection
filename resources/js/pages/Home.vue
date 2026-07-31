@@ -214,6 +214,10 @@ function logout(): void {
                 <span class="text-2xl">📟</span>
                 <p class="mt-1 font-semibold text-gray-900">KPI</p>
             </Link>
+            <Link v-if="page.props.auth.isAdmin" href="/equipment" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
+                <span class="text-2xl">🛒</span>
+                <p class="mt-1 font-semibold text-gray-900">Equipment</p>
+            </Link>
             <Link v-if="page.props.auth.isAdmin" href="/reports" class="rounded-xl bg-white p-4 text-center shadow-sm hover:bg-gray-50">
                 <span class="text-2xl">📈</span>
                 <p class="mt-1 font-semibold text-gray-900">Reports</p>
