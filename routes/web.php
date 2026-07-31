@@ -112,7 +112,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/export', [\App\Http\Controllers\ExportController::class, 'csv'])->name('export');
         Route::get('/reports', [\App\Http\Controllers\ReportsController::class, 'index'])->name('reports');
         Route::get('/kpi', [\App\Http\Controllers\KpiController::class, 'index'])->name('kpi');
-        Route::get('/equipment', fn () => Inertia::render('Equipment'))->name('equipment');
+        Route::get('/equipment', [\App\Http\Controllers\EquipmentController::class, 'index'])->name('equipment');
+        Route::post('/equipment', [\App\Http\Controllers\EquipmentController::class, 'store'])->name('equipment.store');
+        Route::patch('/equipment/{equipment}', [\App\Http\Controllers\EquipmentController::class, 'update'])->name('equipment.update');
+        Route::delete('/equipment/{equipment}', [\App\Http\Controllers\EquipmentController::class, 'destroy'])->name('equipment.destroy');
         Route::get('/diagnose', [\App\Http\Controllers\DiagnoseController::class, 'index'])->name('diagnose');
         Route::post('/diagnose/scan', [\App\Http\Controllers\DiagnoseController::class, 'scan'])->name('diagnose.scan');
         Route::get('/diagnose/{batch}', [\App\Http\Controllers\DiagnoseController::class, 'show'])->name('diagnose.show');
