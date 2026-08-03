@@ -76,6 +76,7 @@ class ItemController extends Controller
                     'purchase' => $metadata?->purchase_price,
                     'insurance' => $metadata?->insurance_value,
                     'ai' => ['from' => $metadata?->ai_value_from, 'to' => $metadata?->ai_value_to],
+                    'check' => $this->marketCheckLinks($metadata),
                     'market' => [
                         'value' => $metadata?->market_value,
                         'match' => $metadata?->market_match,
@@ -125,5 +126,42 @@ class ItemController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * The AI ballpark is the model's judgment, not a lookup — it has no
+     * sources to cite. These pre-filled searches are how an admin audits
+     * it against the live market in one tap (owner request).
+     *
+     * @return array<int, array{label: string, url: string}>
+     */
+    private function marketCheckLinks(?\App\Models\Metadata $metadata): array
+    {
+        if ($metadata === null) {
+            return [];
+        }
+
+        $query = $metadata->primaryTitle();
+        if ($query === "Item #{$metadata->item_id}") {
+            return []; // Nothing identifying to search with yet.
+        }
+
+        if ($metadata->category === 'sports_card' && filled($metadata->card_number)) {
+            $query .= ' #'.$metadata->card_number;
+        }
+
+        $links = [[
+            'label' => 'eBay solds',
+            'url' => 'https://www.ebay.com/sch/i.html?LH_Sold=1&LH_Complete=1&_nkw='.urlencode($query),
+        ]];
+
+        if ($metadata->category === 'sports_card') {
+            $links[] = [
+                'label' => 'SportsCardsPro',
+                'url' => 'https://www.sportscardspro.com/search-products?q='.urlencode($query).'&type=prices',
+            ];
+        }
+
+        return $links;
     }
 }
